@@ -1,1 +1,39 @@
-<h1>Hello from NEW login.html</h1>
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container">
+    <div class="left-side">
+        <img class="side-image" alt="Login Side Image">
+    </div>
+
+    <div class="right-side">
+        <div class="form-wrap login-form">
+            <div class="logo-container">
+                <img class="logo" src="{% static 'images/logo.png' %}" alt="PeerLending Logo">
+                <h3>Welcome Back</h3>
+                <p>Signin to access CIT-U Peer Lending Library</p>
+            </div> 
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <label for="id_username">Email</label>
+                <input type="email" name="username" id="id_username" required>
+
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" required>
+
+    
+                <div class="btn-row vertical">
+                    <button type="submit" class="submit-btn">Sign In</button>
+                    <a class="alt-btn" href="{% url 'register' %}">Create New Account</a>
+                    <a>Forgot your password?</a>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
