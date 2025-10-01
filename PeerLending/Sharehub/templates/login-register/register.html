@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container">
+  <div class="left-side">
+    <img class="side-image" alt="Signup Side Image">
+  </div> 
+
+  <div class="right-side">
+    <div class="form-wrap">
+      <div class="logo-container">
+        <img class="logo" src="{% static 'images/logo.png' %}" alt="PeerLending Logo">
+        <h3>Join CIT-U Peer Lending Library</h3>
+        <p>Create your account to start lending and borrowing academic resources</p>
+      </div>
+
+      <form method="POST" novalidate>
+        {% csrf_token %}
+
+        
+        <div class="form-header">
+          <h3>Required Information</h3>
+          <hr class="section-line">
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">
+            <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
+            Email
+          </label>
+          {{ form.email }}
+          {% for error in form.email.errors %}
+            <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="{{ form.password1.id_for_label }}">
+            <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+            Password
+          </label>
+          {{ form.password1 }}
+          {% for error in form.password1.errors %}
+            <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="{{ form.password2.id_for_label }}">
+            <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+            Confirm Password
+          </label>
+          {{ form.password2 }}
+          {% for error in form.password2.errors %}
+            <p class="error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-header">
+          <h3>Personal Information</h3>
+          <hr class="section-line">
+        </div>
+
+        <!-- First & Last Name -->
+        <div class="name-row">
+          <div class="half form-group">
+            <label for="{{ form.first_name.id_for_label }}">
+              <img src="{% static 'images/user.png' %}" class="icon" alt="Person Icon">
+              First Name
+            </label>
+            {{ form.first_name }}
+            {% for error in form.first_name.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="half form-group">
+            <label for="{{ form.last_name.id_for_label }}">
+              <img src="{% static 'images/user.png' %}" class="icon" alt="Person Icon">
+              Last Name
+            </label>
+            {{ form.last_name }}
+            {% for error in form.last_name.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Birthday -->
+        <div class="name-row">
+          <div class="half form-group">
+            <label for="id_birthday">
+              <img src="{% static 'images/calendar.png' %}" class="icon" alt="Calendar Icon">
+              Birthday
+            </label>
+            <input type="date" name="birthday" id="id_birthday" value="{{ form.birthday.value|default:'' }}">
+            {% for error in form.birthday.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="half form-group">
+            <label for="{{ form.phone_number.id_for_label }}">
+              <img src="{% static 'images/phone.png' %}" class="icon" alt="Phone Icon">
+              Phone Number
+            </label>
+            {{ form.phone_number }}
+            {% for error in form.phone_number.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- College / Course / Year -->
+        <div class="name-row">
+          <div class="third form-group">
+            <label for="{{ form.college_dept.id_for_label }}">
+              <img src="{% static 'images/department.png' %}" class="icon" alt="College Icon">
+              College Department
+            </label>
+            {{ form.college_dept }}
+            {% for error in form.college_dept.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="third form-group">
+            <label for="{{ form.course.id_for_label }}">
+              <img src="{% static 'images/course.png' %}" class="icon" alt="Course Icon">
+              Course
+            </label>
+            {{ form.course }}
+            {% for error in form.course.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+
+          <div class="third form-group">
+            <label for="{{ form.year_level.id_for_label }}">
+              Year Level
+            </label>
+            {{ form.year_level }}
+            {% for error in form.year_level.errors %}
+              <p class="error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="btn-row horizontal">
+          <button type="submit" class="submit-btn">Create Account</button>
+          <a class="alt-btn" href="{% url 'login' %}">Already have an account? Sign In</a>
+        </div>
+      </form>
+    </div> 
+  </div>
+</div>
+
+<style>
+  .error {
+    color: red;
+    font-size: 0.9em;
+    margin: 4px 0 0 0;
+    font-weight: 500;
+  }
+</style>
+
+{% endblock content %}
