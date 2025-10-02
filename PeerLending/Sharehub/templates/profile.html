@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile</title>
+    {% load static %}
+  <link rel="stylesheet" href="{% static 'css/design.css' %}">
+</head>
+<body>
+  <header class="navbar">
+    <a href="{% url 'home' %}" class="back">&larr; Back to Dashboard</a>
+    <h1>User Profile</h1>
+  </header>
+
+  <main class="profile-page">
+    <div class="profile-left">
+      <div class="profile-card">
+        <div class="profile-pic"></div>
+        <h3>{{request.user.first_name}} {{request.user.last_name}}</h3>
+        <p>{{request.user.email}}</p>
+        <span class="student-id"></span>
+      </div>
+
+      <div class="card">
+        <h3>Borrowing Statistics</h3>
+        <div class="placeholder"></div>
+      </div>
+    </div>
+
+    <div class="profile-right">
+      <div class="card">
+        <div class="profile-header">
+          <h3>Profile Information</h3>
+          <button class="edit-btn">Edit Profile</button>
+        </div>
+
+        <div class="info-section">
+          <h4>Personal Information</h4>
+          <div class="info-grid">
+            <p><strong>Full Name:</strong>{{request.user.first_name}} {{request.user.last_name}}</p>
+            <p><strong>Email:</strong>{{request.user.email}}</p>
+            <p><strong>Birth Date:</strong>{{request.user.birthday}}</p>
+            <p><strong>Phone:</strong></p>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h4>Academic Information</h4>
+          <div class="info-grid">
+            <p><strong>College:</strong>{{request.user.college_dept}}</p>
+            <p><strong>Course:</strong>{{request.user.course}}</p>
+            <p><strong>Year Level:</strong>{{request.user.year_level}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
