@@ -1,39 +1,92 @@
-{% extends "base.html" %}
-{% load static %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeerLending Login</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body> 
+
+<div id="errorOverlay"></div>
+
+<div id="errorPopup">
+    <div class="popup-header">Please fill out required fields!</div>
+    <div class="popup-body" id="missingFields"></div>
+    <button class="close-btn" onclick="closePopup()">&times;</button>
+</div> 
 
 <div class="container">
     <div class="left-side">
-        <img class="side-image" alt="Login Side Image">
+        <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image">
     </div>
 
     <div class="right-side">
         <div class="form-wrap login-form">
             <div class="logo-container">
-                <img class="logo" src="{% static 'images/logo.png' %}" alt="PeerLending Logo">
+                <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo">
                 <h3>Welcome Back</h3>
                 <p>Signin to access CIT-U Peer Lending Library</p>
             </div> 
 
-            <form method="POST">
-                {% csrf_token %}
-
-                <label for="id_username">Email</label>
-                <input type="email" name="username" id="id_username" required>
+            <form id="loginForm">
+                <label for="id_username">   Email</label>
+                <input type="email" name="username" id="id_username" placeholder="Enter your email @cit.edu" >
 
                 <label for="id_password">Password</label>
-                <input type="password" name="password" id="id_password" required>
+                <input type="password" name="password" id="id_password" placeholder="Enter your password" >
 
-    
                 <div class="btn-row vertical">
                     <button type="submit" class="submit-btn">Sign In</button>
                     <a class="alt-btn" href="{% url 'register' %}">Create New Account</a>
-                    <a>Forgot your password?</a>
+                    <a class="forgot-link" href="#">Forgot your password?</a>
                 </div>
-
             </form>
         </div>
     </div>
 </div>
 
-{% endblock content %}
+<script>
+const form = document.getElementById('loginForm');
+const popup = document.getElementById('errorPopup');
+const overlay = document.getElementById('errorOverlay');
+const missingFieldsList = document.getElementById('missingFields');
+
+form.addEventListener('submit', function(event) {
+    const missing = [];
+    const username = document.getElementById('id_username').value.trim();
+    const password = document.getElementById('id_password').value.trim();
+
+    if (!username) missing.push("Email");
+    if (!password) missing.push("Password");
+
+    if (missing.length > 0) {
+        event.preventDefault();
+
+        missingFieldsList.innerHTML = "";
+        missing.forEach(field => {
+            const div = document.createElement('div');
+            div.textContent = field;
+            missingFieldsList.appendChild(div);
+        });
+
+        overlay.classList.add('show');
+        popup.style.display = "flex";
+        setTimeout(() => {
+            popup.classList.add('show');
+        }, 10);
+    }
+});
+
+function closePopup() {
+    popup.classList.remove('show');
+    overlay.classList.remove('show');
+    setTimeout(() => {
+        popup.style.display = "none";
+    }, 400);
+}
+</script>
+
+</body>
+</html>
