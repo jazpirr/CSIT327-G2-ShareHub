@@ -1,27 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login/Registration Test</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PeerLending Signup</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body>  
-    <nav>
-        {% if user.is_authenticated %}
-            <!-- Logout button (POST) -->
-            <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit">Logout</button>
-            </form>
-        {% else %}
-        {% endif %}
-    </nav>
+<body>
 
-    <hr>
-    
-    {% block content %}
-    {% endblock %}
+<!-- Popup for errors -->
+<div id="errorOverlay"></div>
+<div id="errorPopup">
+    <div class="popup-header" id="popupHeader">Error</div>
+    <div class="popup-body" id="popupBody"></div>
+    <button class="close-btn" onclick="closePopup()">&times;</button>
+</div>
+
+<div class="container">
+  <div class="left-side">
+    <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Signup Side Image">
+  </div>
+
+  <div class="right-side">
+    <div class="form-wrap">
+      <div class="logo-container">
+        <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo">
+        <h3>Join CIT-U Peer Lending Library</h3>
+        <p>Create your account to start lending and borrowing academic resources</p>
+      </div>
+
+      <form id="signupForm" method="POST" novalidate>
+        {% csrf_token %}
+
+        <!-- Required Information -->
+        <div class="form-header">
+          <h3>Required Information</h3>
+          <hr class="section-line">
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">
+            <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
+            Email
+          </label>
+          <input type="email" name="email" id="email" placeholder="Enter your email" required>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password1">
+            <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+            Password
+          </label>
+          <input type="password" name="password1" id="password1" placeholder="Enter your password" required>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="password2">
+            <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+            Confirm Password
+          </label>
+          <input type="password" name="password2" id="password2" placeholder="Confirm your password" required>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="form-header">
+          <h3>Personal Information</h3>
+          <hr class="section-line">
+        </div>
+
+        <!-- First & Last Name -->
+        <div class="name-row">
+          <div class="half form-group">
+            <label for="first_name">
+              <img src="{% static 'images/user.png' %}" class="icon" alt="Person Icon">
+              First Name
+            </label>
+            <input type="text" name="first_name" id="first_name" placeholder="Enter your first name" required>
+          </div>
+
+          <div class="half form-group">
+            <label for="last_name">
+              <img src="{% static 'images/user.png' %}" class="icon" alt="Person Icon">
+              Last Name
+            </label>
+            <input type="text" name="last_name" id="last_name" placeholder="Enter your last name" required>
+          </div>
+        </div>
+
+        <!-- Optional Fields -->
+        <div class="name-row">
+          <div class="half form-group">
+            <label for="birthday">
+              <img src="{% static 'images/calendar.png' %}" class="icon" alt="Calendar Icon">
+              Birthday
+            </label>
+            <input type="date" name="birthday" id="birthday">
+          </div>
+
+          <div class="half form-group">
+            <label for="phone_number">
+              <img src="{% static 'images/phone.png' %}" class="icon" alt="Phone Icon">
+              Phone Number
+            </label>
+            <input type="tel" name="phone_number" id="phone_number" placeholder="Enter your phone number">
+          </div>
+        </div>
+
+        <div class="name-row">
+          <div class="third form-group">
+            <label for="college_dept">
+              <img src="{% static 'images/department.png' %}" class="icon" alt="College Icon">
+              College Department
+            </label>
+            <select name="college_dept" id="college_dept">
+              <option value="">Select your department</option>
+              {% for value, label in form.college_dept.field.choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="third form-group">
+            <label for="course">
+              <img src="{% static 'images/course.png' %}" class="icon" alt="Course Icon">
+              Course
+            </label>
+            <input type="text" name="course" id="course" placeholder="Enter your course">
+          </div>
+
+          <div class="third form-group">
+            <label for="year_level">
+              Year Level
+            </label>
+            <select name="year_level" id="year_level">
+              <option value="">Select your year level</option>
+              {% for value, label in form.year_level.field.choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="btn-row horizontal">
+          <button type="submit" class="submit-btn">Create Account</button>
+          <a class="alt-btn" href="{% url 'login' %}">Already have an account? Sign In</a>
+        </div>
+      </form>
+    </div> 
+  </div>
+</div>
+
+<script>
+const form = document.getElementById('signupForm');
+const popup = document.getElementById('errorPopup');
+const overlay = document.getElementById('errorOverlay');
+const popupHeader = document.getElementById('popupHeader');
+const popupBody = document.getElementById('popupBody');
+
+form.addEventListener('submit', function(event) {
+    const missing = [];
+
+    // Only truly required fields
+    const requiredFields = [
+        {id: 'email', name: 'Email'},
+        {id: 'password1', name: 'Password'},
+        {id: 'password2', name: 'Confirm Password'},
+        {id: 'first_name', name: 'First Name'},
+        {id: 'last_name', name: 'Last Name'}
+    ];
+
+    requiredFields.forEach(f => {
+        const el = document.getElementById(f.id);
+        if (!el.value.trim()) missing.push(f.name);
+    });
+
+    if (missing.length > 0) {
+        event.preventDefault();
+        popupHeader.textContent = "Please fill out required fields!";
+        popupBody.innerHTML = "";
+        missing.forEach(f => {
+            const div = document.createElement('div');
+            div.textContent = f;
+            popupBody.appendChild(div);
+        });
+        overlay.classList.add('show');
+        popup.style.display = "flex";
+        setTimeout(() => popup.classList.add('show'), 10);
+        return;
+    }
+
+    // Password validation
+    const password = document.getElementById('password1').value.trim();
+    const confirm = document.getElementById('password2').value.trim();
+
+    if (password.length < 8) {
+        event.preventDefault();
+        popupHeader.textContent = "Password Too Short!";
+        popupBody.textContent = "Password must be at least 8 characters long.";
+        overlay.classList.add('show');
+        popup.style.display = "flex";
+        setTimeout(() => popup.classList.add('show'), 10);
+        return;
+    }
+
+    if (password !== confirm) {
+        event.preventDefault();
+        popupHeader.textContent = "Password Mismatch!";
+        popupBody.textContent = "Passwords do not match.";
+        overlay.classList.add('show');
+        popup.style.display = "flex";
+        setTimeout(() => popup.classList.add('show'), 10);
+        return;
+    }
+});
+
+function closePopup() {
+    popup.classList.remove('show');
+    overlay.classList.remove('show');
+    setTimeout(() => popup.style.display = "none", 400);
+}
+</script>
+
 </body>
 </html>

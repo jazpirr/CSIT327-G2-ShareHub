@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PeerLending Login</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
+
 </head>
 <body> 
 
 <div id="errorOverlay"></div>
-
+ 
 <div id="errorPopup">
     <div class="popup-header">Please fill out required fields!</div>
     <div class="popup-body" id="missingFields"></div>
@@ -30,11 +31,16 @@
                 <p>Signin to access CIT-U Peer Lending Library</p>
             </div> 
 
-            <form id="loginForm">
-                <label for="id_username">   Email</label>
+            <form id="loginForm" method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                <label for="id_username">   
+                <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
+                Email</label>
                 <input type="email" name="username" id="id_username" placeholder="Enter your email @cit.edu" >
 
-                <label for="id_password">Password</label>
+                <label for="id_password">
+                <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+                Password</label>
                 <input type="password" name="password" id="id_password" placeholder="Enter your password" >
 
                 <div class="btn-row vertical">
