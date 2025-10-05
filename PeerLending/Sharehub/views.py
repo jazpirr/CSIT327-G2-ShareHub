@@ -3,7 +3,10 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from .forms import CustomUserCreationForm
 from django.contrib.auth.decorators import login_required
+from django import forms
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 def register(request):
     if request.method == "POST":
@@ -26,16 +29,36 @@ def home(request):
     return render(request, "home.html")
 
 def login_view(request):
+    class LoginForm(forms.Form):
+        email = forms.EmailField(label="Email")
+        password = forms.CharField(widget=forms.PasswordInput)
+
+    errors = {}
+
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect("home")
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+            password = form.cleaned_data["password"]
+
+            user = authenticate(request, email=email, password=password)
+            if user is not None:
+                login(request, user)
+                return redirect("home")
+            else:
+                if User.objects.filter(email=email).exists():
+                    errors['password'] = [{"message": "Incorrect password"}]
+                else:
+                    errors['email'] = [{"message": "Email not registered"}]
         else:
-            messages.error(request, "Invalid username or password")
-    return render(request, "login-register/login.html")
+            for field, field_errors in form.errors.items():
+                errors[field] = [{"message": e} for e in field_errors]
+    else:
+        form = LoginForm()
+
+    return render(request, "login-register/login.html", {"form": form, "errors": errors})
+
+
 
 
 def logout_view(request):

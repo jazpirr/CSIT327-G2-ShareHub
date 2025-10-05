@@ -32,3 +32,27 @@ class CustomUserCreationForm(UserCreationForm):
             raise forms.ValidationError("This email is already registered. Please use another.")
 
         return email
+
+    def clean_password1(self):
+        password = self.cleaned_data.get("password1")
+        email = self.cleaned_data.get("email", "")
+
+        if len(password) < 8:
+            raise forms.ValidationError("Password must be at least 8 characters long.")
+        if password.lower() == email.lower():
+            raise forms.ValidationError("Password cannot be the same as your email.")
+        if password.isdigit():
+            raise forms.ValidationError("Password cannot be entirely numeric.")
+        common_passwords = ["password", "12345678", "qwerty", "test123"]
+        if password.lower() in common_passwords:
+            raise forms.ValidationError("Password is too common. Choose a stronger one.")
+
+        return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password1 = cleaned_data.get("password1")
+        password2 = cleaned_data.get("password2")
+
+        if password1 and password2 and password1 != password2:
+            self.add_error("password2", "Passwords do not match.")

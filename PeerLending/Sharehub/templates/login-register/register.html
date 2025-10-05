@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<!-- Single popup for errors -->
+
 <div id="errorOverlay"></div>
 <div id="errorPopup">
     <div class="popup-header" id="popupHeader">Error</div>
@@ -33,13 +33,12 @@
       <form id="signupForm" method="POST" novalidate>
         {% csrf_token %}
 
-        <!-- Required Information -->
         <div class="form-header">
           <h4>Required Information</h4>
           <hr class="section-line">
         </div>
 
-        <!-- Email -->
+        <!-- email -->
         <div class="form-group">
           <label for="email">
             <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
@@ -48,7 +47,7 @@
           <input type="email" name="email" id="email" placeholder="Enter your email" required>
         </div>
 
-        <!-- Password -->
+        <!-- password and confirm -->
         <div class="form-group">
           <label for="password1">
             <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
@@ -57,7 +56,7 @@
           <input type="password" name="password1" id="password1" placeholder="Enter your password" required>
         </div>
 
-        <!-- Confirm Password -->
+        
         <div class="form-group">
           <label for="password2">
             <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
@@ -66,13 +65,13 @@
           <input type="password" name="password2" id="password2" placeholder="Confirm your password" required>
         </div>
 
-        <!-- Personal Information -->
+
         <div class="form-header">
           <h4>Personal Information</h4>
           <hr class="section-line">
         </div>
 
-        <!-- First & Last Name -->
+        <!-- names -->
         <div class="name-row">
           <div class="half form-group">
             <label for="first_name">
@@ -91,7 +90,7 @@
           </div>
         </div>
 
-        <!-- Optional Fields -->
+        <!-- optional -->
         <div class="name-row">
           <div class="half form-group">
             <label for="birthday">
@@ -145,7 +144,7 @@
           </div>
         </div>
 
-        <!-- Submit -->
+        
         <div class="btn-row horizontal">
           <button type="submit" class="submit-btn">Create Account</button>
           <a class="alt-btn" href="{% url 'login' %}">Already have an account? Sign In</a>
@@ -155,76 +154,20 @@
   </div>
 </div>
 
+<script src="{% static 'js/register.js' %}"></script>
+
+{% if form.errors %}
+  {{ form.errors.get_json_data|json_script:"serverErrors" }}
+{% endif %}
+<script src="{% static 'js/register.js' %}"></script>
 <script>
-const form = document.getElementById('signupForm');
-const popup = document.getElementById('errorPopup');
-const overlay = document.getElementById('errorOverlay');
-const popupHeader = document.getElementById('popupHeader');
-const popupBody = document.getElementById('popupBody');
-
-form.addEventListener('submit', function(event) {
-    const missing = [];
-
-    // Required fields
-    const requiredFields = [
-        {id: 'email', name: 'Email'},
-        {id: 'password1', name: 'Password'},
-        {id: 'password2', name: 'Confirm Password'},
-        {id: 'first_name', name: 'First Name'},
-        {id: 'last_name', name: 'Last Name'}
-    ];
-
-    requiredFields.forEach(f => {
-        const el = document.getElementById(f.id);
-        if (!el.value.trim()) missing.push(f.name);
-    });
-
-    if (missing.length > 0) {
-        event.preventDefault();
-        popupHeader.textContent = "Please fill out required fields!";
-        popupBody.innerHTML = "";
-        missing.forEach(f => {
-            const div = document.createElement('div');
-            div.textContent = f;
-            popupBody.appendChild(div);
-        });
-        overlay.classList.add('show');
-        popup.style.display = "flex";
-        setTimeout(() => popup.classList.add('show'), 10);
-        return;
+  document.addEventListener('DOMContentLoaded', () => {
+    const serverErrorsEl = document.getElementById("serverErrors");
+    if (serverErrorsEl) {
+        const errors = JSON.parse(serverErrorsEl.textContent);
+        showServerErrors(errors);
     }
-
-    // Password validation
-    const password = document.getElementById('password1').value.trim();
-    const confirm = document.getElementById('password2').value.trim();
-
-    if (password.length < 8) {
-        event.preventDefault();
-        popupHeader.textContent = "Password Too Short!";
-        popupBody.textContent = "Password must be at least 8 characters long.";
-        overlay.classList.add('show');
-        popup.style.display = "flex";
-        setTimeout(() => popup.classList.add('show'), 10);
-        return;
-    }
-
-    if (password !== confirm) {
-        event.preventDefault();
-        popupHeader.textContent = "Password Mismatch!";
-        popupBody.textContent = "Passwords do not match.";
-        overlay.classList.add('show');
-        popup.style.display = "flex";
-        setTimeout(() => popup.classList.add('show'), 10);
-        return;
-    }
-});
-
-function closePopup() {
-    popup.classList.remove('show');
-    overlay.classList.remove('show');
-    setTimeout(() => popup.style.display = "none", 400);
-}
-
+  });
 </script>
 
 
