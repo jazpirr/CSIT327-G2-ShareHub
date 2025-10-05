@@ -6,17 +6,17 @@
     <title>PeerLending Login</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
-
 </head>
-<body> 
+<body>
 
+<!-- popup overlay -->
 <div id="errorOverlay"></div>
- 
+
 <div id="errorPopup">
-    <div class="popup-header">Please fill out required fields!</div>
-    <div class="popup-body" id="missingFields"></div>
+    <div class="popup-header" id="popupHeader">Error</div>
+    <div class="popup-body" id="popupBody"></div>
     <button class="close-btn" onclick="closePopup()">&times;</button>
-</div> 
+</div>
 
 <div class="container">
     <div class="left-side">
@@ -29,19 +29,22 @@
                 <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo">
                 <h3>Welcome Back</h3>
                 <p>Signin to access CIT-U Peer Lending Library</p>
-            </div> 
+            </div>
 
             <form id="loginForm" method="POST" action="{% url 'login' %}">
                 {% csrf_token %}
-                <label for="id_username">   
-                <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
-                Email</label>
-                <input type="email" name="username" id="id_username" placeholder="Enter your email @cit.edu" >
+
+                <label for="id_email">
+                    <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
+                    Email
+                </label>
+                <input type="email" name="email" id="id_email" placeholder="Enter your email @cit.edu">
 
                 <label for="id_password">
-                <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-                Password</label>
-                <input type="password" name="password" id="id_password" placeholder="Enter your password" >
+                    <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+                    Password
+                </label>
+                <input type="password" name="password" id="id_password" placeholder="Enter your password">
 
                 <div class="btn-row vertical">
                     <button type="submit" class="submit-btn">Sign In</button>
@@ -49,50 +52,23 @@
                     <a class="forgot-link" href="#">Forgot your password?</a>
                 </div>
             </form>
-        </div>
+        </div> 
     </div>
 </div>
 
-<script>
-const form = document.getElementById('loginForm');
-const popup = document.getElementById('errorPopup');
-const overlay = document.getElementById('errorOverlay');
-const missingFieldsList = document.getElementById('missingFields');
+<script src="{% static 'js/login.js' %}"></script>
 
-form.addEventListener('submit', function(event) {
-    const missing = [];
-    const username = document.getElementById('id_username').value.trim();
-    const password = document.getElementById('id_password').value.trim();
 
-    if (!username) missing.push("Email");
-    if (!password) missing.push("Password");
-
-    if (missing.length > 0) {
-        event.preventDefault();
-
-        missingFieldsList.innerHTML = "";
-        missing.forEach(field => {
-            const div = document.createElement('div');
-            div.textContent = field;
-            missingFieldsList.appendChild(div);
-        });
-
-        overlay.classList.add('show');
-        popup.style.display = "flex";
-        setTimeout(() => {
-            popup.classList.add('show');
-        }, 10);
-    }
-});
-
-function closePopup() {
-    popup.classList.remove('show');
-    overlay.classList.remove('show');
-    setTimeout(() => {
-        popup.style.display = "none";
-    }, 400);
-}
-</script>
-
+{% if errors %}
+  {{ errors|json_script:"loginErrors" }}
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const errors = JSON.parse(document.getElementById("loginErrors").textContent);
+        if (window.showServerErrors) {
+            showServerErrors(errors);
+        }
+    });
+  </script>
+{% endif %}
 </body>
 </html>

@@ -321,13 +321,16 @@ body {
   border: 2px solid transparent;
   width: 100%;
 }
+label{
+  margin-top: 5px;
+}
 
 label .icon {
+  
   width: 13px;       
   height: 13px;
   vertical-align: middle; 
   margin-right: 2px; 
-  margin-bottom: 2px;
 }
 
 .errorlist {
