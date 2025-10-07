@@ -86,4 +86,36 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error(err);
         }
     });
+
+    const departmentCourses = {
+        "CCS": ["BSIT", "BSCS"],
+        "CNAHS": ["BSN", "BSP", "BSMT"],
+        "CEA": ["BSCE", "BSArch","BSChE","BSCpE","BSEE","BSECE","BSIE","BSME with Computational Science", "BSME with Mechatronics", "BSMinE"],
+        "CASE": ["AB Comm", "AB Eng", "BEED","BSED","BMA","BS Bio","BS Math","BS Psych"],
+        "CMBA": ["BSA", "BSBA","BSAIS","BSMA","BSHM","BSTM","BSOA","AOA","BPA"],
+        "CCJ": ["BS Crim"]
+    };
+
+    const deptSelect = document.getElementById('college_dept');
+    const courseSelect = document.getElementById('course');
+
+    function updateCourses() {
+        const selectedDept = deptSelect.value;
+        courseSelect.innerHTML = '<option value="">Select your course</option>';
+
+        if (selectedDept && departmentCourses[selectedDept]) {
+            departmentCourses[selectedDept].forEach(course => {
+                const option = document.createElement('option');
+                option.value = course;
+                option.text = course;
+                courseSelect.appendChild(option);
+            });
+        }
+    }
+
+    deptSelect.addEventListener('change', updateCourses);
+    document.addEventListener('DOMContentLoaded', () => {
+        if (deptSelect.value) updateCourses();
+    });
+
 });

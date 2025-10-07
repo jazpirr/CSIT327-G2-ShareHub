@@ -11,28 +11,12 @@ SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.conf import settings
-from django.http import JsonResponse
-from supabase import create_client, Client
-from .forms import CustomUserCreationForm
-from supabase_auth._sync.gotrue_client import AuthApiError
-
-# Initialize Supabase client
-SUPABASE_URL = settings.SUPABASE_URL
-SUPABASE_KEY = settings.SUPABASE_KEY
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
 def register_view(request):
     if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
             try:
-                # Sign up user in Supabase Auth
                 response = supabase.auth.sign_up({
                     "email": data["email"],
                     "password": data["password1"],
@@ -45,7 +29,6 @@ def register_view(request):
 
                 user_id = response.user.id
 
-                # Insert profile into Supabase table
                 insert = supabase.table("user").insert({
                     "id": user_id,
                     "email": data["email"],
@@ -59,13 +42,11 @@ def register_view(request):
                 }).execute()
 
                 if getattr(insert, "error", None):
-                    # Delete Auth user if table insert fails
                     try:
                         supabase.auth.admin.delete_user(user_id)
                     except Exception:
                         pass
 
-                    # Return proper error message to frontend
                     err_msg = "Registration failed. Please try again."
                     try:
                         if hasattr(insert.error, "message"):
@@ -79,7 +60,6 @@ def register_view(request):
                         "errors": {"general": [{"message": err_msg}]}
                     }, status=400)
 
-                # Success — return JSON to trigger frontend redirect
                 return JsonResponse({"success": True, "redirect_url": "/login"})
 
             except AuthApiError as e:
@@ -93,7 +73,6 @@ def register_view(request):
                 return JsonResponse({"errors": {"general": [{"message": err_msg}]}}, status=400)
 
             except Exception as e:
-                # Extract message if possible
                 err_msg = "Unexpected server error. Please try again."
                 try:
                     if isinstance(e, dict) and e.get("message"):
@@ -110,11 +89,9 @@ def register_view(request):
                 }, status=500)
 
         else:
-            # Return form validation errors
             errors = {field: [{"message": err} for err in errs] for field, errs in form.errors.items()}
             return JsonResponse({"errors": errors}, status=400)
 
-    # GET request
     form = CustomUserCreationForm()
     return render(request, "login-register/register.html", {"form": form})
 
@@ -182,7 +159,6 @@ def profile(request):
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp.data else {}
 
-    # Optional: fetch email from Supabase Auth if not in table
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
         if auth_user_resp.user and "email" not in user_info:
@@ -257,7 +233,7 @@ def profile(request):
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp.data else {}
 
-    # Optional: fetch email from Supabase Auth if not in table
+
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
         if auth_user_resp.user and "email" not in user_info:

@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const popupBody = document.getElementById('popupBody');
     const forgotLink = document.querySelector('.forgot-link');
 
-    // ----- Reusable popup -----
     function showPopup(header, messages) {
         popupHeader.textContent = header;
         popupBody.innerHTML = "";
@@ -17,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 popupBody.appendChild(div);
             });
         } else {
-            popupBody.innerHTML = messages; // for HTML body like forgot password form
+            popupBody.innerHTML = messages;
         }
         overlay.classList.add('show');
         popup.style.display = "flex";
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => popup.style.display = "none", 400);
     };
 
-    // ----- Client-side required fields validation -----
     form.addEventListener('submit', function(event) {
         const missing = [];
         const requiredFields = [
@@ -50,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ----- Server-side error popup -----
     window.showServerErrors = function(errors) {
         const messages = [];
 
@@ -67,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showPopup("Login Error", messages);
     };
 
-    // ----- Forgot Password handler -----
     if (forgotLink) {
         forgotLink.addEventListener('click', (e) => {
             e.preventDefault();
@@ -79,8 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             showPopup("Reset Password", bodyHTML);
-
-            // Attach handler dynamically after showing popup
+            
             setTimeout(() => {
                 const sendBtn = document.getElementById('sendResetBtn');
                 if (sendBtn) {
