@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Profile</title>
-    {% load static %}
+  {% load static %}
   <link rel="stylesheet" href="{% static 'css/design.css' %}">
 </head>
 <body>
@@ -17,8 +17,16 @@
     <div class="profile-left">
       <div class="profile-card">
         <div class="profile-pic"></div>
-        <h3>{{request.user.first_name}} {{request.user.last_name}}</h3>
-        <p>{{request.user.email}}</p>
+        <h3>
+          {% if user_info %}
+            {{ user_info.first_name }} {{ user_info.last_name }}
+          {% else %}
+            Guest
+          {% endif %}
+        </h3>
+        <p>
+          {% if user_info %} {{ user_info.email }} {% endif %}
+        </p>
         <span class="student-id"></span>
       </div>
 
@@ -38,19 +46,19 @@
         <div class="info-section">
           <h4>Personal Information</h4>
           <div class="info-grid">
-            <p><strong>Full Name:</strong>{{request.user.first_name}} {{request.user.last_name}}</p>
-            <p><strong>Email:</strong>{{request.user.email}}</p>
-            <p><strong>Birth Date:</strong>{{request.user.birthday}}</p>
-            <p><strong>Phone:</strong></p>
+            <p><strong>Full Name:</strong> {% if user_info %}{{ user_info.first_name }} {{ user_info.last_name }}{% endif %}</p>
+            <p><strong>Email:</strong> {% if user_info %}{{ user_info.email }}{% endif %}</p>
+            <p><strong>Birth Date:</strong> {% if user_info %}{{ user_info.birthday }}{% endif %}</p>
+            <p><strong>Phone:</strong> {% if user_info %}{{ user_info.phone_number }}{% endif %}</p>
           </div>
         </div>
 
         <div class="info-section">
           <h4>Academic Information</h4>
           <div class="info-grid">
-            <p><strong>College:</strong>{{request.user.college_dept}}</p>
-            <p><strong>Course:</strong>{{request.user.course}}</p>
-            <p><strong>Year Level:</strong>{{request.user.year_level}}</p>
+            <p><strong>College:</strong> {% if user_info %}{{ user_info.college_dept }}{% endif %}</p>
+            <p><strong>Course:</strong> {% if user_info %}{{ user_info.course }}{% endif %}</p>
+            <p><strong>Year Level:</strong> {% if user_info %}{{ user_info.year_level }}{% endif %}</p>
           </div>
         </div>
       </div>

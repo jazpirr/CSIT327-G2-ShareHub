@@ -9,7 +9,7 @@
 </head>
 <body>
 
-<!-- popup overlay -->
+<!-- Popup overlay -->
 <div id="errorOverlay"></div>
 
 <div id="errorPopup">
@@ -56,8 +56,19 @@
     </div>
 </div>
 
-<script src="{% static 'js/login.js' %}"></script>
+<div id="forgotOverlay"></div>
 
+<div id="errorPopup" class="forgot-popup">
+  <div class="popup-header">Reset Password</div>
+  <div class="popup-body">
+      <p>Enter your email to receive a reset link.</p>
+      <input type="email" id="forgotEmail" placeholder="Enter your email" required>
+      <button id="sendResetBtn" class="submit-btn">Send Reset Link</button>
+  </div>
+  <button class="close-btn" id="closeForgot">&times;</button>
+</div>
+
+<script src="{% static 'js/login.js' %}"></script>
 
 {% if errors %}
   {{ errors|json_script:"loginErrors" }}
@@ -70,5 +81,7 @@
     });
   </script>
 {% endif %}
+
+
 </body>
 </html>
