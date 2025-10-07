@@ -447,3 +447,54 @@ label .icon {
   display: block;
   opacity: 1;
 }
+
+/* ===== Forgot Password Popup Styles (Matching Theme) ===== */
+#popupBody input#forgotEmail {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 13px;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 400;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+#popupBody input#forgotEmail:focus {
+  outline: none;
+  border-color: #800000;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.05);
+}
+
+#popupBody button#sendResetBtn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 9px 0;
+  background: #800000;
+  color: #FFF;
+  border: 2px solid #800000;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(128, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+#popupBody button#sendResetBtn:hover {
+  background: #660000;
+  border-color: #660000;
+  box-shadow: 0 4px 12px rgba(128, 0, 0, 0.25);
+  transform: translateY(-1px);
+}
+
+#popupBody p {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #333;
+}

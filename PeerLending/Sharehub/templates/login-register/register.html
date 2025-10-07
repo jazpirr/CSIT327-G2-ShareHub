@@ -9,7 +9,6 @@
 </head>
 <body>
 
-
 <div id="errorOverlay"></div>
 <div id="errorPopup">
     <div class="popup-header" id="popupHeader">Error</div>
@@ -30,7 +29,7 @@
         <p>Create your account to start lending and borrowing academic resources</p>
       </div>
 
-      <form id="signupForm" method="POST" novalidate>
+      <form id="signupForm" method="POST" action="{% url 'register' %}" novalidate>
         {% csrf_token %}
 
         <div class="form-header">
@@ -47,7 +46,7 @@
           <input type="email" name="email" id="email" placeholder="Enter your email" required>
         </div>
 
-        <!-- password and confirm -->
+        <!-- password -->
         <div class="form-group">
           <label for="password1">
             <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
@@ -56,7 +55,7 @@
           <input type="password" name="password1" id="password1" placeholder="Enter your password" required>
         </div>
 
-        
+        <!-- confirm password -->
         <div class="form-group">
           <label for="password2">
             <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
@@ -64,7 +63,6 @@
           </label>
           <input type="password" name="password2" id="password2" placeholder="Confirm your password" required>
         </div>
-
 
         <div class="form-header">
           <h4>Personal Information</h4>
@@ -146,7 +144,6 @@
           </div>
         </div>
 
-        
         <div class="btn-row horizontal">
           <button type="submit" class="submit-btn">Create Account</button>
           <a class="alt-btn" href="{% url 'login' %}">Already have an account? Sign In</a>
@@ -156,22 +153,11 @@
   </div>
 </div>
 
-<script src="{% static 'js/register.js' %}"></script>
-
 {% if form.errors %}
   {{ form.errors.get_json_data|json_script:"serverErrors" }}
 {% endif %}
-<script src="{% static 'js/register.js' %}"></script>
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const serverErrorsEl = document.getElementById("serverErrors");
-    if (serverErrorsEl) {
-        const errors = JSON.parse(serverErrorsEl.textContent);
-        showServerErrors(errors);
-    }
-  });
-</script>
 
+<script src="{% static 'js/register.js' %}"></script>
 
 </body>
 </html>

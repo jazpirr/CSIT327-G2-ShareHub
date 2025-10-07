@@ -24,7 +24,13 @@
 
   <main class="dashboard">
     <section class="welcome">
-      <h2>Welcome, <span class="username">{{request.user.first_name}}</span></h2>
+      <h2>Welcome, <span class="username">
+        {% if user_info %}
+            {{ user_info.first_name }}
+        {% else %}
+            Guest
+        {% endif %}
+    </span></h2>
       <p>Manage your borrowed items and discover available resources for your studies</p>
       <div class="alert">⚠️ You have 1 overdue item. Please return "Scientific Calculator" as soon as possible.</div>
     </section>

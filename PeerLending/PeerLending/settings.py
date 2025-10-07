@@ -11,9 +11,14 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import dj_database_url
+from dotenv import load_dotenv
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -73,11 +78,14 @@ WSGI_APPLICATION = 'PeerLending.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),  # fallback to SQLite if DATABASE_URL is not found
+        conn_max_age=600,  # Persistent connections
+        ssl_require=True    # Enforce SSL for secure connection
+    )
 }
 
 
@@ -115,3 +123,6 @@ LOGOUT_REDIRECT_URL = "login"
 AUTHENTICATION_BACKENDS = ['sharehub.backends.EmailBackend']
 
 AUTH_USER_MODEL = "sharehub.CustomUser"
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
