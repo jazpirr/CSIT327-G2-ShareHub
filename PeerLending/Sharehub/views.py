@@ -72,21 +72,7 @@ def register_view(request):
                     pass
                 return JsonResponse({"errors": {"general": [{"message": err_msg}]}}, status=400)
 
-            except Exception as e:
-                err_msg = "Unexpected server error. Please try again."
-                try:
-                    if isinstance(e, dict) and e.get("message"):
-                        err_msg = e["message"]
-                    elif hasattr(e, "args") and e.args:
-                        first_arg = e.args[0]
-                        if isinstance(first_arg, dict) and first_arg.get("message"):
-                            err_msg = first_arg["message"]
-                except Exception:
-                    pass
-                print("Unexpected server error in register_view:", e)
-                return JsonResponse({
-                    "errors": {"general": [{"message": err_msg}]}
-                }, status=500)
+            
 
         else:
             errors = {field: [{"message": err} for err in errs] for field, errs in form.errors.items()}
@@ -241,5 +227,83 @@ def profile(request):
     except Exception:
         pass
 
-    return render(request, "profile.html", {"user_info": user_info})
+    return render(request, "profile/profile.html", {"user_info": user_info})
  
+ 
+def edit_profile(request):
+    user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return redirect("login")
+
+    # Fetch current data from Supabase
+    profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
+    user_info = profile_resp.data or {}
+
+    # Also fetch email from Supabase Auth (for display/edit)
+    try:
+        auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
+        if auth_user_resp.user:
+            user_info["email"] = auth_user_resp.user.email
+    except Exception:
+        pass
+
+    # Handle form submission
+    if request.method == "POST":
+        first_name = request.POST.get("first_name")
+        last_name = request.POST.get("last_name")
+        email = request.POST.get("email")
+        birthday = request.POST.get("birthday") or None
+        phone_number = request.POST.get("phone_number")
+        college_dept = request.POST.get("college_dept")
+        course = request.POST.get("course")
+        year_level = request.POST.get("year_level")
+
+        # ✅ Update table in Supabase
+        update_response = supabase.table("user").update({
+            "first_name": first_name,
+            "last_name": last_name,
+            "birthday": birthday,
+            "phone_number": phone_number,
+            "college_dept": college_dept,
+            "course": course,
+            "year_level": year_level,
+        }).eq("id", user_id).execute()
+
+        # ✅ Update email in Supabase Auth (if changed)
+        try:
+            auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
+            if auth_user_resp.user and auth_user_resp.user.email != email:
+                supabase.auth.admin.update_user_by_id(
+                    user_id,
+                    {"email": email}
+                )
+        except Exception as e:
+            print("Email update failed:", e)
+
+        if getattr(update_response, "error", None):
+            messages.error(request, "Failed to update your profile. Please try again.")
+        else:
+            messages.success(request, "Profile updated successfully!")
+            return redirect("profile")
+
+    return render(request, "profile/edit_profile.html", {"user_info": user_info})
+ 
+def settings_view(request):
+    user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return redirect("login")
+
+    # Fetch user data from Supabase
+    profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
+    user_info = profile_resp.data if profile_resp.data else {}
+
+    # Fetch email from auth user if missing
+    try:
+        auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
+        if auth_user_resp.user and "email" not in user_info:
+            user_info["email"] = auth_user_resp.user.email
+    except Exception:
+        pass
+
+    return render(request, "settings.html", {"user_info": user_info})
+

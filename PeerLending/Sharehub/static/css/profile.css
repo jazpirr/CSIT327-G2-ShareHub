@@ -1,0 +1,489 @@
+/* styles.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    transition: 0.18s all ease-in-out;
+}
+
+:root {
+    --maroon: #7a0019;
+    --gold: #ffcc00;
+    --bg: #f5f5f5;
+    --card: #ffffff;
+    --input-bg: #f9f9f9;
+    --border: #ddd;
+    --border-light: #e0e0e0;
+    --text: #333;
+    --text-muted: #555;
+    --text-light: #999;
+    --success: #28a745;
+    --error: #b00020;
+    --toggle-off: #cccccc;
+    --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --shadow-hover: 0 4px 10px rgba(0, 0, 0, 0.15);
+    --radius: 10px;
+    --radius-small: 5px;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+/* ===== NAVIGATION BAR ===== */
+.navbar {
+  background: white;
+  padding: 15px 40px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.nav-left {
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: var(--maroon);
+  font-size: 1.2em;
+  white-space: nowrap;
+}
+
+.logo svg {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.logo svg circle {
+  fill: var(--maroon);
+}
+
+.logo svg path {
+  stroke: white;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.nav-center {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  margin: 0 20px;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--maroon);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 15px;
+  position: relative;
+  white-space: nowrap;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.nav-link svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nav-link:hover {
+  background: rgba(122, 0, 25, 0.05);
+}
+
+.nav-link.active {
+  background: rgba(122, 0, 25, 0.1);
+  font-weight: 600;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-shrink: 0;
+}
+
+.add-item-btn {
+  background: var(--gold);
+  color: var(--text);
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius-small);
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.add-item-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.add-item-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.notification-btn {
+  background: none;
+  border: none;
+  color: var(--maroon);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.notification-btn:hover {
+  background: rgba(122, 0, 25, 0.05);
+}
+
+.notification-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.notification-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--error);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.nav-right form {
+  display: inline-block;
+  margin: 0;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: var(--maroon);
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 8px 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.logout-btn:hover {
+  background: rgba(122, 0, 25, 0.05);
+}
+
+/* ===== Profile Layout ===== */
+.profile-page {
+  display: flex;
+  gap: 30px;
+  padding: 40px;
+}
+
+.profile-left {
+  flex: 1;
+  max-width: 300px;
+}
+
+.profile-right {
+  flex: 2;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* ===== Profile Card ===== */
+.profile-card {
+  background: white;
+  padding: 30px 25px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-bottom: 25px;
+}
+
+.profile-pic {
+  width: 100px;
+  height: 100px;
+  background: #7a0019;
+  border-radius: 50%;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.profile-pic::before,
+.profile-pic::after {
+  content: '';
+  position: absolute;
+  background: white;
+}
+
+.profile-pic::before {
+  width: 40px;
+  height: 2px;
+  transform: rotate(45deg);
+}
+
+.profile-pic::after {
+  width: 2px;
+  height: 40px;
+  transform: rotate(45deg);
+}
+
+.profile-card h3 {
+  margin-bottom: 5px;
+  color: #7a0019;
+  font-size: 1.1em;
+}
+
+.profile-card > p {
+  font-size: 0.85em;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.role-badge {
+  display: inline-block;
+  background: #f5f5f5;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  color: #555;
+  margin: 10px 0;
+}
+
+.student-id {
+  display: block;
+  font-size: 0.9em;
+  color: #333;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+/* ===== Info Sections ===== */
+.card h3 {
+  color: #7a0019;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+}
+
+.placeholder {
+  background: #e8e8e8;
+  height: 200px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 3em;
+}
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 25px;
+}
+
+.profile-header > div h3 {
+  margin-bottom: 5px;
+}
+
+.profile-header > div p {
+  font-size: 0.85em;
+  color: #777;
+}
+
+/* ===== Unified Buttons (Edit, Save, Cancel) ===== */
+.action-btn,
+.cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  min-width: 150px;
+  text-align: center;
+}
+
+/* Primary (Edit, Save) */
+.action-btn {
+  background-color: #7a0019;
+  color: white;
+  border: none;
+}
+
+.action-btn:hover {
+  background-color: #a00027;
+  transform: translateY(-2px);
+}
+
+/* Secondary (Cancel) */
+.cancel-btn {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1.5px solid #ccc;
+}
+
+.cancel-btn:hover {
+  background-color: #ddd;
+  transform: translateY(-2px);
+}
+
+/* ===== Info Grid ===== */
+.info-section {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.info-section:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.info-section h4 {
+  color: #7a0019;
+  margin-bottom: 15px;
+  font-size: 1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-item strong {
+  font-size: 0.8em;
+  color: #666;
+  font-weight: 500;
+  padding-left: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+  vertical-align: middle;
+  opacity: 0.8;
+}
+
+.info-item span {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 12px 15px;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.95em;
+  transition: border-color 0.2s;
+}
+
+.info-item span:hover {
+  border-color: #7a0019;
+}
+
+/* ===== Form Fields ===== */
+form input,
+form select {
+  display: block;
+  width: 100%;
+  padding: 10px 13px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+form input:focus,
+form select:focus {
+  outline: none;
+  border-color: #800000;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(128, 0, 0, 0.05);
+}

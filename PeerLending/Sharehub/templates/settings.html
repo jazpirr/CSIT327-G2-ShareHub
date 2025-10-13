@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - ShareHub</title>
-    <link rel="stylesheet" href="settings.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/settings.css' %}">
 </head>
 <body>
     <!-- Top Navigation -->
@@ -12,22 +13,22 @@
         <div class="nav-container">
             <div class="nav-left">
                 <div class="logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        ircle cx="12" cy="12"2" r="10" fill="#7B1E1E"/>
-                        <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <span>ShareHub - CIT-U</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
+                    <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>ShareHub - CIT-U</span>
                 </div>
             </div>
-            
+
             <nav class="nav-center">
-                <a href="#" class="nav-link">
+                <a href="{% url 'home' %}" class="nav-link">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     Home
                 </a>
-                <a href="#" class="nav-link">
+                <a href="{% url 'profile' %}" class="nav-link">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
                         ircle cx="12" cy="7" r="4" stroke="currentColor" stroke-widthth="2"/>
@@ -74,6 +75,8 @@
                     </svg>
                     <span class="notification-badge">1</span>
                 </button>
+                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                {% csrf_token %}
                 <button class="logout-btn">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2"/>
@@ -82,6 +85,7 @@
                     </svg>
                     Logout
                 </button>
+                </form>
             </div>
         </div>
     </header>
@@ -142,39 +146,43 @@
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="firstName">First Name</label>
-                                    <input type="text" id="firstName" name="firstName" data-field="first_name" required>
+                                    <input type="text" id="firstName" name="firstName" data-field="first_name"
+                                    value="{{ user_info.first_name|default_if_none:'' }}" required>
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="lastName">Last Name</label>
-                                    <input type="text" id="lastName" name="lastName" data-field="last_name" required>
+                                    <input type="text" id="lastName" name="lastName" data-field="last_name"
+                                    value="{{ user_info.last_name|default_if_none:'' }}" required>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="email">Email Address</label>
-                                    <input type="email" id="email" name="email" data-field="email" required>
-                                    <span class="validation-message" id="email-error"></span>
+                                    <label for="email">Email</label>
+                                    <input type="email" id="email" name="email" data-field="email"
+                                    value="{{ user_info.email|default_if_none:'' }}" required>
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="phone">Phone Number</label>
-                                    <input type="tel" id="phone" name="phone" data-field="phone">
+                                    <label for="phone">Phone</label>
+                                    <input type="tel" id="phone" name="phone" data-field="phone"
+                                    value="{{ user_info.phone_number|default_if_none:'' }}">
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="college">College</label>
-                                    <input type="text" id="college" name="college" data-field="college">
+                                    <label for="college">College Department</label>
+                                    <input type="text" id="college" name="college" data-field="college"
+                                    value="{{ user_info.college_dept|default_if_none:'' }}">
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="yearLevel">Year Level</label>
                                     <select id="yearLevel" name="yearLevel" data-field="year_level">
                                         <option value="">Select Year Level</option>
-                                        <option value="1st Year">1st Year</option>
-                                        <option value="2nd Year">2nd Year</option>
-                                        <option value="3rd Year">3rd Year</option>
-                                        <option value="4th Year">4th Year</option>
-                                        <option value="Graduate">Graduate</option>
+                                        <option value="1st Year" {% if user_info.year_level == "1st Year" %}selected{% endif %}>1st Year</option>
+                                        <option value="2nd Year" {% if user_info.year_level == "2nd Year" %}selected{% endif %}>2nd Year</option>
+                                        <option value="3rd Year" {% if user_info.year_level == "3rd Year" %}selected{% endif %}>3rd Year</option>
+                                        <option value="4th Year" {% if user_info.year_level == "4th Year" %}selected{% endif %}>4th Year</option>
+                                        <option value="Graduate" {% if user_info.year_level == "Graduate" %}selected{% endif %}>Graduate</option>
                                     </select>
                                 </div>
                             </div>
@@ -287,6 +295,6 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="{% static 'js/settings.js' %}"></script>
 </body>
 </html>
