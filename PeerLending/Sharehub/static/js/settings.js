@@ -1,18 +1,5 @@
 // script.js
 
-// Default user settings data (simulates server state)
-const DEFAULT_SETTINGS = {
-    first_name: 'Frances Anne',
-    last_name: 'Riconalla',
-    email: 'frances@cit.edu',
-    phone: '+63 912 345 6789',
-    college: 'Engineering',
-    year_level: '3rd Year',
-    email_notifications: true,
-    due_date_reminders: true,
-    profile_visibility: true,
-    contact_info: true
-};
 
 class SettingsManager {
     constructor() {
@@ -64,7 +51,8 @@ class SettingsManager {
     bindEvents() {
         // Tab switching
         document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+            item.addEventListener('click', (e) => this.switchTab(e.currentTarget.dataset.tab));
+
         });
         
         // Form field changes

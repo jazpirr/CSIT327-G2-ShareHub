@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const missing = [];
-        ['email','password1','password2','first_name','last_name'].forEach(id => {
+        ['email','password1','confirm_password','first_name','last_name'].forEach(id => {
             const val = document.getElementById(id).value.trim();
             if(!val) missing.push(id);
         });
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if(document.getElementById('password1').value !== document.getElementById('password2').value) {
+        if(document.getElementById('password1').value !== document.getElementById('confirm_password').value) {
             showPopup("Password Error", ["Passwords do not match!"]);
             return;
         }
@@ -78,11 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if(data.errors) {
                 showServerErrors(data.errors);
             } else {
-                showPopup("Error", ["Unexpected error occurred."]);
+                showPopup("Error", ["Email is already registered."]);
             }
 
         } catch(err) {
-            showPopup("Error", ["Unexpected error occurred."]);
+            showPopup("Error", ["Email is already registered."]);
             console.error(err);
         }
     });
