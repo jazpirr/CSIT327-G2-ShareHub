@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - ShareHub</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        ircle cx="12" cy="12"2" r="10" fill="#7B1E1E"/>
+                        <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>ShareHub - CIT-U</span>
+                </div>
+            </div>
+            
+            <nav class="nav-center">
+                <a href="#" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Home
+                </a>
+                <a href="#" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                        ircle cx="12" cy="7" r="4" stroke="currentColor" stroke-widthth="2"/>
+                    </svg>
+                    Profile
+                </a>
+                <a href="#" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2"/>
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Borrow Items
+                </a>
+                <a href="#" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
+                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
+                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Return Items
+                </a>
+                <a href="#" class="nav-link active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        ircle cx="12" cy="12" r="3" stroke="currentColor" stroke-e-width="2"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Settings
+                </a>
+            </nav>
+            
+            <div class="nav-right">
+                <button class="add-item-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
+                        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Add Item
+                </button>
+                <button class="notification-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span class="notification-badge">1</span>
+                </button>
+                <button class="logout-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2"/>
+                        <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>Settings</h1>
+                <p>Manage your account settings and preferences</p>
+            </div>
+            
+            <div class="settings-layout">
+                <!-- Left Sidebar -->
+                <nav class="settings-sidebar">
+                    <button class="sidebar-item active" data-tab="account">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                            ircle cx="12" cy="7" r="4" stroke="currentColor" strokeke-width="2"/>
+                        </svg>
+                        Account
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="sidebar-item" data-tab="notifications">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Notifications
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="sidebar-item" data-tab="privacy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            ircle cx="12" cy="16" r="1" stroke="currentntColor" stroke-width="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Privacy
+                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </nav>
+
+                <!-- Main Content Area -->
+                <div class="settings-content">
+                    <!-- Account Tab -->
+                    <div id="account-tab" class="tab-content active">
+                        <h2>Account Settings</h2>
+                        
+                        <form id="account-form" class="settings-form">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="firstName">First Name</label>
+                                    <input type="text" id="firstName" name="firstName" data-field="first_name" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="lastName">Last Name</label>
+                                    <input type="text" id="lastName" name="lastName" data-field="last_name" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" id="email" name="email" data-field="email" required>
+                                    <span class="validation-message" id="email-error"></span>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="tel" id="phone" name="phone" data-field="phone">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="college">College</label>
+                                    <input type="text" id="college" name="college" data-field="college">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="yearLevel">Year Level</label>
+                                    <select id="yearLevel" name="yearLevel" data-field="year_level">
+                                        <option value="">Select Year Level</option>
+                                        <option value="1st Year">1st Year</option>
+                                        <option value="2nd Year">2nd Year</option>
+                                        <option value="3rd Year">3rd Year</option>
+                                        <option value="4th Year">4th Year</option>
+                                        <option value="Graduate">Graduate</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Change Password Section -->
+                            <div class="password-section">
+                                <h3>Change Password</h3>
+                                <div class="form-grid">
+                                    <div class="form-group full-width">
+                                        <label for="currentPassword">Current Password</label>
+                                        <input type="password" id="currentPassword" name="currentPassword">
+                                        <span class="validation-message" id="current-password-error"></span>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="newPassword">New Password</label>
+                                        <input type="password" id="newPassword" name="newPassword">
+                                        <span class="validation-message" id="new-password-error"></span>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="confirmPassword">Confirm New Password</label>
+                                        <input type="password" id="confirmPassword" name="confirmPassword">
+                                        <span class="validation-message" id="confirm-password-error"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Notifications Tab -->
+                    <div id="notifications-tab" class="tab-content">
+                        <h2>Notification Preferences</h2>
+                        
+                        <form id="notifications-form" class="settings-form">
+                            <div class="toggle-group">
+                                <div class="toggle-item">
+                                    <div class="toggle-info">
+                                        <h3>Email Notifications</h3>
+                                        <p>Receive email updates about your borrowed items</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="emailNotifications" data-field="email_notifications">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="toggle-item">
+                                    <div class="toggle-info">
+                                        <h3>Due Date Reminders</h3>
+                                        <p>Get notified 2 days before items are due</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Privacy Tab -->
+                    <div id="privacy-tab" class="tab-content">
+                        <h2>Privacy Settings</h2>
+                        
+                        <form id="privacy-form" class="settings-form">
+                            <div class="toggle-group">
+                                <div class="toggle-item">
+                                    <div class="toggle-info">
+                                        <h3>Profile Visibility</h3>
+                                        <p>Make your profile visible to other students</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="profileVisibility" data-field="profile_visibility">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                                
+                                <div class="toggle-item">
+                                    <div class="toggle-info">
+                                        <h3>Contact Information</h3>
+                                        <p>Share your contact details with item owners</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="contactInfo" data-field="contact_info">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button type="button" id="saveBtn" class="btn btn-primary" disabled>Save Changes</button>
+                        <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" role="status" aria-live="polite">
+        <div class="toast-content">
+            <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <polyline points="20,6 9,17 4,12" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span class="toast-message">Settings saved</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
