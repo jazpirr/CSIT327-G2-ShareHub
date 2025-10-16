@@ -6,6 +6,8 @@
     <title>Settings - ShareHub</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/settings.css' %}">
+    
+  
 </head>
 <body>
     <!-- Top Navigation -->
@@ -31,7 +33,7 @@
                 <a href="{% url 'profile' %}" class="nav-link">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                        ircle cx="12" cy="7" r="4" stroke="currentColor" stroke-widthth="2"/>
+                        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     Profile
                 </a>
@@ -53,8 +55,8 @@
                 </a>
                 <a href="#" class="nav-link active">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        ircle cx="12" cy="12" r="3" stroke="currentColor" stroke-e-width="2"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
                     </svg>
                     Settings
                 </a>
@@ -68,13 +70,56 @@
                     </svg>
                     Add Item
                 </button>
-                <button class="notification-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    <span class="notification-badge">1</span>
-                </button>
+                <div style="position: relative;">
+                    <button class="notification-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <span class="notification-badge">1</span>
+                    </button>
+                    
+                    <!-- Notification Popup -->
+                    <div class="notification-popup" id="notificationPopup">
+                        <div class="notification-header">
+                            <h3>Notifications</h3>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                <button class="mark-read-btn">Mark all as read</button>
+                                <button class="close-popup" id="closePopup">×</button>
+                            </div>
+                        </div>
+                        <div class="notification-list">
+                            <div class="notification-item">
+                                <div class="notification-title">Return <strong>'Organic Chemistry Textbook'</strong> by Jan 20, 2026</div>
+                                <div class="notification-meta">
+                                    <span class="notification-time">Today, 3:15 PM</span>
+                                    <span class="notification-status active">Active</span>
+                                </div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-title">Return <strong>'Scientific Calculator'</strong> by Sept 16, 2026</div>
+                                <div class="notification-meta">
+                                    <span class="notification-time">Today, 3:15 PM</span>
+                                    <span class="notification-status overdue">Overdue</span>
+                                </div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-title">Return <strong>'Lab Equipment Kit'</strong> by Jan 22, 2026</div>
+                                <div class="notification-meta">
+                                    <span class="notification-time">Today, 3:15 PM</span>
+                                    <span class="notification-status active">Active</span>
+                                </div>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-title">Return <strong>'Organic Chemistry Textbook'</strong> by Jan 20, 2026</div>
+                                <div class="notification-meta">
+                                    <span class="notification-time">Today, 3:15 PM</span>
+                                    <span class="notification-status active">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <form method="post" action="{% url 'logout' %}" style="display: inline;">
                 {% csrf_token %}
                 <button class="logout-btn">
@@ -90,6 +135,9 @@
         </div>
     </header>
 
+    <!-- Notification Overlay -->
+    <div class="notification-overlay" id="notificationOverlay"></div>
+
     <!-- Main Content -->
     <main class="main-content">
         <div class="container">
@@ -104,7 +152,7 @@
                     <button class="sidebar-item active" data-tab="account">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                            ircle cx="12" cy="7" r="4" stroke="currentColor" strokeke-width="2"/>
+                            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
                         </svg>
                         Account
                         <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -126,7 +174,7 @@
                     <button class="sidebar-item" data-tab="privacy">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-                            ircle cx="12" cy="16" r="1" stroke="currentntColor" stroke-width="2"/>
+                            <circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="2"/>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
                         </svg>
                         Privacy
@@ -296,5 +344,36 @@
     </div>
 
     <script src="{% static 'js/settings.js' %}"></script>
+    <script>
+        // Notification popup functionality
+        const notificationBtn = document.querySelector('.notification-btn');
+        const notificationPopup = document.getElementById('notificationPopup');
+        const notificationOverlay = document.getElementById('notificationOverlay');
+        const closePopup = document.getElementById('closePopup');
+
+        // Toggle popup
+        notificationBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notificationPopup.classList.toggle('active');
+            notificationOverlay.classList.toggle('active');
+        });
+
+        // Close popup when clicking close button
+        closePopup.addEventListener('click', () => {
+            notificationPopup.classList.remove('active');
+            notificationOverlay.classList.remove('active');
+        });
+
+        // Close popup when clicking overlay
+        notificationOverlay.addEventListener('click', () => {
+            notificationPopup.classList.remove('active');
+            notificationOverlay.classList.remove('active');
+        });
+
+        // Prevent popup from closing when clicking inside it
+        notificationPopup.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    </script>
 </body>
 </html>

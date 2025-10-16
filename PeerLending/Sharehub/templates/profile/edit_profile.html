@@ -67,13 +67,44 @@
         </svg>
         Add Item
       </button>
-      <button class="notification-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-        </svg>
-        <span class="notification-badge">1</span>
-      </button>
+      <div style="position: relative;">
+          <button class="notification-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span class="notification-badge">1</span>
+          </button>
+          
+          <!-- Notification Popup -->
+          <div class="notification-popup" id="notificationPopup">
+            <div class="notification-header">
+              <h3>Notifications</h3>
+              <div style="display: flex; align-items: center; gap: 5px;">
+                <button class="mark-read-btn">Mark all as read</button>
+                <button class="close-popup" id="closePopup">×</button>
+              </div>
+            </div>
+            <div class="notification-list">
+              <div class="notification-item">
+                <div class="notification-title">Return <strong>'Organic Chemistry Textbook'</strong> by Jan 20, 2026</div>
+                <div class="notification-meta">
+                  <span class="notification-time">Today, 3:15 PM</span>
+                  <span class="notification-status active">Active</span>
+                </div>
+              </div>
+              <div class="notification-item">
+                <div class="notification-title">Return <strong>'Scientific Calculator'</strong> by Sept 16, 2026</div>
+                <div class="notification-meta">
+                  <span class="notification-time">Today, 3:15 PM</span>
+                  <span class="notification-status overdue">Overdue</span>
+                </div>
+              </div>
+            
+            </div>
+          </div>
+        </div>
+
       <form method="post" action="{% url 'logout' %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="logout-btn">
@@ -271,6 +302,36 @@
     const reader = new FileReader();
     reader.onload = () => { previewImg.src = reader.result; };
     reader.readAsDataURL(file);
+  });
+
+    // Notification popup functionality
+  const notificationBtn = document.querySelector('.notification-btn');
+  const notificationPopup = document.getElementById('notificationPopup');
+  const notificationOverlay = document.getElementById('notificationOverlay');
+  const closePopup = document.getElementById('closePopup');
+
+  // Toggle popup
+  notificationBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  notificationPopup.classList.toggle('active');
+  notificationOverlay.classList.toggle('active');
+  });
+  
+  // Close popup when clicking close button
+  closePopup.addEventListener('click', () => {
+  notificationPopup.classList.remove('active');
+  notificationOverlay.classList.remove('active');
+  });
+
+  // Close popup when clicking overlay
+  notificationOverlay.addEventListener('click', () => {
+  notificationPopup.classList.remove('active');
+  notificationOverlay.classList.remove('active');
+  });
+
+  // Prevent popup from closing when clicking inside it
+  notificationPopup.addEventListener('click', (e) => {
+  e.stopPropagation();
   });
 </script>
 </body>
