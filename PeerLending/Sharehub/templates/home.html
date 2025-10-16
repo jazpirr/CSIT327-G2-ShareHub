@@ -20,7 +20,7 @@
           <span>ShareHub - CIT-U</span>
         </div>
       </div>
-      
+     
       <nav class="nav-center">
         <a href="#" class="nav-link active">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -59,7 +59,7 @@
           Settings
         </a>
       </nav>
-      
+     
       <div class="nav-right">
         <button class="add-item-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -76,7 +76,7 @@
             </svg>
             <span class="notification-badge">1</span>
           </button>
-          
+         
           <!-- Notification Popup -->
           <div class="notification-popup" id="notificationPopup">
             <div class="notification-header">
@@ -101,7 +101,7 @@
                   <span class="notification-status overdue">Overdue</span>
                 </div>
               </div>
-            
+           
             </div>
           </div>
         </div>
@@ -119,10 +119,10 @@
       </div>
     </div>
   </header>
-
+ 
   <!-- Notification Overlay -->
   <div class="notification-overlay" id="notificationOverlay"></div>
-
+ 
   <!-- Notification Popup -->
   <div class="notification-popup" id="notificationPopup">
     <div class="notification-header">
@@ -163,7 +163,7 @@
       </div>
     </div>
   </div>
-
+ 
   <main class="dashboard">
     <section class="welcome">
       <h2>Welcome, <span class="username">
@@ -176,25 +176,25 @@
       <p>Manage your borrowed items and discover available resources for your studies</p>
       <div class="alert">⚠️ You have 1 overdue item. Please return "Scientific Calculator" as soon as possible.</div>
     </section>
-
+ 
     <section class="content-grid">
       <div class="card">
         <h3>Quick Actions</h3>
         <div class="placeholder"></div>
       </div>
-
+ 
       <div class="card">
         <h3>Currently Borrowed Items</h3>
         <div class="item"></div>
         <div class="item"></div>
         <div class="item"></div>
       </div>
-
+ 
       <div class="card">
         <h3>Borrowing Statistics</h3>
         <div class="placeholder"></div>
       </div>
-
+ 
       <div class="card">
         <h3>Available Items</h3>
         <div class="available-items">
@@ -218,37 +218,38 @@
       </div>
     </section>
   </main>
-
+ 
   <script>
     // Notification popup functionality
     const notificationBtn = document.querySelector('.notification-btn');
     const notificationPopup = document.getElementById('notificationPopup');
     const notificationOverlay = document.getElementById('notificationOverlay');
     const closePopup = document.getElementById('closePopup');
-
+ 
     // Toggle popup
     notificationBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       notificationPopup.classList.toggle('active');
       notificationOverlay.classList.toggle('active');
     });
-
+ 
     // Close popup when clicking close button
     closePopup.addEventListener('click', () => {
       notificationPopup.classList.remove('active');
       notificationOverlay.classList.remove('active');
     });
-
+ 
     // Close popup when clicking overlay
     notificationOverlay.addEventListener('click', () => {
       notificationPopup.classList.remove('active');
       notificationOverlay.classList.remove('active');
     });
-
+ 
     // Prevent popup from closing when clicking inside it
     notificationPopup.addEventListener('click', (e) => {
       e.stopPropagation();
     });
+
   </script>
 </body>
 </html>
