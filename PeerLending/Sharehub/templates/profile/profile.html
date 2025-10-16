@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>User Profile</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/profile.css' %}">
 </head>
 <body>
-  <!-- Top Navigation -->
 <header class="navbar">
   <div class="nav-container">
     <div class="nav-left">
@@ -20,7 +19,7 @@
         <span>ShareHub - CIT-U</span>
       </div>
     </div>
-    
+
     <nav class="nav-center">
       <a href="{% url 'home' %}" class="nav-link">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -59,7 +58,7 @@
         Settings
       </a>
     </nav>
-    
+
     <div class="nav-right">
       <button class="add-item-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -75,7 +74,7 @@
         </svg>
         <span class="notification-badge">1</span>
       </button>
-      <form method="post" action="{% url 'logout' %}" style="display: inline;">
+      <form method="post" action="{% url 'logout' %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="logout-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -90,144 +89,83 @@
   </div>
 </header>
 
-  <main class="profile-page">
-    <div class="profile-left">
-      <div class="profile-card">
-        <div class="profile-pic"></div>
-        <h3>{{ user_info.first_name }} {{ user_info.last_name }}</h3>
-        <p>{{ user_info.email }}</p>
-        <span class="role-badge">Verified Student</span>
-        <span class="student-id">Student ID<br>{{ user_info.student_id }}</span>
+<main class="profile-page">
+  <div class="profile-left">
+    <div class="profile-card" style="text-align:center">
+      <div class="profile-avatar">
+        <img
+          src="{% if user_info.profile_picture %}{{ user_info.profile_picture }}{% else %}{% static 'images/user.png' %}{% endif %}"
+          alt="Profile Picture"
+          data-fallback="{% static 'images/user.png' %}"
+          onerror="this.onerror=null; this.src=this.dataset.fallback"
+        />
+
       </div>
 
-      <div class="card">
-        <h3>Borrowing Statistics</h3>
-        <div class="placeholder">📊</div>
-      </div>
+      <h3>{{ user_info.first_name }} {{ user_info.last_name }}</h3>
+      <p>{{ user_info.email }}</p>
+      <span class="role-badge">Verified Student</span>
+      <span class="student-id">Student ID<br>{{ user_info.student_id }}</span>
     </div>
 
-    <div class="profile-right">
-      <div class="card">
-        <div class="profile-header">
-          <div>
-            <h3>Profile Information</h3>
-            <p>Your personal and academic details</p> 
-          </div>
-            <button type="button" class="action-btn" id="editProfileBtn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-              Edit Profile
-            </button>
+    <div class="card">
+      <h3>Borrowing Statistics</h3>
+      <div class="placeholder">📊</div>
+    </div>
+  </div>
+
+  <div class="profile-right">
+    <div class="card">
+      <div class="profile-header">
+        <div>
+          <h3>Profile Information</h3>
+          <p>Your personal and academic details</p>
         </div>
+        <button type="button" class="action-btn" id="editProfileBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Edit Profile
+        </button>
+      </div>
 
-        <!-- PERSONAL INFORMATION -->
-        <div class="info-section">
-          <h4>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            Personal Information
-          </h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/user.png' %}" alt="User Icon" class="field-icon">
-                Full Name
-              </strong>
-              <span>
-                {% if user_info %}
-                  {{ user_info.first_name }} {{ user_info.last_name }}
-                {% else %}
-                  N/A
-                {% endif %}
-              </span>
-            </div>
-
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/email.png' %}" alt="Email Icon" class="field-icon">
-                Email Address
-              </strong>
-              <span>
-                {% if user_info %}{{ user_info.email }}{% else %}N/A{% endif %}
-              </span>
-            </div>
-
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/calendar.png' %}" alt="Calendar Icon" class="field-icon">
-                Birth Date
-              </strong>
-              <span>
-                {% if user_info %}{{ user_info.birthday }}{% else %}N/A{% endif %}
-              </span>
-            </div>
-
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/phone.png' %}" alt="Phone Icon" class="field-icon">
-                Phone Number
-              </strong>
-              <span>
-                {% if user_info %}{{ user_info.phone_number }}{% else %}N/A{% endif %}
-              </span>
-            </div>
-          </div>
+      <div class="info-section">
+        <h4>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Personal Information
+        </h4>
+        <div class="info-grid">
+          <div class="info-item"><strong><img src="{% static 'images/user.png' %}" class="field-icon"> Full Name</strong><span>{{ user_info.first_name }} {{ user_info.last_name }}</span></div>
+          <div class="info-item"><strong><img src="{% static 'images/email.png' %}" class="field-icon"> Email</strong><span>{{ user_info.email }}</span></div>
+          <div class="info-item"><strong><img src="{% static 'images/calendar.png' %}" class="field-icon"> Birth Date</strong><span>{{ user_info.birthday|default:"N/A" }}</span></div>
+          <div class="info-item"><strong><img src="{% static 'images/phone.png' %}" class="field-icon"> Phone</strong><span>{{ user_info.phone_number|default:"N/A" }}</span></div>
         </div>
+      </div>
 
-        <!-- ACADEMIC INFORMATION -->
-        <div class="info-section">
-          <h4>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-              <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-            </svg>
-            Academic Information
-          </h4>
-          <div class="info-grid">
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/department.png' %}" alt="Department Icon" class="field-icon">
-                College Department
-              </strong>
-              <span>
-                {% if user_info %}{{ user_info.college_dept }}{% else %}N/A{% endif %}
-              </span>
-            </div>
-
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/course.png' %}" alt="Course Icon" class="field-icon">
-                Course
-              </strong>
-              <span>
-                {% if user_info %}{{ user_info.course }}{% else %}N/A{% endif %}
-              </span>
-            </div>
-
-            <div class="info-item">
-              <strong>
-                <img src="{% static 'images/calendar.png' %}" alt="Year Icon" class="field-icon">
-                Year Level
-              </strong>
-              <span>
-                {% if user_info %}{{ user_info.year_level }}{% else %}N/A{% endif %}
-              </span>
-            </div>
-          </div>
+      <div class="info-section">
+        <h4>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+          </svg>
+          Academic Information
+        </h4>
+        <div class="info-grid">
+          <div class="info-item"><strong><img src="{% static 'images/department.png' %}" class="field-icon"> Department</strong><span>{{ user_info.college_dept|default:"N/A" }}</span></div>
+          <div class="info-item"><strong><img src="{% static 'images/course.png' %}" class="field-icon"> Course</strong><span>{{ user_info.course|default:"N/A" }}</span></div>
+          <div class="info-item"><strong><img src="{% static 'images/calendar.png' %}" class="field-icon"> Year</strong><span>{{ user_info.year_level|default:"N/A" }}</span></div>
         </div>
       </div>
     </div>
-  </main>
+  </div>
+</main>
 
-  <script>
-  document.getElementById('editProfileBtn').onclick = function() {
-    window.location.href = "{% url 'edit_profile' %}";
-  };
+<script>
+  document.getElementById('editProfileBtn').onclick = () => location.href = "{% url 'edit_profile' %}";
 </script>
-
 </body>
 </html>
