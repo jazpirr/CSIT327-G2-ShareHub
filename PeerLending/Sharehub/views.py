@@ -5,6 +5,8 @@ from django.http import JsonResponse
 from supabase import create_client, Client
 from .forms import CustomUserCreationForm
 from supabase_auth._sync.gotrue_client import AuthApiError
+import os
+import uuid
 
 # Initialize Supabase client
 SUPABASE_URL = settings.SUPABASE_URL
@@ -235,11 +237,11 @@ def edit_profile(request):
     if not user_id:
         return redirect("login")
 
-    # Fetch current data from Supabase
+    # Fetch current user info
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data or {}
 
-    # Also fetch email from Supabase Auth (for display/edit)
+    # Fetch email from Supabase Auth
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
         if auth_user_resp.user:
@@ -251,14 +253,30 @@ def edit_profile(request):
     if request.method == "POST":
         first_name = request.POST.get("first_name")
         last_name = request.POST.get("last_name")
-        email = request.POST.get("email")
         birthday = request.POST.get("birthday") or None
         phone_number = request.POST.get("phone_number")
         college_dept = request.POST.get("college_dept")
         course = request.POST.get("course")
         year_level = request.POST.get("year_level")
 
-        # ✅ Update table in Supabase
+        file = request.FILES.get("profile_picture")
+        profile_picture_url = user_info.get("profile_picture")
+
+        # ✅ Upload profile picture to Supabase Storage
+        if file:
+            ext = os.path.splitext(file.name)[1]
+            file_name = f"{user_id}/{uuid.uuid4()}{ext}"
+            file_bytes = file.read()
+
+            upload_res = supabase.storage.from_("profile-pics").upload(file_name, file_bytes)
+
+            if hasattr(upload_res, "error") and upload_res.error:
+                messages.error(request, "Failed to upload image.")
+            else:
+                public_url = supabase.storage.from_("profile-pics").get_public_url(file_name)
+                profile_picture_url = public_url
+
+        # ✅ Update Supabase table
         update_response = supabase.table("user").update({
             "first_name": first_name,
             "last_name": last_name,
@@ -267,21 +285,11 @@ def edit_profile(request):
             "college_dept": college_dept,
             "course": course,
             "year_level": year_level,
+            "profile_picture": profile_picture_url,
         }).eq("id", user_id).execute()
 
-        # ✅ Update email in Supabase Auth (if changed)
-        try:
-            auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
-            if auth_user_resp.user and auth_user_resp.user.email != email:
-                supabase.auth.admin.update_user_by_id(
-                    user_id,
-                    {"email": email}
-                )
-        except Exception as e:
-            print("Email update failed:", e)
-
         if getattr(update_response, "error", None):
-            messages.error(request, "Failed to update your profile. Please try again.")
+            messages.error(request, "Failed to update your profile.")
         else:
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
