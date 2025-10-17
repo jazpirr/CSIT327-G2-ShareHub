@@ -250,3 +250,7 @@ def settings_view(request):
  
     return render(request, "settings.html", {"user_info": user_info})
  
+
+def admin_dashboard (request):
+  return render(request, "admindashboard.html")
+

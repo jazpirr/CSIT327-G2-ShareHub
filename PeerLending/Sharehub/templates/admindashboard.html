@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Dashboard - CIT-U Peer Lending Library</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/admindashboard.css' %}" />
+</head>
+<body data-color-scheme="light">
+  <!-- Top navigation -->
+  <nav class="navbar" role="navigation" aria-label="Top navigation">
+    <div class="nav-container">
+      <div class="nav-left">
+        <div class="logo">
+          <!-- Filled circle + plus logo (match settings.html) -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
+            <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-text">ShareHub - CIT-U</span>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button class="logout-btn" type="submit" aria-label="Logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Logout
+          </button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main-content" role="main">
+    <div class="page-header">
+      <h1>
+        <!-- Shield outline icon in header -->
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2l7 3v5c0 5-3.58 9.74-7 11-3.42-1.26-7-6-7-11V5l7-3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        </svg>
+        Admin Dashboard
+      </h1>
+      <p>Comprehensive system management and monitoring</p>
+    </div>
+
+    <!-- Summary cards -->
+    <div class="summary-cards" role="region" aria-label="Summary cards">
+      <div class="summary-card users-card" aria-labelledby="users-title">
+        <div class="card-content">
+          <div class="card-info">
+            <div class="card-title" id="users-title">Total Users</div>
+            <div class="card-value">{{ total_users|default:"245" }}</div>
+            <div class="card-meta">
+              <span class="growth-indicator">{{ users_growth|default:"+12%" }}</span>
+              <span class="active-count">{{ active_users|default:"198 active" }}</span>
+            </div>
+          </div>
+          <div class="card-icon" aria-hidden="true">
+            <!-- User icon -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 20c0-2.761 4.477-5 8-5s8 2.239 8 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-card items-card" aria-labelledby="items-title">
+        <div class="card-content">
+          <div class="card-info">
+            <div class="card-title" id="items-title">Total Items</div>
+            <div class="card-value">{{ total_items|default:"387" }}</div>
+            <div class="card-meta">
+              <span class="available-count">{{ available_items|default:"302 available" }}</span>
+            </div>
+          </div>
+          <div class="card-icon" aria-hidden="true">
+            <!-- Box / item icon -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73L12 2 4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73L12 22l8-4.27A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 9l5 3 5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-card requests-card" aria-labelledby="requests-title">
+        <div class="card-content">
+          <div class="card-info">
+            <div class="card-title" id="requests-title">Active Requests</div>
+            <div class="card-value">{{ active_requests|default:"45" }}</div>
+            <div class="card-meta">
+              <span class="pending-count">{{ pending_requests|default:"12 pending" }}</span>
+            </div>
+          </div>
+          <div class="card-icon" aria-hidden="true">
+            <!-- Requests = clock icon -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-card issues-card" aria-labelledby="issues-title">
+        <div class="card-content">
+          <div class="card-info">
+            <div class="card-title" id="issues-title">Issues</div>
+            <div class="card-value">{{ issues_count|default:"11" }}</div>
+            <div class="card-meta">
+              <span class="overdue-count">{{ overdue|default:"8 overdue, 3 flagged" }}</span>
+            </div>
+          </div>
+          <div class="card-icon" aria-hidden="true">
+            <!-- Issues / alert icon -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 9v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 17h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-buttons" role="tablist" aria-label="Actions">
+      <button class="action-btn overview-btn active" data-action="overview" role="tab" aria-selected="true">Overview</button>
+      <button class="action-btn approve-btn" data-action="approve-requests" role="tab">Approve Requests</button>
+      <button class="action-btn manage-btn" data-action="manage-users" role="tab">Manage Users</button>
+      <button class="action-btn reports-btn" data-action="view-reports" role="tab">View Reports</button>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-section">
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>Borrowing Overview</h3>
+          <p>Total items lent vs currently borrowed</p>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="borrowingChart" aria-label="Borrowing Overview chart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>Return Performance</h3>
+          <p>Status of returned items</p>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="returnChart" aria-label="Return Performance chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-section" aria-labelledby="items-table-title">
+      <div class="table-header">
+        <div class="table-title">
+          <h3 id="items-table-title">Items Currently Borrowed</h3>
+          <span class="item-count">{{ current_borrowed_count|default:"6 Items" }}</span>
+        </div>
+        <p>Track all active borrowing transactions</p>
+      </div>
+
+      <div class="table-container">
+        <table class="borrowed-items-table" role="table">
+          <thead>
+            <tr role="row">
+              <th role="columnheader">Item Name</th>
+              <th role="columnheader">Item Owner</th>
+              <th role="columnheader">Borrower</th>
+              <th role="columnheader">Return Due Date</th>
+              <th role="columnheader">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in borrowed_items %}
+            <tr role="row">
+              <td>{{ row.item_name }}</td>
+              <td>{{ row.item_owner }}</td>
+              <td>{{ row.borrower }}</td>
+              <td>
+                <div class="due-date">
+                  <span class="date">{{ row.due_date }}</span>
+                  {% if row.overdue_text %}
+                  <span class="overdue-text">{{ row.overdue_text }}</span>
+                  {% elif row.remaining_text %}
+                  <span class="remaining-text">{{ row.remaining_text }}</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td>
+                <span class="status-badge {{ row.status_class }}">{{ row.status_label }}</span>
+              </td>
+            </tr>
+            {% empty %}
+
+            
+            <tr><td>Engineering Handbook</td><td>Chris Martinez</td><td>Anna Davis</td><td><div class="due-date"><span class="date">Jan 15, 2024</span><span class="overdue-text">7 days overdue</span></div></td><td><span class="status-badge late">Late</span></td></tr>
+            <tr><td>Physics Textbook</td><td>David Brown</td><td>Emily Chen</td><td><div class="due-date"><span class="date">Jan 18, 2024</span></div></td><td><span class="status-badge returned">Returned</span></td></tr>
+            <tr><td>Lab Equipment Kit</td><td>Sarah Williams</td><td>Robert Lee</td><td><div class="due-date"><span class="date">Jan 28, 2024</span><span class="remaining-text">6 days remaining</span></div></td><td><span class="status-badge on-time">On-Time</span></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{% static 'js/admindashboard.js' %}"></script>
+</body>
+</html>
