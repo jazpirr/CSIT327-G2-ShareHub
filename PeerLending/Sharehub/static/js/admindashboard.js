@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function initializeCharts() {
-  // Borrowing Overview bar chart
   const borrowingCtx = document.getElementById('borrowingChart');
   if (borrowingCtx) {
     new Chart(borrowingCtx, {
@@ -47,7 +46,6 @@ function initializeCharts() {
     });
   }
 
-  // Return Performance doughnut chart
   const returnCtx = document.getElementById('returnChart');
   if (returnCtx) {
     new Chart(returnCtx, {
@@ -90,15 +88,12 @@ function initializeInteractiveElements() {
   const logoutBtn = document.querySelector('.logout-btn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function (e) {
-      // default behaviour is to submit the logout form; keep as-is
     });
   }
 
-  // simple header sort placeholder
   document.querySelectorAll('.borrowed-items-table th').forEach(th => {
     th.addEventListener('click', function () {
       th.classList.toggle('sorted-asc');
-      // Sorting is visual only in this static file. Replace with real sort logic if needed.
     });
   });
 }
@@ -106,7 +101,6 @@ function initializeInteractiveElements() {
 function handleButtonAction(action) {
   switch (action) {
     case 'overview':
-      // nothing - already on overview
       break;
     case 'approve-requests':
       window.location.href = '/admin/approve-requests';

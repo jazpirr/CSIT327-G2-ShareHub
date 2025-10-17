@@ -94,20 +94,16 @@ body { margin: 0; }
 .card-meta { color:var(--color-slate-500); font-size:13px; display:flex; gap:12px; align-items:center; }
 .card-icon { width:56px; height:56px; border-radius:12px; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.03); color:var(--color-slate-900); box-shadow: var(--shadow-sm); }
 
-/* Color the SVG icons to match the card accent and provide a subtle tinted background */
 .users-card .card-icon { color: var(--color-primary); background: rgba(123,30,30,0.06); }
 .items-card .card-icon { color: var(--color-warning); background: rgba(246,199,0,0.07); }
 .requests-card .card-icon { color: var(--color-success); background: rgba(39,174,96,0.06); }
 .issues-card .card-icon { color: var(--color-error); background: rgba(255,84,89,0.06); }
 
-/* meta badges */
 .growth-indicator { color: var(--color-success); font-weight:700; font-size:13px; }
 .active-count, .available-count, .pending-count, .overdue-count { color: var(--color-slate-500); font-size:13px; }
 
-/* make card inner content align on the left for text block */
 .card-info { display:flex; flex-direction:column; align-items:flex-start; }
 
-/* ACTION BUTTONS */
 .action-buttons { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin:18px 0 28px; }
 .action-btn {
   padding:14px 18px; border-radius:10px; border:none; cursor:pointer; font-weight:700; color:#fff; box-shadow:var(--shadow-sm); transition:transform .16s ease, box-shadow .16s ease;
@@ -118,13 +114,11 @@ body { margin: 0; }
 .manage-btn { background:var(--color-warning); color:var(--color-slate-900); }
 .reports-btn { background:var(--color-info); }
 
-/* CHARTS */
 .charts-section { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px; }
 .chart-container { background:var(--color-surface); border-radius:12px; padding:20px; box-shadow:var(--shadow-sm); border:1px solid var(--color-card-border); }
 .chart-header h3 { margin:0 0 8px; color:var(--color-primary); font-size:var(--font-size-lg); }
 .chart-wrapper { height:300px; }
 
-/* TABLE */
 .table-section { background:var(--color-surface); border-radius:12px; padding:18px; box-shadow:var(--shadow-sm); border:1px solid var(--color-card-border); }
 .table-header { margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--color-card-border-inner); }
 .table-title { display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -137,18 +131,15 @@ body { margin: 0; }
 .borrowed-items-table td { padding:16px 14px; border-bottom:1px solid var(--color-card-border-inner); color:var(--color-slate-900); }
 .borrowed-items-table tr:hover td { background: rgba(0,0,0,0.01); }
 
-/* Due date styles */
 .due-date { display:flex; flex-direction:column; gap:6px; }
 .overdue-text { color:var(--color-error); font-size:12px; font-weight:500; }
 .remaining-text { color:var(--color-success); font-size:12px; font-weight:500; }
 
-/* Status badges */
 .status-badge { padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:600; display:inline-block; min-width:68px; text-align:center; }
 .status-badge.late { background: rgba(var(--color-error-rgb),0.12); color:var(--color-error); }
 .status-badge.returned { background: rgba(0,0,0,0.03); color:var(--color-slate-500); }
 .status-badge.on-time { background: rgba(var(--color-success-rgb),0.12); color:var(--color-success); }
 
-/* Responsive */
 @media (max-width: 1000px) {
   .charts-section { grid-template-columns:1fr; }
   .summary-cards { grid-template-columns: repeat(2, 1fr); }
