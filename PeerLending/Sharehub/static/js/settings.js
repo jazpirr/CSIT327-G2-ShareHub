@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  
   const sidebarItems = document.querySelectorAll('.sidebar-item');
   const tabContents = document.querySelectorAll('.tab-content');
 
@@ -14,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  
   new SettingsManager();
 });
 
@@ -23,25 +21,37 @@ class SettingsManager {
         this.originalSettings = {};
         this.currentTab = 'account';
         this.hasChanges = false;
-        this.init();
+        try { window.settingsManager = this; } catch (e) { }
+        try {
+            this.init();
+        } catch (e) {
+            console.error('SettingsManager init error:', e);
+        }
     }
+
     init() {
+        console.log('SettingsManager: init start');
         this.loadSettings();
         this.bindEvents();
         this.updateUI();
+        console.log('SettingsManager: init complete');
     }
 
     loadSettings() {
-        const savedSettings = localStorage.getItem('shareHub_userSettings');
-        this.originalSettings = savedSettings ? 
-            JSON.parse(savedSettings) : 
-            { ...DEFAULT_SETTINGS };
-        // TODO: Replace with Supabase API call
-        // const { data, error } = await supabase
-        //   .from('user_settings')
-        //   .select('*')
-        //   .eq('user_id', currentUser.id)
-        //   .single();
+        this.originalSettings = {};
+        try {
+            document.querySelectorAll('[data-field]').forEach(field => {
+                const key = field.getAttribute('data-field');
+                if (field.type === 'checkbox') {
+                    this.originalSettings[key] = field.checked;
+                } else {
+                    this.originalSettings[key] = field.value || '';
+                }
+            });
+            console.log('Settings loaded:', this.originalSettings);
+        } catch (e) {
+            console.error('Error loading settings:', e);
+        }
     }
 
     updateUI() {
@@ -59,117 +69,138 @@ class SettingsManager {
     }
     
     bindEvents() {
-        // Internal SettingsManager tab switching (not needed for main bug, but keep for class logic)
-        document.querySelectorAll('.sidebar-item').forEach(item => {
-            item.addEventListener('click', (e) => this.switchTab(e.currentTarget.dataset.tab));
-        });
         document.querySelectorAll('[data-field]').forEach(field => {
             const eventType = field.type === 'checkbox' ? 'change' : 'input';
             field.addEventListener(eventType, () => this.onFieldChange());
         });
-        document.getElementById('newPassword').addEventListener('input', () => this.validatePassword());
-        document.getElementById('confirmPassword').addEventListener('input', () => this.validatePasswordMatch());
-        document.getElementById('email').addEventListener('blur', () => this.validateEmail());
-        document.getElementById('saveBtn').addEventListener('click', () => this.saveSettings());
-        document.getElementById('cancelBtn').addEventListener('click', () => this.cancelChanges());
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                if (!document.getElementById('saveBtn').disabled) {
-                    this.saveSettings();
-                }
-            }
-            if (e.key === 'Escape') {
-                this.cancelChanges();
-            }
-        });
-    }
 
-    switchTab(tabName) {
-        // This preserves internal tracking, but DOM switching is done by the universal logic above
-        this.currentTab = tabName;
+        const newPasswordEl = document.getElementById('newPassword');
+        if (newPasswordEl) newPasswordEl.addEventListener('input', () => {
+            this.validatePassword();
+            this.onFieldChange();
+        });
+
+        const confirmPasswordEl = document.getElementById('confirmPassword');
+        if (confirmPasswordEl) confirmPasswordEl.addEventListener('input', () => {
+            this.validatePasswordMatch();
+            this.onFieldChange();
+        });
+
+        const currentPasswordEl = document.getElementById('currentPassword');
+        if (currentPasswordEl) currentPasswordEl.addEventListener('input', () => this.onFieldChange());
+
+        const emailEl = document.getElementById('email');
+        if (emailEl) {
+            emailEl.addEventListener('blur', () => this.validateEmail());
+            emailEl.addEventListener('input', () => this.onFieldChange());
+        }
+
+        const saveBtn = document.getElementById('saveBtn');
+        if (saveBtn) saveBtn.addEventListener('click', () => this.saveSettings());
+
+        const cancelBtn = document.getElementById('cancelBtn');
+        if (cancelBtn) cancelBtn.addEventListener('click', () => this.cancelChanges());
     }
 
     onFieldChange() {
         this.hasChanges = this.checkForChanges();
+        console.log('Field changed. Has changes:', this.hasChanges);
         this.updateSaveButtonState();
     }
 
     checkForChanges() {
-        return Object.keys(this.originalSettings).some(key => {
-            const field = document.querySelector(`[data-field="${key}"]`);
-            if (!field) return false;
+        try {
+            const currentPassword = document.getElementById('currentPassword')?.value || '';
+            const newPassword = document.getElementById('newPassword')?.value || '';
+            const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+            if (currentPassword || newPassword || confirmPassword) {
+                console.log('Password change detected');
+                return true;
+            }
+        } catch (e) {}
+
+        const fields = document.querySelectorAll('[data-field]');
+        for (let field of fields) {
+            const key = field.getAttribute('data-field');
             const currentValue = field.type === 'checkbox' ? field.checked : field.value;
-            return currentValue !== this.originalSettings[key];
-        });
+            const original = this.originalSettings[key] || '';
+            if (String(currentValue) !== String(original)) {
+                console.log(`Change in ${key}: "${original}" -> "${currentValue}"`);
+                return true;
+            }
+        }
+        return false;
     }
 
     updateSaveButtonState() {
         const saveBtn = document.getElementById('saveBtn');
+        if (!saveBtn) return;
         const hasValidation = this.validateAllFields();
-        saveBtn.disabled = !this.hasChanges || !hasValidation;
+        saveBtn.disabled = !(this.hasChanges && hasValidation);
+        console.log('Save button:', { changes: this.hasChanges, valid: hasValidation, disabled: saveBtn.disabled });
     }
 
     validateAllFields() {
-        const emailValid = this.validateEmail();
-        const passwordValid = this.validatePasswordFields();
-        return emailValid && passwordValid;
+        return this.validateEmail() && this.validatePasswordFields();
     }
 
     validateEmail() {
         const emailField = document.getElementById('email');
         const errorElement = document.getElementById('email-error');
+        if (!emailField || !errorElement) return true;
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (emailField.value && !emailRegex.test(emailField.value)) {
             errorElement.textContent = 'Please enter a valid email address';
             return false;
-        } else {
-            errorElement.textContent = '';
-            return true;
         }
+        errorElement.textContent = '';
+        return true;
     }
 
     validatePassword() {
         const passwordField = document.getElementById('newPassword');
         const errorElement = document.getElementById('new-password-error');
+        if (!passwordField || !errorElement) return true;
         if (passwordField.value && passwordField.value.length < 8) {
-            errorElement.textContent = 'Password must be at least 8 characters long';
+            errorElement.textContent = 'Password must be at least 8 characters';
             return false;
-        } else {
-            errorElement.textContent = '';
-            return true;
         }
+        errorElement.textContent = '';
+        return true;
     }
 
     validatePasswordMatch() {
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
+        const newPassword = document.getElementById('newPassword')?.value || '';
+        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
         const errorElement = document.getElementById('confirm-password-error');
+        if (!errorElement) return true;
         if (confirmPassword && newPassword !== confirmPassword) {
             errorElement.textContent = 'Passwords do not match';
             return false;
-        } else {
-            errorElement.textContent = '';
-            return true;
         }
+        errorElement.textContent = '';
+        return true;
     }
 
     validatePasswordFields() {
-        const currentPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
+        const currentPassword = document.getElementById('currentPassword')?.value || '';
+        const newPassword = document.getElementById('newPassword')?.value || '';
+        const confirmPassword = document.getElementById('confirmPassword')?.value || '';
+        
         if (currentPassword || newPassword || confirmPassword) {
+            const currentPwdError = document.getElementById('current-password-error');
             if (!currentPassword) {
-                document.getElementById('current-password-error').textContent =
-                    'Current password required for password change';
-            } else {
-                document.getElementById('current-password-error').textContent = '';
+                if (currentPwdError) currentPwdError.textContent = 'Current password required';
+                return false;
             }
-            return this.validatePassword() && this.validatePasswordMatch() && currentPassword;
+            if (currentPwdError) currentPwdError.textContent = '';
+            return this.validatePassword() && this.validatePasswordMatch();
         }
-        document.getElementById('current-password-error').textContent = '';
-        document.getElementById('new-password-error').textContent = '';
-        document.getElementById('confirm-password-error').textContent = '';
+        
+        ['current-password-error', 'new-password-error', 'confirm-password-error'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '';
+        });
         return true;
     }
 
@@ -179,112 +210,132 @@ class SettingsManager {
         const originalText = saveBtn.textContent;
         saveBtn.textContent = 'Saving...';
         saveBtn.disabled = true;
+
         try {
-            const newSettings = {};
-            Object.keys(this.originalSettings).forEach(key => {
-                const field = document.querySelector(`[data-field="${key}"]`);
-                if (field) {
-                    newSettings[key] = field.type === 'checkbox' ? field.checked : field.value;
+            const currentPassword = document.getElementById('currentPassword')?.value || '';
+            const newEmail = document.getElementById('email')?.value || '';
+            const newPassword = document.getElementById('newPassword')?.value || '';
+
+            if (newEmail && newEmail !== this.originalSettings.email) {
+                const res = await updateEmailRequest(currentPassword, newEmail);
+                if (!res.ok) {
+                    handleServerErrors(res.data || {});
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    return;
                 }
-            });
-            // TODO: Save to Supabase instead of localStorage
-            // const { error } = await supabase
-            //   .from('user_settings')
-            //   .upsert(newSettings)
-            //   .eq('user_id', currentUser.id);
-            // if (error) throw error;
-            await new Promise(resolve => setTimeout(resolve, 500));
-            localStorage.setItem('shareHub_userSettings', JSON.stringify(newSettings));
-            const newPassword = document.getElementById('newPassword').value;
+            }
+
             if (newPassword) {
-                // TODO: Call Supabase auth to change password
-                // const { error } = await supabase.auth.updateUser({
-                //   password: newPassword
-                // });
-                // if (error) throw error;
+                const res2 = await updatePasswordRequest(currentPassword, newPassword);
+                if (!res2.ok) {
+                    handleServerErrors(res2.data || {});
+                    saveBtn.textContent = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
                 document.getElementById('currentPassword').value = '';
                 document.getElementById('newPassword').value = '';
                 document.getElementById('confirmPassword').value = '';
             }
-            this.originalSettings = { ...newSettings };
+
+            this.loadSettings();
             this.hasChanges = false;
             this.showSuccessToast();
             this.updateSaveButtonState();
         } catch (error) {
             console.error('Save error:', error);
-            this.showErrorToast('Failed to save settings. Please try again.');
+            this.showErrorToast('Failed to save. Please try again.');
         } finally {
             saveBtn.textContent = originalText;
-            saveBtn.disabled = false;
         }
     }
 
     cancelChanges() {
         this.updateUI();
-        document.getElementById('currentPassword').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
-        document.querySelectorAll('.validation-message').forEach(msg => {
-            msg.textContent = '';
+        ['currentPassword', 'newPassword', 'confirmPassword'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
         });
+        document.querySelectorAll('.validation-message').forEach(msg => msg.textContent = '');
         this.hasChanges = false;
         this.updateSaveButtonState();
     }
 
     showSuccessToast() {
         const toast = document.getElementById('toast');
+        if (!toast) return;
         toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-        toast.setAttribute('tabindex', '0');
-        toast.focus();
-        setTimeout(() => {
-            toast.removeAttribute('tabindex');
-        }, 3000);
+        setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
     showErrorToast(message) {
         const toast = document.getElementById('toast');
-        const messageElement = toast.querySelector('.toast-message');
-        const originalMessage = messageElement.textContent;
+        if (!toast) return;
+        const messageEl = toast.querySelector('.toast-message');
+        if (!messageEl) return;
+        const original = messageEl.textContent;
         toast.style.background = 'var(--error)';
-        messageElement.textContent = message;
+        messageEl.textContent = message;
         toast.classList.add('show');
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => {
                 toast.style.background = 'var(--success)';
-                messageElement.textContent = originalMessage;
+                messageEl.textContent = original;
             }, 300);
         }, 4000);
     }
 }
 
-const SettingsUtils = {
-    exportSettings() {
-        const settings = localStorage.getItem('shareHub_userSettings');
-        if (settings) {
-            const blob = new Blob([settings], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'sharehub-settings.json';
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-    },
-    importSettings(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const settings = JSON.parse(e.target.result);
-                localStorage.setItem('shareHub_userSettings', JSON.stringify(settings));
-                location.reload();
-            } catch (error) {
-                console.error('Invalid settings file:', error);
-            }
-        };
-        reader.readAsText(file);
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
+async function postJson(url, payload) {
+    const csrftoken = getCookie('csrftoken');
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken || ''
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, status: res.status, data };
+}
+
+async function updateEmailRequest(currentPassword, newEmail) {
+    return await postJson('/settings/update_email/', {
+        current_password: currentPassword,
+        new_email: newEmail
+    });
+}
+
+async function updatePasswordRequest(currentPassword, newPassword) {
+    return await postJson('/settings/update_password/', {
+        current_password: currentPassword,
+        new_password: newPassword
+    });
+}
+
+function handleServerErrors(payload) {
+    if (!payload || !payload.errors) {
+        const manager = window.settingsManager || null;
+        const msg = (payload && payload.message) ? payload.message : 'Server error';
+        if (manager) manager.showErrorToast(msg);
+        return;
     }
-};
+    Object.entries(payload.errors).forEach(([field, errs]) => {
+        const el = document.getElementById(`${field}-error`);
+        if (el) el.textContent = errs.map(e => e.message).join('; ');
+    });
+}
+
+window.updateEmailRequest = updateEmailRequest;
+window.updatePasswordRequest = updatePasswordRequest;

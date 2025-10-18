@@ -1,219 +1,247 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Admin Dashboard - CIT-U Peer Lending Library</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/admindashboard.css' %}" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - ShareHub CIT-U</title>
+    <link rel="stylesheet" href="{% static 'css/settings.css' %}">
 </head>
-<body data-color-scheme="light">
-
-  <nav class="navbar" role="navigation" aria-label="Top navigation">
+<body>
+  <!-- Top Navigation -->
+  <header class="navbar">
     <div class="nav-container">
       <div class="nav-left">
         <div class="logo">
-   
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#7a0019"/>
             <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span class="logo-text">ShareHub - CIT-U</span>
+          <span>ShareHub - CIT-U</span>
         </div>
       </div>
 
+      <div class="nav-center">
+        <a href="{% url 'home' %}" class="nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          Home
+        </a>
+        <a href="#" class="nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          Browse
+        </a>
+        <a href="#" class="nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+          My Items
+        </a>
+        <a href="{% url 'profile' %}" class="nav-link">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          Profile
+        </a>
+      </div>
+
       <div class="nav-right">
-        <form method="post" action="{% url 'logout' %}">
+        <button class="add-item-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          Add Item
+        </button>
+        <button class="notification-btn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+          <span class="notification-badge">3</span>
+        </button>
+        <form method="post" action="{% url 'logout' %}" style="display:inline;">
           {% csrf_token %}
-          <button class="logout-btn" type="submit" aria-label="Logout">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M9 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <button type="submit" class="logout-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
             </svg>
             Logout
           </button>
         </form>
       </div>
     </div>
-  </nav>
+  </header>
 
-  <main class="main-content" role="main">
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="main-content">
+    <!-- Page Header -->
     <div class="page-header">
-      <h1>
-       
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M12 2l7 3v5c0 5-3.58 9.74-7 11-3.42-1.26-7-6-7-11V5l7-3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
-        </svg>
-        Admin Dashboard
-      </h1>
-      <p>Comprehensive system management and monitoring</p>
+      <h1>Settings</h1>
+      <p>Manage your account settings and preferences</p>
     </div>
 
-  
-    <div class="summary-cards" role="region" aria-label="Summary cards">
-      <div class="summary-card users-card" aria-labelledby="users-title">
-        <div class="card-content">
-          <div class="card-info">
-            <div class="card-title" id="users-title">Total Users</div>
-            <div class="card-value">{{ total_users|default:"245" }}</div>
-            <div class="card-meta">
-              <span class="growth-indicator">{{ users_growth|default:"+12%" }}</span>
-              <span class="active-count">{{ active_users|default:"198 active" }}</span>
-            </div>
-          </div>
-          <div class="card-icon" aria-hidden="true">
+    <!-- Settings Layout -->
+    <div class="settings-layout">
+      <!-- Sidebar -->
+      <aside class="settings-sidebar">
+        <button class="sidebar-item active" data-tab="account">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          Account Settings
+          <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+        <button class="sidebar-item" data-tab="notifications">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+          Notifications
+          <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+        <button class="sidebar-item" data-tab="privacy">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+          </svg>
+          Privacy & Security
+          <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </aside>
+
+      <!-- Main Settings Content -->
+      <div class="settings-content">
         
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M12 12c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 20c0-2.761 4.477-5 8-5s8 2.239 8 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="summary-card items-card" aria-labelledby="items-title">
-        <div class="card-content">
-          <div class="card-info">
-            <div class="card-title" id="items-title">Total Items</div>
-            <div class="card-value">{{ total_items|default:"387" }}</div>
-            <div class="card-meta">
-              <span class="available-count">{{ available_items|default:"302 available" }}</span>
-            </div>
-          </div>
-          <div class="card-icon" aria-hidden="true">
+        <!-- Account Tab -->
+        <div id="account-tab" class="tab-content active">
+          <h2>Account Information</h2>
           
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73L12 2 4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73L12 22l8-4.27A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M7 9l5 3 5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-
-      <div class="summary-card requests-card" aria-labelledby="requests-title">
-        <div class="card-content">
-          <div class="card-info">
-            <div class="card-title" id="requests-title">Active Requests</div>
-            <div class="card-value">{{ active_requests|default:"45" }}</div>
-            <div class="card-meta">
-              <span class="pending-count">{{ pending_requests|default:"12 pending" }}</span>
+          <div class="settings-form">
+            <!-- Personal Information -->
+            <h3>Personal Information</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" data-field="first_name" value="{{ user_info.first_name }}" placeholder="Enter your first name" autocomplete="given-name">
+                <span id="firstName-error" class="validation-message"></span>
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" data-field="last_name" value="{{ user_info.last_name }}" placeholder="Enter your last name" autocomplete="family-name">
+                <span id="lastName-error" class="validation-message"></span>
+              </div>
+              <div class="form-group full-width">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" data-field="email" value="{{ user_info.email }}" placeholder="your.email@example.com" autocomplete="email">
+                <span id="email-error" class="validation-message"></span>
+              </div>
             </div>
-          </div>
-          <div class="card-icon" aria-hidden="true">
-       
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-      </div>
 
-      <div class="summary-card issues-card" aria-labelledby="issues-title">
-        <div class="card-content">
-          <div class="card-info">
-            <div class="card-title" id="issues-title">Issues</div>
-            <div class="card-value">{{ issues_count|default:"11" }}</div>
-            <div class="card-meta">
-              <span class="overdue-count">{{ overdue|default:"8 overdue, 3 flagged" }}</span>
-            </div>
-          </div>
-          <div class="card-icon" aria-hidden="true">
-         
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 9v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M12 17h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="action-buttons" role="tablist" aria-label="Actions">
-      <button class="action-btn overview-btn active" data-action="overview" role="tab" aria-selected="true">Overview</button>
-      <button class="action-btn approve-btn" data-action="approve-requests" role="tab">Approve Requests</button>
-      <button class="action-btn manage-btn" data-action="manage-users" role="tab">Manage Users</button>
-      <button class="action-btn reports-btn" data-action="view-reports" role="tab">View Reports</button>
-    </div>
-
-    <div class="charts-section">
-      <div class="chart-container">
-        <div class="chart-header">
-          <h3>Borrowing Overview</h3>
-          <p>Total items lent vs currently borrowed</p>
-        </div>
-        <div class="chart-wrapper">
-          <canvas id="borrowingChart" aria-label="Borrowing Overview chart"></canvas>
-        </div>
-      </div>
-
-      <div class="chart-container">
-        <div class="chart-header">
-          <h3>Return Performance</h3>
-          <p>Status of returned items</p>
-        </div>
-        <div class="chart-wrapper">
-          <canvas id="returnChart" aria-label="Return Performance chart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="table-section" aria-labelledby="items-table-title">
-      <div class="table-header">
-        <div class="table-title">
-          <h3 id="items-table-title">Items Currently Borrowed</h3>
-          <span class="item-count">{{ current_borrowed_count|default:"6 Items" }}</span>
-        </div>
-        <p>Track all active borrowing transactions</p>
-      </div>
-
-      <div class="table-container">
-        <table class="borrowed-items-table" role="table">
-          <thead>
-            <tr role="row">
-              <th role="columnheader">Item Name</th>
-              <th role="columnheader">Item Owner</th>
-              <th role="columnheader">Borrower</th>
-              <th role="columnheader">Return Due Date</th>
-              <th role="columnheader">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in borrowed_items %}
-            <tr role="row">
-              <td>{{ row.item_name }}</td>
-              <td>{{ row.item_owner }}</td>
-              <td>{{ row.borrower }}</td>
-              <td>
-                <div class="due-date">
-                  <span class="date">{{ row.due_date }}</span>
-                  {% if row.overdue_text %}
-                  <span class="overdue-text">{{ row.overdue_text }}</span>
-                  {% elif row.remaining_text %}
-                  <span class="remaining-text">{{ row.remaining_text }}</span>
-                  {% endif %}
+            <!-- Password Section -->
+            <div class="password-section">
+              <h3>Change Password</h3>
+              <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Leave blank if you don't want to change your password</p>
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label for="currentPassword">Current Password</label>
+                  <input type="password" id="currentPassword" placeholder="Enter current password" autocomplete="current-password">
+                  <span id="current-password-error" class="validation-message"></span>
                 </div>
-              </td>
-              <td>
-                <span class="status-badge {{ row.status_class }}">{{ row.status_label }}</span>
-              </td>
-            </tr>
-            {% empty %}
+                <div class="form-group">
+                  <label for="newPassword">New Password</label>
+                  <input type="password" id="newPassword" placeholder="At least 8 characters" autocomplete="new-password">
+                  <span id="new-password-error" class="validation-message"></span>
+                </div>
+                <div class="form-group">
+                  <label for="confirmPassword">Confirm New Password</label>
+                  <input type="password" id="confirmPassword" placeholder="Re-enter new password" autocomplete="new-password">
+                  <span id="confirm-password-error" class="validation-message"></span>
+                </div>
+              </div>
+            </div>
 
+            <!-- Action Buttons -->
+            <div class="form-actions">
+              <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+              <button type="button" id="saveBtn" class="btn-primary" disabled>Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div id="notifications-tab" class="tab-content">
+          <h2>Notification Preferences</h2>
+          
+          <div class="settings-form">
+            <div class="notification-item">
+              <div class="notification-info">
+                <label for="emailNotifications">Email Notifications</label>
+                <p>Receive email updates about your borrowed items</p>
+              </div>
+              <input type="checkbox" id="emailNotifications" data-field="email_notifications" autocomplete="on">
+            </div>
             
-            <tr><td>Engineering Handbook</td><td>Chris Martinez</td><td>Anna Davis</td><td><div class="due-date"><span class="date">Jan 15, 2024</span><span class="overdue-text">7 days overdue</span></div></td><td><span class="status-badge late">Late</span></td></tr>
-            <tr><td>Physics Textbook</td><td>David Brown</td><td>Emily Chen</td><td><div class="due-date"><span class="date">Jan 18, 2024</span></div></td><td><span class="status-badge returned">Returned</span></td></tr>
-            <tr><td>Lab Equipment Kit</td><td>Sarah Williams</td><td>Robert Lee</td><td><div class="due-date"><span class="date">Jan 28, 2024</span><span class="remaining-text">6 days remaining</span></div></td><td><span class="status-badge on-time">On-Time</span></td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            <div class="notification-item">
+              <div class="notification-info">
+                <label for="dueDateReminders">Due Date Reminders</label>
+                <p>Get notified 2 days before items are due</p>
+              </div>
+              <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders" autocomplete="on">
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+              <button type="button" id="saveBtn" class="btn-primary" disabled>Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy Tab -->
+        <div id="privacy-tab" class="tab-content">
+          <h2>Privacy & Security</h2>
+          
+          <div class="settings-form">
+            <div class="notification-item">
+              <div class="notification-info">
+                <label for="profileVisibility">Profile Visibility</label>
+                <p>Make your profile visible to other students</p>
+              </div>
+              <input type="checkbox" id="profileVisibility" data-field="profile_visibility" autocomplete="on">
+            </div>
+            
+            <div class="notification-item">
+              <div class="notification-info">
+                <label for="contactInfo">Share Contact Info</label>
+                <p>Share your contact details with item owners</p>
+              </div>
+              <input type="checkbox" id="contactInfo" data-field="contact_info" autocomplete="on">
+            </div>
+
+            <div class="form-actions">
+              <button type="button" id="cancelBtn" class="btn-secondary">Cancel</button>
+              <button type="button" id="saveBtn" class="btn-primary" disabled>Save Changes</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
-  </main>
+  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="{% static 'js/admindashboard.js' %}"></script>
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <svg class="toast-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <span class="toast-message">Settings saved successfully!</span>
+  </div>
+
+  <script src="{% static 'js/settings.js' %}"></script>
 </body>
 </html>

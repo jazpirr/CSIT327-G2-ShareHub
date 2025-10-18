@@ -135,10 +135,8 @@
         </div>
     </header>
 
-    <!-- Notification Overlay -->
     <div class="notification-overlay" id="notificationOverlay"></div>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
             <div class="page-header">
@@ -147,7 +145,7 @@
             </div>
             
             <div class="settings-layout">
-                <!-- Left Sidebar -->
+   
                 <nav class="settings-sidebar">
                     <button class="sidebar-item active" data-tab="account">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -184,9 +182,8 @@
                     </button>
                 </nav>
 
-                <!-- Main Content Area -->
                 <div class="settings-content">
-                    <!-- Account Tab -->
+                  
                     <div id="account-tab" class="tab-content active">
                         <h2>Account Settings</h2>
                         
@@ -195,31 +192,36 @@
                                 <div class="form-group">
                                     <label for="firstName">First Name</label>
                                     <input type="text" id="firstName" name="firstName" data-field="first_name"
-                                    value="{{ user_info.first_name|default_if_none:'' }}" required>
+                                    value="{{ user_info.first_name|default_if_none:'' }}" required
+                                    placeholder="First name" autocomplete="given-name">
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="lastName">Last Name</label>
                                     <input type="text" id="lastName" name="lastName" data-field="last_name"
-                                    value="{{ user_info.last_name|default_if_none:'' }}" required>
+                                    value="{{ user_info.last_name|default_if_none:'' }}" required
+                                    placeholder="Last name" autocomplete="family-name">
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="email">Email</label>
                                     <input type="email" id="email" name="email" data-field="email"
-                                    value="{{ user_info.email|default_if_none:'' }}" required>
+                                    value="{{ user_info.email|default_if_none:'' }}" required
+                                    placeholder="you@school.edu" autocomplete="email">
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="phone">Phone</label>
                                     <input type="tel" id="phone" name="phone" data-field="phone"
-                                    value="{{ user_info.phone_number|default_if_none:'' }}">
+                                    value="{{ user_info.phone_number|default_if_none:'' }}"
+                                    placeholder="09xxxxxxxxx" autocomplete="tel">
                                 </div>
                                 
                                 <div class="form-group">
                                     <label for="college">College Department</label>
                                     <input type="text" id="college" name="college" data-field="college"
-                                    value="{{ user_info.college_dept|default_if_none:'' }}">
+                                    value="{{ user_info.college_dept|default_if_none:'' }}"
+                                    placeholder="College / Department">
                                 </div>
                                 
                                 <div class="form-group">
@@ -235,25 +237,28 @@
                                 </div>
                             </div>
                             
-                            <!-- Change Password Section -->
+                          
                             <div class="password-section">
                                 <h3>Change Password</h3>
                                 <div class="form-grid">
                                     <div class="form-group full-width">
                                         <label for="currentPassword">Current Password</label>
-                                        <input type="password" id="currentPassword" name="currentPassword">
+                                        <input type="password" id="currentPassword" name="currentPassword"
+                                        placeholder="Current password" autocomplete="current-password">
                                         <span class="validation-message" id="current-password-error"></span>
                                     </div>
                                     
                                     <div class="form-group">
                                         <label for="newPassword">New Password</label>
-                                        <input type="password" id="newPassword" name="newPassword">
+                                        <input type="password" id="newPassword" name="newPassword"
+                                        placeholder="New password" autocomplete="new-password">
                                         <span class="validation-message" id="new-password-error"></span>
                                     </div>
                                     
                                     <div class="form-group">
                                         <label for="confirmPassword">Confirm New Password</label>
-                                        <input type="password" id="confirmPassword" name="confirmPassword">
+                                        <input type="password" id="confirmPassword" name="confirmPassword"
+                                        placeholder="Confirm new password" autocomplete="new-password">
                                         <span class="validation-message" id="confirm-password-error"></span>
                                     </div>
                                 </div>
@@ -261,7 +266,7 @@
                         </form>
                     </div>
 
-                    <!-- Notifications Tab -->
+
                     <div id="notifications-tab" class="tab-content">
                         <h2>Notification Preferences</h2>
                         
@@ -269,30 +274,31 @@
                             <div class="toggle-group">
                                 <div class="toggle-item">
                                     <div class="toggle-info">
-                                        <h3>Email Notifications</h3>
-                                        <p>Receive email updates about your borrowed items</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="emailNotifications" data-field="email_notifications">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                            <h3 id="emailNotificationsLabel">Email Notifications</h3>
+                                            <p>Receive email updates about your borrowed items</p>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="emailNotifications" data-field="email_notifications"
+                                                aria-labelledby="emailNotificationsLabel" title="Email Notifications">
+                                            <span class="toggle-slider"></span>
+                                        </label>
                                 </div>
                                 
                                 <div class="toggle-item">
                                     <div class="toggle-info">
-                                        <h3>Due Date Reminders</h3>
-                                        <p>Get notified 2 days before items are due</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                            <h3 id="dueDateRemindersLabel">Due Date Reminders</h3>
+                                            <p>Get notified 2 days before items are due</p>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders"
+                                                aria-labelledby="dueDateRemindersLabel" title="Due Date Reminders">
+                                            <span class="toggle-slider"></span>
+                                        </label>
                                 </div>
                             </div>
                         </form>
                     </div>
 
-                    <!-- Privacy Tab -->
                     <div id="privacy-tab" class="tab-content">
                         <h2>Privacy Settings</h2>
                         
@@ -300,30 +306,31 @@
                             <div class="toggle-group">
                                 <div class="toggle-item">
                                     <div class="toggle-info">
-                                        <h3>Profile Visibility</h3>
-                                        <p>Make your profile visible to other students</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="profileVisibility" data-field="profile_visibility">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                            <h3 id="profileVisibilityLabel">Profile Visibility</h3>
+                                            <p>Make your profile visible to other students</p>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="profileVisibility" data-field="profile_visibility"
+                                                aria-labelledby="profileVisibilityLabel" title="Profile Visibility">
+                                            <span class="toggle-slider"></span>
+                                        </label>
                                 </div>
                                 
                                 <div class="toggle-item">
                                     <div class="toggle-info">
-                                        <h3>Contact Information</h3>
-                                        <p>Share your contact details with item owners</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" id="contactInfo" data-field="contact_info">
-                                        <span class="toggle-slider"></span>
-                                    </label>
+                                            <h3 id="contactInfoLabel">Contact Information</h3>
+                                            <p>Share your contact details with item owners</p>
+                                        </div>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="contactInfo" data-field="contact_info"
+                                                aria-labelledby="contactInfoLabel" title="Contact Information">
+                                            <span class="toggle-slider"></span>
+                                        </label>
                                 </div>
                             </div>
                         </form>
                     </div>
 
-                    <!-- Action Buttons -->
                     <div class="form-actions">
                         <button type="button" id="saveBtn" class="btn btn-primary" disabled>Save Changes</button>
                         <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
@@ -333,7 +340,6 @@
         </div>
     </main>
 
-    <!-- Toast Notification -->
     <div id="toast" class="toast" role="status" aria-live="polite">
         <div class="toast-content">
             <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -345,32 +351,27 @@
 
     <script src="{% static 'js/settings.js' %}"></script>
     <script>
-        // Notification popup functionality
         const notificationBtn = document.querySelector('.notification-btn');
         const notificationPopup = document.getElementById('notificationPopup');
         const notificationOverlay = document.getElementById('notificationOverlay');
         const closePopup = document.getElementById('closePopup');
 
-        // Toggle popup
         notificationBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             notificationPopup.classList.toggle('active');
             notificationOverlay.classList.toggle('active');
         });
 
-        // Close popup when clicking close button
         closePopup.addEventListener('click', () => {
             notificationPopup.classList.remove('active');
             notificationOverlay.classList.remove('active');
         });
 
-        // Close popup when clicking overlay
         notificationOverlay.addEventListener('click', () => {
             notificationPopup.classList.remove('active');
             notificationOverlay.classList.remove('active');
         });
 
-        // Prevent popup from closing when clicking inside it
         notificationPopup.addEventListener('click', (e) => {
             e.stopPropagation();
         });
