@@ -125,4 +125,4 @@ AUTHENTICATION_BACKENDS = ['sharehub.backends.EmailBackend']
 AUTH_USER_MODEL = "sharehub.CustomUser"
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZ3VpcGlmeGxodmVkdGN2d2dmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTczNDEwMSwiZXhwIjoyMDc1MzEwMTAxfQ.gJayY6b6sbSt6AKvoh9W1DmQ9grVInz0t4c4spvqsD8"

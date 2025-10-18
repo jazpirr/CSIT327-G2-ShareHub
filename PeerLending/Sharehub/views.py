@@ -12,10 +12,15 @@ from .utils import supabase_login_required
  
 import os
 import uuid
+import json
+import re
+from django.views.decorators.http import require_POST
  
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
  
  
 @never_cache
@@ -101,6 +106,7 @@ def login_view(request):
  
             if response.user:
                 request.session["supabase_user_id"] = response.user.id
+                request.session["user_email"] = email
                 messages.success(request, "Welcome back!")
                 return redirect("home")
             else:
@@ -249,7 +255,179 @@ def settings_view(request):
         pass
  
     return render(request, "settings.html", {"user_info": user_info})
- 
+
+
+#change email and password in settings page
+
+@require_POST
+def update_email(request):
+    """Update user's email with detailed logging"""
+    user_id = request.session.get('supabase_user_id')
+    if not user_id:
+        return JsonResponse({'errors': {'general': [{'message': 'Not authenticated'}]}}, status=401)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except:
+        payload = {}
+
+    current_password = payload.get('current_password') or request.POST.get('current_password')
+    new_email = payload.get('new_email') or request.POST.get('new_email')
+
+    if not current_password:
+        return JsonResponse({'errors': {'current_password': [{'message': 'Current password required'}]}}, status=400)
+    
+    if not new_email or not EMAIL_REGEX.match(new_email):
+        return JsonResponse({'errors': {'email': [{'message': 'Invalid email'}]}}, status=400)
+
+    current_email = request.session.get('user_email')
+    
+    if not current_email:
+        try:
+            user_data = supabase.table('user').select('email').eq('id', user_id).execute()
+            if user_data.data and len(user_data.data) > 0:
+                current_email = user_data.data[0].get('email')
+        except:
+            pass
+    
+    if not current_email:
+        return JsonResponse({'errors': {'general': [{'message': 'Unable to determine current email'}]}}, status=400)
+
+    print(f'🔍 DEBUG: Current email: {current_email}, New email: {new_email}')
+
+    try:
+        signin_resp = supabase.auth.sign_in_with_password({'email': current_email, 'password': current_password})
+        user_obj = getattr(signin_resp, 'user', None)
+        session_obj = getattr(signin_resp, 'session', None)
+        
+        if not user_obj or not session_obj:
+            print('❌ DEBUG: Sign-in failed')
+            return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
+        
+        access_token = session_obj.access_token
+        refresh_token = session_obj.refresh_token
+        print(f'✅ DEBUG: Sign-in successful! User ID: {user_obj.id}')
+        
+    except Exception as e:
+        print(f'❌ Sign-in error: {e}')
+        return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
+
+    try:
+        from supabase import create_client
+        user_supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        user_supabase.auth.set_session(access_token, refresh_token)
+        
+        print(f'🔄 DEBUG: Calling update_user with email: {new_email}')
+        update_resp = user_supabase.auth.update_user({'email': new_email})
+        
+        if hasattr(update_resp, 'error') and update_resp.error:
+            print(f'❌ Email update error: {update_resp.error}')
+            return JsonResponse({'errors': {'general': [{'message': 'Failed to update email'}]}}, status=400)
+        
+        updated_user = getattr(update_resp, 'user', None)
+        if updated_user:
+            print(f'✅ DEBUG: Supabase Auth returned updated user. Email in response: {getattr(updated_user, "email", "NOT FOUND")}')
+            print(f'✅ DEBUG: User confirmed: {getattr(updated_user, "email_confirmed_at", "NOT CONFIRMED")}')
+        else:
+            print(f'⚠️ WARNING: No user object in update response!')
+        
+        try:
+            supabase.table('user').update({'email': new_email}).eq('id', user_id).execute()
+            print(f'✅ DEBUG: User table updated')
+        except Exception as e:
+            print(f'⚠️ Table sync warning: {e}')
+        
+    
+        request.session['user_email'] = new_email
+        
+        print(f'✅ Email update complete for user {user_id}')
+        return JsonResponse({
+            'success': True, 
+            'message': 'Email updated! Please check your new email inbox for a confirmation link if required.'
+        })
+        
+    except Exception as e:
+        print(f'❌ Email update exception: {type(e).__name__}: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'errors': {'general': [{'message': str(e)}]}}, status=400)
+
+
+
+@require_POST
+def update_password(request):
+    """Update password"""
+    user_id = request.session.get('supabase_user_id')
+    if not user_id:
+        return JsonResponse({'errors': {'general': [{'message': 'Not authenticated'}]}}, status=401)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except:
+        payload = {}
+
+    current_password = payload.get('current_password') or request.POST.get('current_password')
+    new_password = payload.get('new_password') or request.POST.get('new_password')
+
+    if not current_password:
+        return JsonResponse({'errors': {'current_password': [{'message': 'Current password required'}]}}, status=400)
+    
+    if not new_password or len(new_password) < 8:
+        return JsonResponse({'errors': {'new_password': [{'message': 'Min 8 characters'}]}}, status=400)
+
+    current_email = request.session.get('user_email')
+    
+    if not current_email:
+        try:
+            user_data = supabase.table('user').select('email').eq('id', user_id).execute()
+            if user_data.data and len(user_data.data) > 0:
+                current_email = user_data.data[0].get('email')
+        except:
+            pass
+    
+    if not current_email:
+        return JsonResponse({'errors': {'general': [{'message': 'Unable to determine current email'}]}}, status=400)
+
+    print(f'DEBUG: Attempting sign-in with email: {current_email}')
+
+    try:
+        signin_resp = supabase.auth.sign_in_with_password({'email': current_email, 'password': current_password})
+        user_obj = getattr(signin_resp, 'user', None)
+        session_obj = getattr(signin_resp, 'session', None)
+        
+        if not user_obj or not session_obj:
+            print('DEBUG: Sign-in failed')
+            return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
+        
+        access_token = session_obj.access_token
+        refresh_token = session_obj.refresh_token
+        print('DEBUG: Sign-in successful!')
+        
+    except Exception as e:
+        print(f'Sign-in error: {e}')
+        return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
+
+  
+    try:
+        from supabase import create_client
+        user_supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        user_supabase.auth.set_session(access_token, refresh_token)
+        update_resp = user_supabase.auth.update_user({'password': new_password})
+        
+        if hasattr(update_resp, 'error') and update_resp.error:
+            print(f'Password update error: {update_resp.error}')
+            return JsonResponse({'errors': {'general': [{'message': 'Failed to update password'}]}}, status=400)
+        
+        print(f'✅ Password updated successfully for user {user_id}')
+        return JsonResponse({'success': True, 'message': 'Password updated successfully!'})
+        
+    except Exception as e:
+        print(f'❌ Password update exception: {e}')
+        return JsonResponse({'errors': {'general': [{'message': str(e)}]}}, status=400)
+
+
+#end of change email and password in settings page
+
 
 def admin_dashboard (request):
   return render(request, "admindashboard.html")
