@@ -432,3 +432,48 @@ def update_password(request):
 def admin_dashboard (request):
   return render(request, "admindashboard.html")
 
+@require_POST
+def forgot_password(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        payload = {}
+    email = (payload.get("email") or request.POST.get("email") or "").strip()
+
+    if not email or not EMAIL_REGEX.match(email):
+        return JsonResponse({"errors": {"email": [{"message": "Enter a valid email address"}]}}, status=400)
+
+    redirect_to = getattr(settings, "SUPABASE_RESET_REDIRECT", None) or "http://127.0.0.1:8000/reset-password"
+
+    try:
+        supabase.auth.reset_password_for_email(email, {"redirect_to": redirect_to})
+        return JsonResponse({"success": True, "message": "A reset link has been sent to your email."})
+    except AuthApiError as e:
+        # Show the real error while DEBUG is True; otherwise keep it generic to avoid user enumeration
+        if getattr(settings, "DEBUG", False):
+            detail = None
+            try:
+                data = e.args[0]
+                if isinstance(data, dict) and data.get("msg"):
+                    detail = data["msg"]
+                elif isinstance(data, str):
+                    detail = data
+            except Exception:
+                pass
+            return JsonResponse({"errors": {"supabase": [{"message": detail or "Auth error"}]}}, status=400)
+        return JsonResponse({"success": True, "message": "A reset link has been sent to your email."})
+    except Exception as e:
+        print("Forgot password error:", repr(e))
+        return JsonResponse({"errors": {"general": [{"message": "Something went wrong. Please try again."}]}}, status=400)
+
+
+def reset_password_page(request):
+    return render(
+        request,
+        "login-register/reset_password.html",
+        {
+            "SUPABASE_URL": settings.SUPABASE_URL,
+            "SUPABASE_ANON_KEY": settings.SUPABASE_ANON_KEY,
+            "LOGIN_URL": "/login/", 
+        }, 
+    )

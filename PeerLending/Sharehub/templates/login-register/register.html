@@ -6,6 +6,8 @@
   <title>PeerLending Signup</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 </head>
 <body>
 
@@ -46,23 +48,34 @@
           <input type="email" name="email" id="email" placeholder="Enter your email" required>
         </div>
 
-        <!-- password -->
-        <div class="form-group">
-          <label for="password1">
-            <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-            Password
-          </label>
-          <input type="password" name="password1" id="password1" placeholder="Enter your password" required>
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password1">
+          <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+          Password
+        </label>
+        <div class="password-wrap">
+          <input type="password" name="password1" id="password1" placeholder="Enter your password">
+          <button type="button" class="password-toggle" data-target="password1" aria-label="Show password" title="Show password">
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
         </div>
+      </div>
 
-        <!-- confirm password -->
-        <div class="form-group">
-          <label for="password2">
-            <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-            Confirm Password
-          </label>
-          <input type="password" name="password2" id="confirm_password" placeholder="Confirm your password" required>
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="password2">
+          <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+          Confirm Password
+        </label>
+        <div class="password-wrap">
+          <input type="password" name="password2" id="confirm_password" placeholder="Confirm password">
+          <button type="button" class="password-toggle" data-target="confirm_password" aria-label="Show password" title="Show password">
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
         </div>
+      </div>
+
 
         <div class="form-header">
           <h4>Personal Information</h4>
