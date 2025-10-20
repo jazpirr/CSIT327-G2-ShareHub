@@ -6,6 +6,7 @@
   <title>User Profile</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+  <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
 </head>
 <body>
 <header class="navbar">
@@ -120,6 +121,87 @@
   </div>
 </header>
 
+<!-- Add Item Modal -->
+<div class="modal-overlay" id="addItemModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add New Item</h2>
+      <p>Share your academic items with fellow students</p>
+    </div>
+    
+    <form id="addItemForm" class="modal-body">
+      <div class="form-group">
+        <label>Item Image</label>
+        <div class="upload-area" id="uploadArea">
+          <div class="upload-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17,8 12,3 7,8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="upload-text">Click to upload image</div>
+          <div class="upload-subtext">PNG, JPG up to 10MB</div>
+          <input type="file" id="itemImage" accept="image/png, image/jpeg" style="display: none;">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="itemName">Item Name <span class="required">*</span></label>
+        <input type="text" id="itemName" class="form-control" placeholder="e.g., Scientific Calculator" required>
+      </div>
+
+      <div class="form-group">
+        <label for="itemCategory">Category <span class="required">*</span></label>
+        <select id="itemCategory" class="form-control" required>
+          <option value="">Select Category</option>
+          <option value="textbooks">Textbooks</option>
+          <option value="calculators">Calculators</option>
+          <option value="lab-equipment">Lab Equipment</option>
+          <option value="electronics">Electronics</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="itemCondition">Condition <span class="required">*</span></label>
+        <select id="itemCondition" class="form-control" required>
+          <option value="">Select Condition</option>
+          <option value="new">New</option>
+          <option value="like-new">Like New</option>
+          <option value="good">Good</option>
+          <option value="fair">Fair</option>
+          <option value="poor">Poor</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="itemDescription">Description <span class="required">*</span></label>
+        <textarea id="itemDescription" class="form-control" placeholder="Provide details about the item, including any accessories or special notes..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Availability</label>
+        <div class="availability-options">
+          <label class="availability-option">
+            <input type="radio" name="availability" value="available" checked>
+            <span>Available Now</span>
+          </label>
+          <label class="availability-option">
+            <input type="radio" name="availability" value="unavailable">
+            <span>Currently Unavailable</span>
+          </label>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" id="cancelAddItem">Cancel</button>
+      <button type="submit" form="addItemForm" class="btn btn-add">Add Item</button>
+    </div>
+  </div>
+</div>
+
 <main class="profile-page">
   <div class="profile-left">
     <div class="profile-card" style="text-align:center">
@@ -228,5 +310,6 @@
   e.stopPropagation();
   });
 </script>
+<script src="{% static 'js/add-item-modal.js' %}"></script>
 </body>
 </html>
