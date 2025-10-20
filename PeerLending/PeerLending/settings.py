@@ -126,3 +126,8 @@ AUTH_USER_MODEL = "sharehub.CustomUser"
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZ3VpcGlmeGxodmVkdGN2d2dmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTczNDEwMSwiZXhwIjoyMDc1MzEwMTAxfQ.gJayY6b6sbSt6AKvoh9W1DmQ9grVInz0t4c4spvqsD8"
+SUPABASE_ANON_KEY = SUPABASE_KEY  
+
+SUPABASE_RESET_REDIRECT = "http://127.0.0.1:8000/reset-password"  # or your prod URL
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "yourdomain.com"]
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000", "http://localhost:8000", "https://yourdomain.com"]

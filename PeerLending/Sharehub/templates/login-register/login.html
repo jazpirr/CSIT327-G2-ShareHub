@@ -1,87 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PeerLending Login</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
 
-<!-- Popup overlay -->
-<div id="errorOverlay"></div>
+  <!-- Popup overlay + single popup -->
+  <div id="errorOverlay"></div>
+  <div id="errorPopup">
+      <div class="popup-header" id="popupHeader">Error</div>
+      <div class="popup-body" id="popupBody"></div>
+      <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
+  </div>
 
-<div id="errorPopup">
-    <div class="popup-header" id="popupHeader">Error</div>
-    <div class="popup-body" id="popupBody"></div>
-    <button class="close-btn" onclick="closePopup()">&times;</button>
-</div>
-
-<div class="container">
+  <div class="container">
     <div class="left-side">
-        <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image">
+      <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image" />
     </div>
 
     <div class="right-side">
-        <div class="form-wrap login-form">
-            <div class="logo-container">
-                <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo">
-                <h3>Welcome Back</h3>
-                <p>Signin to access ShareHub - CIT-U Peer Lending Library</p>
-            </div>
+      <div class="form-wrap login-form">
+        <div class="logo-container">
+          <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo" />
+          <h3>Welcome Back</h3>
+          <p>Signin to access ShareHub - CIT-U Peer Lending Library</p>
+        </div>
 
-            <form id="loginForm" method="POST" action="{% url 'login' %}">
-                {% csrf_token %}
+        <form id="loginForm" method="POST" action="{% url 'login' %}">
+          {% csrf_token %}
 
-                <label for="id_email">
-                    <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
-                    Email
-                </label>
-                <input type="email" name="email" id="id_email" placeholder="Enter your email @cit.edu">
+          <label for="id_email">
+            <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon" />
+            Email
+          </label>
+          <input type="email" name="email" id="id_email" placeholder="Enter your email @cit.edu" autocomplete="username" />
 
-                <label for="id_password">
-                    <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-                    Password
-                </label>
-                <input type="password" name="password" id="id_password" placeholder="Enter your password">
+          <label for="id_password">
+          <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
+          Password
+        </label>
+        <div class="password-wrap">
+          <input type="password" name="password" id="id_password" placeholder="Enter your password">
+          <button type="button" class="password-toggle" data-target="password" aria-label="Show password" title="Show password">
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
+        </div>
 
-                <div class="btn-row vertical">
-                    <button type="submit" class="submit-btn">Sign In</button>
-                    <a class="alt-btn" href="{% url 'register' %}">Create New Account</a>
-                    <a class="forgot-link" href="#">Forgot your password?</a>
-                </div>
-            </form>
-        </div> 
+          <div class="btn-row vertical">
+            <button type="submit" class="submit-btn">Sign In</button>
+            <a class="alt-btn" href="{% url 'register' %}">Create New Account</a>
+            <a class="forgot-link" href="#">Forgot your password?</a>
+          </div>
+        </form>
+      </div>
     </div>
-</div>
-
-<div id="forgotOverlay"></div>
-
-<div id="errorPopup" class="forgot-popup">
-  <div class="popup-header">Reset Password</div>
-  <div class="popup-body">
-      <p>Enter your email to receive a reset link.</p>
-      <input type="email" id="forgotEmail" placeholder="Enter your email" required>
-      <button id="sendResetBtn" class="submit-btn">Send Reset Link</button>
   </div>
-  <button class="close-btn" id="closeForgot">&times;</button>
-</div>
 
-<script src="{% static 'js/login.js' %}"></script>
-
-{% if errors %}
-  {{ errors|json_script:"loginErrors" }}
+  <!-- Provide Django URL to JS -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const errors = JSON.parse(document.getElementById("loginErrors").textContent);
-        if (window.showServerErrors) {
-            showServerErrors(errors);
-        }
-    });
+    window.FORGOT_PASSWORD_URL = "{% url 'forgot_password' %}";
   </script>
-{% endif %}
+  <script src="{% static 'js/login.js' %}?v=3"></script>
 
+  {% if errors %}
+    {{ errors|json_script:"loginErrors" }}
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const errors = JSON.parse(document.getElementById("loginErrors").textContent);
+        if (window.showServerErrors) showServerErrors(errors);
+      });
+    </script>
+  {% endif %}
 
 
 </body>
