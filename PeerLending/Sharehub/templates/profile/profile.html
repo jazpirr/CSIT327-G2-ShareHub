@@ -106,7 +106,7 @@
           </div>
         </div>
 
-      <form method="post" action="{% url 'logout' %}" style="display:inline;">
+      <form method="post" action="{% url 'logout' %}" id="logoutForm" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="logout-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -311,5 +311,6 @@
   });
 </script>
 <script src="{% static 'js/add-item-modal.js' %}"></script>
+<script src="{% static 'js/confirmation_logout.js' %}"></script>
 </body>
 </html>
