@@ -9,6 +9,13 @@
   <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
 </head>
 <body>
+
+  <!-- Action popup (shared with login style) -->
+  <div id="actionPopup" class="popup" role="dialog" aria-modal="true" style="display:none;">
+    <div class="popup-header" id="actionPopupHeader">Message</div>
+    <div class="popup-body" id="actionPopupBody"></div>
+    <button class="close-btn" id="actionPopupClose" aria-label="Close popup">&times;</button>
+  </div>
   <!-- Top Navigation -->
   <header class="navbar">
     <div class="nav-container">
@@ -115,7 +122,7 @@
           </svg>
           Logout
         </button>
-        </a>
+        </form>
       </div>
     </div>
   </header>
@@ -129,6 +136,7 @@
       </div>
       
       <form id="addItemForm" class="modal-body">
+        {% csrf_token %}
         <div class="form-group">
           <label>Item Image</label>
           <div class="upload-area" id="uploadArea">
@@ -141,7 +149,7 @@
             </div>
             <div class="upload-text">Click to upload image</div>
             <div class="upload-subtext">PNG, JPG up to 10MB</div>
-            <input type="file" id="itemImage" accept="image/png, image/jpeg" style="display: none;">
+            <input type="file" id="itemImage" name="image" accept="image/png, image/jpeg" style="display: none;">
           </div>
         </div>
 
@@ -179,19 +187,6 @@
           <textarea id="itemDescription" class="form-control" placeholder="Provide details about the item, including any accessories or special notes..." required></textarea>
         </div>
 
-        <div class="form-group">
-          <label>Availability</label>
-          <div class="availability-options">
-            <label class="availability-option">
-              <input type="radio" name="availability" value="available" checked>
-              <span>Available Now</span>
-            </label>
-            <label class="availability-option">
-              <input type="radio" name="availability" value="unavailable">
-              <span>Currently Unavailable</span>
-            </label>
-          </div>
-        </div>
       </form>
 
       <div class="modal-footer">
@@ -326,144 +321,49 @@
         <div class="placeholder"></div>
       </div>
  
-      <div class="card">
-        <h3>Available Items</h3>
-        <div class="available-items">
-          <div class="item-box">
-            <div class="placeholder small"></div>
-            <button>Request to Borrow</button>
+  <div class="card">
+    <h3>Available Items</h3>
+
+    <div class="available-items">
+      {% if available_items %}
+        {% for item in available_items %}
+          <div class="item-box" data-item-id="{{ item.item_id }}">
+            <div class="item-thumb">
+              {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.title|default:'Item image' }}">
+              {% else %}
+                <div class="placeholder small" style="height:120px;border-radius:6px;"></div>
+              {% endif %}
+            </div>
+
+            <div class="item-meta" style="margin-top:8px;">
+              <div class="item-title" style="font-weight:700;">{{ item.title }}</div>
+              <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category }}</div>
+            </div>
+
+            <form method="post" action="" style="margin-top:auto;">
+              {% csrf_token %}
+              <input type="hidden" name="item_id" value="{{ item.item_id }}">
+              <button type="submit" class="request-btn">Request to Borrow</button>
+            </form>
           </div>
-          <div class="item-box">
-            <div class="placeholder small"></div>
-            <button>Request to Borrow</button>
-          </div>
-          <div class="item-box">
-            <div class="placeholder small"></div>
-            <button>Request to Borrow</button>
-          </div>
-          <div class="item-box">
-            <div class="placeholder small"></div>
-            <button>Request to Borrow</button>
-          </div>
-        </div>
-      </div>
+        {% endfor %}
+      {% else %}
+        <div class="no-items">No available items right now.</div>
+      {% endif %}
+    </div>
+
+    <!-- optional: load more button -->
+    <div id="loadMoreWrap" style="text-align:center;margin-top:12px;">
+      <!-- hide or remove if not used -->
+      <!-- <button id="loadMoreBtn" class="btn">Load more</button> -->
+    </div>
+  </div>
+
     </section>
   </main>
  
-  <script>
-    // Notification popup functionality
-    const notificationBtn = document.querySelector('.notification-btn');
-    const notificationPopup = document.getElementById('notificationPopup');
-    const notificationOverlay = document.getElementById('notificationOverlay');
-    const closePopup = document.getElementById('closePopup');
- 
-    // Toggle popup
-    notificationBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      notificationPopup.classList.toggle('active');
-      notificationOverlay.classList.toggle('active');
-      // Close filter popup if open
-      filterPopup.classList.remove('active');
-    });
- 
-    // Close popup when clicking close button
-    closePopup.addEventListener('click', () => {
-      notificationPopup.classList.remove('active');
-      notificationOverlay.classList.remove('active');
-    });
- 
-    // Close popup when clicking overlay
-    notificationOverlay.addEventListener('click', () => {
-      notificationPopup.classList.remove('active');
-      notificationOverlay.classList.remove('active');
-    });
- 
-    // Prevent popup from closing when clicking inside it
-    notificationPopup.addEventListener('click', (e) => {
-      e.stopPropagation();
-    });
-
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    const searchClear = document.getElementById('searchClear');
-
-    searchInput.addEventListener('input', (e) => {
-      if (e.target.value.length > 0) {
-        searchClear.style.display = 'flex';
-      } else {
-        searchClear.style.display = 'none';
-      }
-    });
-
-    searchClear.addEventListener('click', () => {
-      searchInput.value = '';
-      searchClear.style.display = 'none';
-      searchInput.focus();
-    });
-
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        console.log('Searching for:', searchInput.value);
-      }
-    });
-
-    // Filter popup functionality
-    const filterBtn = document.querySelector('.search-filter-btn');
-    const filterPopup = document.getElementById('filterPopup');
-    const filterClose = document.getElementById('filterClose');
-    const filterClearBtn = document.getElementById('filterClearBtn');
-    const filterApplyBtn = document.getElementById('filterApplyBtn');
-
-    // Toggle filter popup
-    filterBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      filterPopup.classList.toggle('active');
-      // Close notification popup if open
-      notificationPopup.classList.remove('active');
-      notificationOverlay.classList.remove('active');
-    });
-
-    // Close filter popup
-    filterClose.addEventListener('click', () => {
-      filterPopup.classList.remove('active');
-    });
-
-    // Clear all filters
-    filterClearBtn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-option input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
-      });
-    });
-
-    // Apply filters
-    filterApplyBtn.addEventListener('click', () => {
-      const selectedFilters = {
-        categories: [],
-        availability: [],
-        condition: []
-      };
-      
-      document.querySelectorAll('.filter-option input[type="checkbox"]:checked').forEach(checkbox => {
-        if (checkbox.id.startsWith('cat-')) {
-          selectedFilters.categories.push(checkbox.value);
-        } else if (checkbox.id.startsWith('avail-')) {
-          selectedFilters.availability.push(checkbox.value);
-        } else if (checkbox.id.startsWith('cond-')) {
-          selectedFilters.condition.push(checkbox.value);
-        }
-      });
-      
-      console.log('Applied filters:', selectedFilters);
-      filterPopup.classList.remove('active');
-    });
-
-    // Close filter popup when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!filterPopup.contains(e.target) && !filterBtn.contains(e.target)) {
-        filterPopup.classList.remove('active');
-      }
-    });
-  </script>
+  <script src="{% static 'js/home-search.js' %}"></script>
   <script src="{% static 'js/add-item-modal.js' %}"></script>
   <script src="{% static 'js/confirmation_logout.js' %}"></script>
 </body>

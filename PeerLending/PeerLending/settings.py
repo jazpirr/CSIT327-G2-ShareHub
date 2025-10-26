@@ -83,7 +83,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),  # fallback to SQLite if DATABASE_URL is not found
-        conn_max_age=600,  # Persistent connections
+        conn_max_age=600, 
         ssl_require=True    # Enforce SSL for secure connection
     )
 }
@@ -127,6 +127,7 @@ AUTH_USER_MODEL = "sharehub.CustomUser"
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZ3VpcGlmeGxodmVkdGN2d2dmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTczNDEwMSwiZXhwIjoyMDc1MzEwMTAxfQ.gJayY6b6sbSt6AKvoh9W1DmQ9grVInz0t4c4spvqsD8"
 SUPABASE_ANON_KEY = SUPABASE_KEY  
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
 SUPABASE_RESET_REDIRECT = "http://127.0.0.1:8000/reset-password"  # or your prod URL
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "yourdomain.com"]
