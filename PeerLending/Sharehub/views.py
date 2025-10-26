@@ -15,12 +15,15 @@ import uuid
 import json
 import re
 from django.views.decorators.http import require_POST
+from supabase import create_client as create_supabase_client
  
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
+SUPABASE_SERVICE_ROLE_KEY = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
+
  
  
 @never_cache
@@ -157,10 +160,47 @@ def logout_view(request):
  
 @supabase_login_required
 def home(request):
+    import logging
+    logger = logging.getLogger(__name__)
+
     user_id = request.session.get("supabase_user_id")
+
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp.data else None
-    return render(request, "home.html", {"user_info": user_info})
+
+    available_items = []
+    try:
+        items_resp = supabase.table("item") \
+            .select("*") \
+            .eq("available", True) \
+            .neq("user_id", user_id) \
+            .execute()
+
+        logger.info("Supabase items_resp: %s", getattr(items_resp, "__dict__", str(items_resp)))
+        if getattr(items_resp, "error", None):
+            logger.error("Supabase error: %s", items_resp.error)
+        else:
+            available_items = items_resp.data or []
+            logger.info("Found %d available items (excluding current user)", len(available_items))
+
+        if not available_items:
+            logger.info("No items after excluding current user. Trying without excluding user...")
+            test_resp = supabase.table("item").select("*").eq("available", True).execute()
+            logger.info("Supabase test_resp: %s", getattr(test_resp, "__dict__", str(test_resp)))
+            if getattr(test_resp, "error", None):
+                logger.error("Supabase test query error: %s", test_resp.error)
+            else:
+                logger.info("Found %d available items (including all users)", len(test_resp.data or []))
+
+    except Exception as e:
+        logger.exception("Exception fetching available items: %s", e)
+
+    return render(request, "home.html", {
+        "user_info": user_info,
+        "available_items": available_items,
+    })
+
+
  
  
 @supabase_login_required
@@ -477,3 +517,86 @@ def reset_password_page(request):
             "LOGIN_URL": "/login/", 
         }, 
     )
+
+@require_POST
+@supabase_login_required
+def add_item(request):
+    import logging
+    logger = logging.getLogger(__name__)
+
+    logger.info("🟢 [add_item] hit")
+    user_id = request.session.get("supabase_user_id")
+    logger.info("   session user_id: %s", user_id)
+    if not user_id:
+        return JsonResponse({"errors": {"general": [{"message": "Not authenticated"}]}}, status=401)
+
+    title = (request.POST.get("itemName") or request.POST.get("title") or "").strip()
+    category = (request.POST.get("category") or request.POST.get("itemCategory") or "").strip()
+    condition = (request.POST.get("condition") or request.POST.get("itemCondition") or "").strip()
+    description = (request.POST.get("description") or request.POST.get("itemDescription") or "").strip()
+
+    availability_raw = (request.POST.get("availability") or request.POST.get("available") or "available").strip().lower()
+
+    if not title or not category or not condition or not description:
+        return JsonResponse({"errors": {"general": [{"message": "Please fill in all required fields"}]}}, status=400)
+
+    availability_bool = availability_raw in ("available", "true", "1", "on", "yes")
+
+    file = request.FILES.get("image") or request.FILES.get("itemImage")
+    image_url = None
+
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        logger.error("Missing SUPABASE_SERVICE_ROLE_KEY")
+        return JsonResponse({"errors": {"general": [{"message": "Server misconfigured: missing service role key"}]}}, status=500)
+
+    admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    try:
+        if file:
+            ext = os.path.splitext(file.name)[1] or ".bin"
+            filename = f"{user_id}/{uuid.uuid4()}{ext}"
+            file_bytes = file.read()
+
+            upload_res = admin_client.storage.from_("item-images").upload(filename, file_bytes)
+            if getattr(upload_res, "error", None):
+                err = upload_res.error
+                msg = getattr(err, "message", str(err))
+                logger.error("Upload error: %s", msg)
+                return JsonResponse({"errors": {"image": [{"message": f"Failed to upload image: {msg}"}]}}, status=500)
+
+            public = admin_client.storage.from_("item-images").get_public_url(filename)
+            image_url = (public.get("publicUrl") if isinstance(public, dict) and public.get("publicUrl") else
+                         getattr(public, "public_url", None) or getattr(public, "publicUrl", None) or (public if isinstance(public, str) else None))
+            logger.info("   image_url=%s", image_url)
+    except Exception as e:
+        logger.exception("Image upload exception")
+        return JsonResponse({"errors": {"image": [{"message": f"Image upload error: {str(e)}"}]}}, status=500)
+
+    try:
+        item_id = str(uuid.uuid4())
+        payload = {
+            "item_id": item_id,
+            "title": title,
+            "description": description,
+            "category": category,
+            "user_id": user_id,
+            "condition": condition,
+            "available": availability_bool,
+            "image_url": image_url,
+        }
+
+        logger.debug("INSERT payload: %s", payload)
+        insert_res = admin_client.table("item").insert(payload).execute()
+
+        if getattr(insert_res, "error", None):
+            err = insert_res.error
+            msg = getattr(err, "message", str(err))
+            logger.error("Insert error: %s", msg)
+            return JsonResponse({"errors": {"general": [{"message": f"Failed to create item: {msg}"}]}}, status=500)
+
+        logger.info("✅ [add_item] success item_id=%s", item_id)
+        return JsonResponse({"success": True, "item_id": item_id})
+    except Exception as e:
+        logger.exception("Insert exception")
+        return JsonResponse({"errors": {"general": [{"message": str(e)}]}}, status=500)
+
