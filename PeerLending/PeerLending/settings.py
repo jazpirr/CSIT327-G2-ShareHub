@@ -25,12 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-1^1%2747cylhs+#jzi)q(0qo=cr!xh(!$i9^32mfhtu4ym-@%8'
+load_dotenv(os.path.join(BASE_DIR, '.env'))
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')]
 
 
 # Application definition
@@ -78,13 +79,11 @@ WSGI_APPLICATION = 'PeerLending.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-load_dotenv(os.path.join(BASE_DIR, '.env'))
-
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),  # fallback to SQLite if DATABASE_URL is not found
         conn_max_age=600, 
-        ssl_require=True    # Enforce SSL for secure connection
+        ssl_require=os.getenv('DB_SSL_REQUIRE', 'True').lower() in ('true', '1', 'yes')  # Enforce SSL for secure connection
     )
 }
 
@@ -111,6 +110,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -124,11 +125,13 @@ AUTHENTICATION_BACKENDS = ['sharehub.backends.EmailBackend']
 
 AUTH_USER_MODEL = "sharehub.CustomUser"
 
+# Supabase Configuration
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVtZ3VpcGlmeGxodmVkdGN2d2dmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTczNDEwMSwiZXhwIjoyMDc1MzEwMTAxfQ.gJayY6b6sbSt6AKvoh9W1DmQ9grVInz0t4c4spvqsD8"
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_ANON_KEY = SUPABASE_KEY  
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-SUPABASE_RESET_REDIRECT = "http://127.0.0.1:8000/reset-password"  # or your prod URL
+SUPABASE_RESET_REDIRECT = os.getenv("SUPABASE_RESET_REDIRECT", "http://127.0.0.1:8081/reset-password")  # or your prod URL
+
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "yourdomain.com"]
 CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000", "http://localhost:8000", "https://yourdomain.com"]
