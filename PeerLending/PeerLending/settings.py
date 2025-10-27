@@ -135,6 +135,8 @@ AUTHENTICATION_BACKENDS = ['sharehub.backends.EmailBackend']
 
 AUTH_USER_MODEL = "sharehub.CustomUser"
  
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "yourdomain.com"]
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:8000", "http://localhost:8000", "https://yourdomain.com"]
 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
