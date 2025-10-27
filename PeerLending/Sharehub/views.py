@@ -3,38 +3,26 @@ from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_POST
-
+ 
 from supabase import create_client, Client
 from supabase_auth._sync.gotrue_client import AuthApiError
-
+ 
 from .forms import CustomUserCreationForm
 from .utils import supabase_login_required
-
+ 
 import os
 import uuid
 import json
 import re
-import logging
-
-logger = logging.getLogger(__name__)
-
-# Regex for email validation
-EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
-
-# Load Supabase config from Django settings
-SUPABASE_URL = getattr(settings, "SUPABASE_URL", None)
-SUPABASE_KEY = getattr(settings, "SUPABASE_KEY", None)                # anon/public key
-SUPABASE_SERVICE_ROLE_KEY = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None)  # server-only
-
-# Create supabase client (anon/public) — fail with clear error if missing
-if not SUPABASE_URL or not SUPABASE_KEY:
-    # Do NOT expose secrets in this message — raise an informative error so developer fixes .env
-    raise RuntimeError("Supabase configuration missing: set SUPABASE_URL and SUPABASE_KEY in your .env (and restart).")
-
-# regular client (uses anon/public key)
+from django.views.decorators.http import require_POST
+from supabase import create_client as create_supabase_client
+ 
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_KEY = settings.SUPABASE_KEY
+SUPABASE_SERVICE_ROLE_KEY = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
  
  
