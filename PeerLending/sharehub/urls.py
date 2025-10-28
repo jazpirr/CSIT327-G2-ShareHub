@@ -17,6 +17,6 @@ urlpatterns = [
     path("forgot-password", views.forgot_password, name="forgot_password"),
     path("reset-password", views.reset_password_page, name="reset_password_page"),
     path("add-item/", views.add_item, name="add_item"),
-
+    path("borrow_items/", views.borrow_items, name="borrow_items"),
 ]
  

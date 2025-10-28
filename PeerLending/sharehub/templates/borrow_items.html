@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse & Borrow Items - ShareHub</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/borrow_items.css' %}">
+</head>
+ 
+<body>
+   
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#7B1E1E" />
+                        <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span>ShareHub - CIT-U</span>
+                </div>
+            </div>
+ 
+            <nav class="nav-center">
+                <a href="{% url 'home' %}" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor"
+                            stroke-width="2" />
+                    </svg>
+                    Home
+                </a>
+                <a href="{% url 'profile' %}" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2" />
+                        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Profile
+                </a>
+                <a href="{% url 'borrow_items' %}" class="nav-link active">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                            stroke="currentColor" stroke-width="2" />
+                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Borrow Items
+                </a>
+                <a href="" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor"
+                            stroke-width="2" />
+                        <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2" />
+                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2" />
+                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Return Items
+                </a>
+                <a href="{% url 'settings' %}" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                        <path
+                            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                            stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Settings
+                </a>
+            </nav>
+ 
+            <div class="nav-right">
+                <button class="add-item-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2" />
+                        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2" />
+                    </svg>
+                    Add Item
+                </button>
+                <div style="position: relative;">
+                    <button class="notification-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor"
+                                stroke-width="2" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                        <span class="notification-badge">1</span>
+                    </button>
+                </div>
+                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2" />
+                            <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2" />
+                            <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" />
+                        </svg>
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+ 
+    <!-- Main Content -->
+    <main class="borrow-container">
+        <div class="borrow-header">
+            <h1>Browse & Borrow Items</h1>
+            <p>Discover and request academic items from your peers</p>
+        </div>
+ 
+        <div class="search-section">
+            <div class="search-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input type="text" placeholder="Search items or owners...">
+            </div>
+        </div>
+ 
+        <div class="content-layout">
+            <!-- Left Column - Available Items -->
+            <div class="items-column">
+                <div class="section-header">
+                    <h2>Available Items (7)</h2>
+                </div>
+ 
+                <!-- Updated Item Cards to match second image -->
+                <div class="item-card" data-item-id="1">
+                    <div class="item-header">
+                        <h3>Scientific Calculator</h3>
+                    </div>
+                    <div class="item-details">
+                        <p><strong>Owner:</strong> John Doe</p>
+                        <p><strong>Condition:</strong> Excellent</p>
+                        <p class="item-description">Casio FX-991EX scientific calculator, perfect for engineering
+                            students</p>
+                    </div>
+                    <button class="request-btn" data-item="Scientific Calculator" data-owner="John Doe">Request to
+                        Borrow</button>
+                </div>
+ 
+                <div class="item-card" data-item-id="2">
+                    <div class="item-header">
+                        <h3>Organic Chemistry Textbook</h3>
+                    </div>
+                    <div class="item-details">
+                        <p><strong>Owner:</strong> Jane Smith</p>
+                        <p><strong>Condition:</strong> Good</p>
+                        <p class="item-description">McMurry Organic Chemistry 9th Edition, includes practice problems
+                        </p>
+                    </div>
+                    <button class="request-btn" data-item="Organic Chemistry Textbook" data-owner="Jane Smith">Request
+                        to Borrow</button>
+                </div>
+ 
+                <div class="item-card" data-item-id="3">
+                    <div class="item-header">
+                        <h3>Arduino Starter Kit</h3>
+                    </div>
+                    <div class="item-details">
+                        <p><strong>Owner:</strong> Mike Johnson</p>
+                        <p><strong>Condition:</strong> Excellent</p>
+                        <p class="item-description">Complete Arduino Uno starter kit with sensors and components</p>
+                    </div>
+                    <button class="request-btn" data-item="Arduino Starter Kit" data-owner="Mike Johnson">Request to
+                        Borrow</button>
+                </div>
+ 
+                <div class="item-card" data-item-id="4">
+                    <div class="item-header">
+                        <h3>Biology Lab Manual</h3>
+                    </div>
+                    <div class="item-details">
+                        <p><strong>Owner:</strong> Sarah Williams</p>
+                        <p><strong>Condition:</strong> Very Good</p>
+                        <p class="item-description">General Biology Lab Manual, latest edition with illustrations</p>
+                    </div>
+                    <button class="request-btn" data-item="Biology Lab Manual" data-owner="Sarah Williams">Request to
+                        Borrow</button>
+                </div>
+            </div>
+ 
+            <!-- Right Column - My Requests -->
+            <div class="requests-column">
+                <div class="section-header">
+                    <h2>My Requests</h2>
+                </div>
+ 
+                <div class="request-list">
+                    <div class="request-item pending">
+                        <div class="request-header">
+                            <h4>Scientific Calculator</h4>
+                            <span class="request-status pending">Pending</span>
+                        </div>
+                        <div class="request-details">
+                            <p><strong>To:</strong> John Doe</p>
+                            <p><strong>Date:</strong> Jan 15, 2024</p>
+                        </div>
+                    </div>
+ 
+                    <div class="request-item approved">
+                        <div class="request-header">
+                            <h4>Lab Equipment Kit</h4>
+                            <span class="request-status approved">Approved</span>
+                        </div>
+                        <div class="request-details">
+                            <p><strong>To:</strong> Mike Johnson</p>
+                            <p><strong>Date:</strong> Jan 14, 2024</p>
+                        </div>
+                    </div>
+ 
+                    <div class="request-item rejected">
+                        <div class="request-header">
+                            <h4>Physics Textbook</h4>
+                            <span class="request-status rejected">Rejected</span>
+                        </div>
+                        <div class="request-details">
+                            <p><strong>To:</strong> Sarah Williams</p>
+                            <p><strong>Date:</strong> Jan 12, 2024</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+ 
+    <!-- Borrow Request Modal -->
+    <div class="modal-overlay" id="borrowModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Request to Borrow</h2>
+                <p>Send a borrow request to the item owner</p>
+            </div>
+ 
+            <form id="borrowForm" class="modal-body">
+                <div class="form-group">
+                    <label>Item</label>
+                    <div class="form-display" id="modalItemName">Scientific Calculator</div>
+                </div>
+ 
+                <div class="form-group">
+                    <label>Owner</label>
+                    <div class="form-display" id="modalOwnerName">John Doe</div>
+                </div>
+ 
+                <div class="form-group">
+                    <label for="borrowDuration">Borrow Duration <span class="required">*</span></label>
+                    <select id="borrowDuration" class="form-control" required>
+                        <option value="">Select duration</option>
+                        <option value="3">3 days</option>
+                        <option value="7" selected>7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30">30 days</option>
+                    </select>
+                </div>
+ 
+                <div class="form-note">
+                    <p>The owner will be notified of your request and can approve or decline it.</p>
+                </div>
+            </form>
+ 
+            <div class="modal-footer">
+                <button type="button" class="btn btn-cancel" id="cancelBorrow">Cancel</button>
+                <button type="submit" form="borrowForm" class="btn btn-request">Send Request</button>
+            </div>
+        </div>
+    </div>
+ 
+    <script src="{% static 'js/borrow_items.js' %}"></script>
+</body>
+ 
+</html>
