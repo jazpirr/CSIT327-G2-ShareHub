@@ -35,8 +35,6 @@ CSRF_TRUSTED_ORIGINS = os.environ.get(
     "http://127.0.0.1:8000,http://localhost:8000"
 ).split(",")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
