@@ -600,3 +600,5 @@ def add_item(request):
         logger.exception("Insert exception")
         return JsonResponse({"errors": {"general": [{"message": str(e)}]}}, status=500)
 
+def borrow_items(request):
+  return render(request, "borrow_items.html")
