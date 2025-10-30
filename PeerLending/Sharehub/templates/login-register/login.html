@@ -15,7 +15,7 @@
 
   <!-- Popup overlay + single popup -->
   <div id="errorOverlay"></div>
-  <div id="errorPopup">
+  <div id="errorPopup">  
       <div class="popup-header" id="popupHeader">Error</div>
       <div class="popup-body" id="popupBody"></div>
       <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
@@ -23,7 +23,7 @@
 
   <div class="container">
     <div class="left-side"> 
-      <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image" />
+      <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image" /> 
     </div>
   
     <div class="right-side">
@@ -64,61 +64,37 @@
     </div>
   </div>
 
-  <!-- Provide Django URL to JS -->
-  <script>
-    window.FORGOT_PASSWORD_URL = "{% url 'forgot_password' %}";
-  </script>
-  <script src="{% static 'js/login.js' %}?v=3"></script>
+  <!-- Logout Success Popup -->
+<div id="successOverlay" class="overlay"></div>
 
-  {% if errors %}
-    {{ errors|json_script:"loginErrors" }}
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const errors = JSON.parse(document.getElementById("loginErrors").textContent);
-        if (window.showServerErrors) showServerErrors(errors);
-      });
-    </script>
-  {% endif %}
-
-<!-- Logout Success Popup -->
- 
-<div id="successOverlay" class="overlay" style="display:none;"></div>
-
-<div id="successPopup" class="popup" style="display:none;">
-    <div class="popup-header" style="background: rgb(112, 11, 11);">Notification</div>
-    <div class="popup-body">You have successfully logged out!</div>
-    <button class="ok-btn" onclick="closeSuccessPopup()">OK</button>
+<div id="successPopup" class="popup">
+  <div class="popup-header">Notification</div>
+  <div class="popup-body">
+    <p>You have successfully Logout.</p>
+  </div>
+  <button class="ok-btn" onclick="closeSuccessPopup()">Okay</button>
 </div>
 
-<script>  
+<script>
 function showSuccessPopup() {
-    document.getElementById("successOverlay").style.display = "block";
-    document.getElementById("successPopup").style.display = "flex";
+  document.getElementById("successOverlay").style.display = "block";
+  document.getElementById("successPopup").style.display = "flex";
 }
 
 function closeSuccessPopup() {
-    document.getElementById("successOverlay").style.display = "none";
-    document.getElementById("successPopup").style.display = "none";
+  document.getElementById("successOverlay").style.display = "none";
+  document.getElementById("successPopup").style.display = "none";
 }
-</script>
 
-<script>
 document.addEventListener("DOMContentLoaded", () => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("next") === "/logout/") {
-        alert("✅ You have successfully logged out!");  
-    } 
-});
-</script> 
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("logout_success") === "1") {
-        showSuccessPopup();  // ✅ Call your existing popup function
-    }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("logout_success") === "1") {
+    showSuccessPopup();
+  }  
 });
 </script>
+
+
   
 
 </body>
