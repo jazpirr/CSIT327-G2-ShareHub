@@ -1,3 +1,4 @@
+ <!-- login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,9 +7,11 @@
     <title>PeerLending Login</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1" />
+    <link rel="stylesheet" href="{% static 'css/logoutdisplay.css' %}?v=1" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
+
 
   <!-- Popup overlay + single popup -->
   <div id="errorOverlay"></div>
@@ -19,10 +22,10 @@
   </div>
 
   <div class="container">
-    <div class="left-side">
+    <div class="left-side"> 
       <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image" />
     </div>
-
+  
     <div class="right-side">
       <div class="form-wrap login-form">
         <div class="logo-container">
@@ -77,6 +80,46 @@
     </script>
   {% endif %}
 
+<!-- Logout Success Popup -->
+ 
+<div id="successOverlay" class="overlay" style="display:none;"></div>
+
+<div id="successPopup" class="popup" style="display:none;">
+    <div class="popup-header" style="background: rgb(112, 11, 11);">Notification</div>
+    <div class="popup-body">You have successfully logged out!</div>
+    <button class="ok-btn" onclick="closeSuccessPopup()">OK</button>
+</div>
+
+<script>  
+function showSuccessPopup() {
+    document.getElementById("successOverlay").style.display = "block";
+    document.getElementById("successPopup").style.display = "flex";
+}
+
+function closeSuccessPopup() {
+    document.getElementById("successOverlay").style.display = "none";
+    document.getElementById("successPopup").style.display = "none";
+}
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("next") === "/logout/") {
+        alert("✅ You have successfully logged out!");  
+    } 
+});
+</script> 
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("logout_success") === "1") {
+        showSuccessPopup();  // ✅ Call your existing popup function
+    }
+});
+</script>
+  
 
 </body>
 </html>

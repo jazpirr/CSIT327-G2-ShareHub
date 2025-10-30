@@ -1,3 +1,4 @@
+# urls.py
 from django.urls import path
 from django.shortcuts import redirect
 from . import views
@@ -17,6 +18,9 @@ urlpatterns = [
     path("forgot-password", views.forgot_password, name="forgot_password"),
     path("reset-password", views.reset_password_page, name="reset_password_page"),
     path("add-item/", views.add_item, name="add_item"),
+  
+
+
 
 ]
- 
+  

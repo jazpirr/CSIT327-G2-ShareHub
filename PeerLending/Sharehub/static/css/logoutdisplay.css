@@ -1,0 +1,68 @@
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Notification Popup Box */
+.notif-box {
+  width: 420px;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  text-align: center;
+  box-shadow: 0px 4px 25px rgba(0,0,0,0.25);
+  z-index: 1000;
+  animation: fadeIn .3s ease-out;
+}
+
+/* Header Area */
+.notif-header {
+  background: #d93030;
+  color: white;
+  font-size: 1.4rem;
+  font-weight: bold;
+  padding: 14px;
+}
+
+/* Body Area */
+.notif-body {
+  padding: 22px;
+  font-size: 1.1rem;
+  color: #444;
+}
+
+/* Button */
+.notif-btn {
+  background: #d93030;
+  color: white;
+  border: none;
+  width: 100%;  
+  padding: 12px 0;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: 0.2s;
+}
+
+.notif-btn:hover {
+  background: #b22525;  
+}
+ 
+/* Fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

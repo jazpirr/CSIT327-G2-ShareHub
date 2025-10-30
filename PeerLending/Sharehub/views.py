@@ -1,5 +1,7 @@
+# views.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth import logout
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
@@ -143,14 +145,18 @@ def login_view(request):
 # ---------- Logout ----------
 @never_cache
 def logout_view(request):
-    # Clear the session
-    request.session.flush()
- 
+    logout(request)
+    return redirect('/login/?logout_success=1')
+
+def custom_logout(request):
+    logout(request)
+    return redirect('/login?logout_success=1')
+    
     try:
         supabase.auth.sign_out()
-    except Exception:
-        pass
- 
+    except Exception: 
+        pass 
+  
     resp = redirect("login")
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp["Pragma"] = "no-cache"
