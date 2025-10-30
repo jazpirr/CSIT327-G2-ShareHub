@@ -49,17 +49,17 @@
   line-height: 1.5;
 }
 
-/* Okay Button */
+/* Okay Buttonn */
 .ok-btn {
-  background-color: #8B0000;
+  background-color: #990202;
   color: white;
   border: none;
   padding: 12px 45px;
   border-radius: 8px;
-  cursor: pointer;
+  cursor: pointer; 
   font-size: 18px;
   font-weight: 700;
-  margin-bottom: 25px;
+  margin-bottom: 25px; 
   transition: all 0.3s ease;
 }
 
