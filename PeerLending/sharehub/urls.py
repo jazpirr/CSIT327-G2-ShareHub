@@ -18,5 +18,8 @@ urlpatterns = [
     path("reset-password", views.reset_password_page, name="reset_password_page"),
     path("add-item/", views.add_item, name="add_item"),
     path("borrow_items/", views.borrow_items, name="borrow_items"),
+    path("request-borrow/", views.create_request, name="request_borrow"),
+    path('api/request/respond/', views.respond_request, name='api_respond_request'),
+    path('return-items/', views.return_items, name='return_items'),
 ]
  
