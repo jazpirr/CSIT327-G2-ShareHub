@@ -222,7 +222,7 @@
     <main class="main-content">
         <div class="container">
             <div class="page-header">
-                <h1>Settings</h1>
+                <h1>Settings</h1> 
                 <p>Manage your account settings and preferences</p>
             </div>
             
@@ -349,65 +349,141 @@
                     </div>
 
 
-                    <div id="notifications-tab" class="tab-content">
-                        <h2>Notification Preferences</h2>
-                        
-                        <form id="notifications-form" class="settings-form">
-                            <div class="toggle-group">
-                                <div class="toggle-item">
-                                    <div class="toggle-info">
-                                            <h3 id="emailNotificationsLabel">Email Notifications</h3>
-                                            <p>Receive email updates about your borrowed items</p>
-                                        </div>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="emailNotifications" data-field="email_notifications"
-                                                aria-labelledby="emailNotificationsLabel" title="Email Notifications">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                </div>
-                                
-                                <div class="toggle-item">
-                                    <div class="toggle-info">
-                                            <h3 id="dueDateRemindersLabel">Due Date Reminders</h3>
-                                            <p>Get notified 2 days before items are due</p>
-                                        </div>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders"
-                                                aria-labelledby="dueDateRemindersLabel" title="Due Date Reminders">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+ <!-- ✅ Notification Settings -->
+<div id="notifications-tab" class="tab-content">
+  <h2>Notification Preferences</h2>
+  <p>Control how you receive updates and reminders from ShareHub</p>
+
+  <form id="notifications-form" class="settings-form">
+    <div class="toggle-group">
+
+      <!-- Email Notifications -->
+      <div class="toggle-item">
+        
+        <div class="toggle-info">
+          <h3 id="emailNotificationsLabel">Email Notifications</h3>
+          <p>Receive updates about borrowed and shared items via email</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="emailNotifications" data-field="email_notifications"
+                 aria-labelledby="emailNotificationsLabel" title="Email Notifications">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- SMS Notifications -->
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <h3 id="smsNotificationsLabel">SMS Notifications</h3>
+          <p>Receive important alerts via text message</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="smsNotifications" data-field="sms_notifications"
+                 aria-labelledby="smsNotificationsLabel" title="SMS Notifications">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- In-App Notifications -->
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <h3 id="inAppNotificationsLabel">In-App Notifications</h3>
+          <p>Receive notifications directly inside ShareHub</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="inAppNotifications" data-field="in_app_notifications"
+                 aria-labelledby="inAppNotificationsLabel" title="In-App Notifications">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <!-- Due Date Reminders -->
+      <div class="toggle-item">
+        <div class="toggle-info">
+          <h3 id="dueDateRemindersLabel">Due Date Reminders</h3>
+          <p>Get notified 2 days before borrowed items are due</p>
+        </div>
+        <label class="toggle-switch">
+          <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders"
+                 aria-labelledby="dueDateRemindersLabel" title="Due Date Reminders">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+    </div> <!-- end toggle-group --> 
+  </form> 
+</div> <!-- end notification tab -->
+
+
 
                     <div id="privacy-tab" class="tab-content">
                         <h2>Privacy Settings</h2>
                         
                         <form id="privacy-form" class="settings-form">
-                            <div class="toggle-group">
-                                <div class="toggle-item">
-                                    <div class="toggle-info">
-                                            <h3 id="profileVisibilityLabel">Profile Visibility</h3>
-                                            <p>Make your profile visible to other students</p>
-                                        </div>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="profileVisibility" data-field="profile_visibility"
-                                                aria-labelledby="profileVisibilityLabel" title="Profile Visibility">
-                                            <span class="toggle-slider"></span>
-                                        </label>
-                                </div>
-                                
-                                <div class="toggle-item">
-                                    <div class="toggle-info">
-                                            <h3 id="contactInfoLabel">Contact Information</h3>
-                                            <p>Share your contact details with item owners</p>
-                                        </div>
-                                        <label class="toggle-switch">
-                                            <input type="checkbox" id="contactInfo" data-field="contact_info"
-                                                aria-labelledby="contactInfoLabel" title="Contact Information">
-                                            <span class="toggle-slider"></span>
-                                        </label>
+        <div class="settings-box">
+            <!-- Show Email -->
+            <div class="toggle-item">
+                <div class="toggle-info">
+                    <h3 id="showEmailLabel">Show Email</h3>
+                    <p>Allow others to see your email address on your profile</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="showEmail" data-field="show_email"
+                        aria-labelledby="showEmailLabel" title="Show Email">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Public Profile -->
+            <div class="toggle-item">
+                <div class="toggle-info">
+                    <h3 id="publicProfileLabel">Public Profile</h3>
+                    <p>Make your profile visible to everyone on ShareHub</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="publicProfile" data-field="public_profile"
+                        aria-labelledby="publicProfileLabel" title="Public Profile">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Allow Item Sharing -->
+            <div class="toggle-item">
+                <div class="toggle-info">
+                    <h3 id="itemSharingLabel">Allow Item Sharing</h3>
+                    <p>Permit other users to share your listed items</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="itemSharing" data-field="allow_item_sharing"
+                        aria-labelledby="itemSharingLabel" title="Allow Item Sharing">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Profile Visibility -->
+            <div class="toggle-item">
+                <div class="toggle-info">
+                    <h3 id="profileVisibilityLabel">Profile Visibility</h3>
+                    <p>Make your profile visible to other students</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="profileVisibility" data-field="profile_visibility"
+                        aria-labelledby="profileVisibilityLabel" title="Profile Visibility">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="toggle-item">
+                <div class="toggle-info">
+                    <h3 id="contactInfoLabel">Contact Information</h3>
+                    <p>Share your contact details with item owners</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="contactInfo" data-field="contact_info"
+                        aria-labelledby="contactInfoLabel" title="Contact Information">
+                    <span class="toggle-slider"></span>
+                </label>
                                 </div>
                             </div>
                         </form>
@@ -441,7 +517,7 @@
         notificationBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             notificationPopup.classList.toggle('active');
-            notificationOverlay.classList.toggle('active');
+            notificationOverlay.classList.toggle('active'); 
         });
 
         closePopup.addEventListener('click', () => {
@@ -458,6 +534,97 @@
             e.stopPropagation();
         });
     </script>
+
+   <!-- ✅ Supabase SDK -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<script>
+  // ✅ Initialize Supabase
+  const supabaseUrl = "https://YOUR-PROJECT-ID.supabase.co";  // <-- replace with your real project URL
+  const supabaseAnonKey = "YOUR-ANON-KEY";                     // <-- replace with your anon key
+  const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+
+  const saveBtn = document.getElementById('saveBtn');
+
+  // ✅ Load saved settings from Supabase
+  document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn("No user logged in.");
+      return;
+    }
+
+    // Fetch existing settings
+    const { data, error } = await supabase
+      .from('user_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') console.error("Error loading settings:", error);
+
+    // If user has saved settings, apply them
+    if (data) {
+      document.getElementById('emailNotifications').checked = data.email_notifications;
+      document.getElementById('dueDateReminders').checked = data.due_date_reminders;
+      document.getElementById('showEmail').checked = data.show_email;
+      document.getElementById('publicProfile').checked = data.public_profile;
+      document.getElementById('itemSharing').checked = data.allow_item_sharing;
+      document.getElementById('profileVisibility').checked = data.profile_visibility;
+      document.getElementById('contactInfo').checked = data.contact_info;
+      document.getElementById('smsNotifications').checked = data.sms_notifications;
+      document.getElementById('inAppNotifications').checked = data.in_app_notifications;
+
+    }
+
+    // Enable save button when any toggle changes
+    document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+      toggle.addEventListener('change', () => {
+        saveBtn.disabled = false;
+      });
+    });
+  });
+
+  // ✅ Save settings to Supabase
+  saveBtn.addEventListener('click', async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("You must be logged in to save settings.");
+      return;
+    }
+
+    const settingsData = {
+      user_id: user.id,
+      email_notifications: document.getElementById('emailNotifications').checked,
+      due_date_reminders: document.getElementById('dueDateReminders').checked,
+      show_email: document.getElementById('showEmail').checked,
+      public_profile: document.getElementById('publicProfile').checked,
+      allow_item_sharing: document.getElementById('itemSharing').checked,
+      profile_visibility: document.getElementById('profileVisibility').checked,
+      contact_info: document.getElementById('contactInfo').checked,
+      updated_at: new Date().toISOString(),
+      sms_notifications: document.getElementById('smsNotifications').checked,
+in_app_notifications: document.getElementById('inAppNotifications').checked,
+
+    };
+
+    const { error } = await supabase
+      .from('user_settings')
+      .upsert(settingsData, { onConflict: ['user_id'] });  
+
+    if (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings.");
+    } else {
+      // Toast message animation
+      const toast = document.getElementById("toast");
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 2000);
+      saveBtn.disabled = true;
+    }
+  });  
+</script> 
+
     <script src="{% static 'js/add-item-modal.js' %}"></script>
     <script src="{% static 'js/confirmation_logout.js' %}"></script>
 </body>

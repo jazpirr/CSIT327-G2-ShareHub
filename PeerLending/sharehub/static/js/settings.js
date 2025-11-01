@@ -205,51 +205,62 @@ class SettingsManager {
     }
 
     async saveSettings() {
-        if (!this.validateAllFields()) return;
-        const saveBtn = document.getElementById('saveBtn');
-        const originalText = saveBtn.textContent;
-        saveBtn.textContent = 'Saving...';
-        saveBtn.disabled = true;
+  if (!this.validateAllFields()) return;
+  const saveBtn = document.getElementById('saveBtn');
+  const originalText = saveBtn.textContent;
+  saveBtn.textContent = 'Saving…';
+  saveBtn.disabled = true;
 
-        try {
-            const currentPassword = document.getElementById('currentPassword')?.value || '';
-            const newEmail = document.getElementById('email')?.value || '';
-            const newPassword = document.getElementById('newPassword')?.value || '';
-
-            if (newEmail && newEmail !== this.originalSettings.email) {
-                const res = await updateEmailRequest(currentPassword, newEmail);
-                if (!res.ok) {
-                    handleServerErrors(res.data || {});
-                    saveBtn.textContent = originalText;
-                    saveBtn.disabled = false;
-                    return;
-                }
-            }
-
-            if (newPassword) {
-                const res2 = await updatePasswordRequest(currentPassword, newPassword);
-                if (!res2.ok) {
-                    handleServerErrors(res2.data || {});
-                    saveBtn.textContent = originalText;
-                    saveBtn.disabled = false;
-                    return;
-                }
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
-                document.getElementById('confirmPassword').value = '';
-            }
-
-            this.loadSettings();
-            this.hasChanges = false;
-            this.showSuccessToast();
-            this.updateSaveButtonState();
-        } catch (error) {
-            console.error('Save error:', error);
-            this.showErrorToast('Failed to save. Please try again.');
-        } finally {
-            saveBtn.textContent = originalText;
-        }
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("You must be logged in to save settings.");
+      return;
     }
+
+    const payload = {
+      user_id: user.id,
+      email_notifications: document.getElementById('emailNotifications').checked,
+      sms_notifications: document.getElementById('smsNotifications').checked,
+      in_app_notifications: document.getElementById('inAppNotifications').checked,
+      due_date_reminders: document.getElementById('dueDateReminders').checked,
+      show_email: document.getElementById('showEmail').checked,
+      public_profile: document.getElementById('publicProfile').checked,
+      allow_item_sharing: document.getElementById('itemSharing').checked,
+      profile_visibility: document.getElementById('profileVisibility').checked,
+      contact_info: document.getElementById('contactInfo').checked,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from('user_settings')
+      .upsert(payload, { onConflict: 'user_id' })
+      .select();
+
+    console.log('saveSettings upsert result:', data, error);
+
+    if (error) {
+      console.error("Error saving settings:", error);
+      this.showErrorToast("Failed to save settings.");
+    } else {
+      // update originalSettings to the new values
+      Object.keys(payload).forEach(key => {
+        if (key in this.originalSettings) {
+          this.originalSettings[key] = payload[key];
+        }
+      });
+      this.hasChanges = false;
+      this.showSuccessToast();
+      this.updateSaveButtonState();
+    }
+  } catch (err) {   
+    console.error('Save error:', err);
+    this.showErrorToast('Failed to save. Please try again.');
+  } finally {
+    saveBtn.textContent = originalText;
+  }
+}
+
 
     cancelChanges() {
         this.updateUI();
@@ -339,3 +350,140 @@ function handleServerErrors(payload) {
 
 window.updateEmailRequest = updateEmailRequest;
 window.updatePasswordRequest = updatePasswordRequest;
+
+// === PRIVACY SETTINGS HANDLER ===
+
+
+ddocument.addEventListener("DOMContentLoaded", () => {
+  const saveBtn = document.getElementById("saveBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const toast = document.getElementById("toast");
+
+  // Initialize Supabase client
+  const { createClient } = window.supabase;
+  const supabaseUrl = "https://YOUR_PROJECT_ID.supabase.co";
+  const supabaseKey = "YOUR_ANON_PUBLIC_KEY";
+  const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+  async function loadSettings() {
+    const user = (await supabaseClient.auth.getUser()).data.user;
+    if (!user) return;
+
+    const { data } = await supabaseClient
+      .from("user_settings")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (data) {
+      document.getElementById("show_email").checked = data.show_email;
+      document.getElementById("show_profile").checked = data.show_profile;
+      document.getElementById("allow_sharing").checked = data.allow_sharing;
+    }
+  }
+
+  async function saveSettings() {
+    const user = (await supabaseClient.auth.getUser()).data.user;
+    if (!user) return;
+
+    const show_email = document.getElementById("show_email").checked;
+    const show_profile = document.getElementById("show_profile").checked;
+    const allow_sharing = document.getElementById("allow_sharing").checked;
+    
+
+    await supabaseClient.from("user_settings").upsert({
+      id: user.id,
+      show_email,
+      show_profile,
+      allow_sharing,
+      updated_at: new Date().toISOString(),
+    });
+
+    showToast("Settings saved successfully!");
+  }
+
+  saveBtn.addEventListener("click", saveSettings);
+  cancelBtn.addEventListener("click", () => location.reload());
+  loadSettings();
+
+  function showToast(message) {
+    const messageEl = toast.querySelector(".toast-message");
+    messageEl.textContent = message;
+    document.body.classList.add("blur-active");
+    toast.classList.add("show");
+    setTimeout(() => {
+      toast.classList.remove("show");
+      document.body.classList.remove("blur-active");
+    }, 2500); 
+  }
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    console.warn("No user logged in.");
+    return;
+  }
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error("Error loading settings:", error);
+  }
+  if (data) {
+    // populate toggles
+    document.getElementById('emailNotifications').checked = data.email_notifications;
+    document.getElementById('smsNotifications').checked = data.sms_notifications;
+    document.getElementById('inAppNotifications').checked = data.in_app_notifications;
+    document.getElementById('dueDateReminders').checked = data.due_date_reminders;
+
+    document.getElementById('showEmail').checked = data.show_email;
+    document.getElementById('publicProfile').checked = data.public_profile;
+    document.getElementById('itemSharing').checked = data.allow_item_sharing;
+    document.getElementById('profileVisibility').checked = data.profile_visibility;
+    document.getElementById('contactInfo').checked = data.contact_info;
+  }
+
+  document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      saveBtn.disabled = false;
+    });
+  });
+});
+
+  
+
+  const settingsData = {
+    user_id: user.id,
+    email_notifications: document.getElementById('emailNotifications').checked,
+    sms_notifications: document.getElementById('smsNotifications').checked,
+    in_app_notifications: document.getElementById('inAppNotifications').checked,
+    due_date_reminders: document.getElementById('dueDateReminders').checked,
+    show_email: document.getElementById('showEmail').checked,
+    public_profile: document.getElementById('publicProfile').checked,
+    allow_item_sharing: document.getElementById('itemSharing').checked,
+    profile_visibility: document.getElementById('profileVisibility').checked,
+    contact_info: document.getElementById('contactInfo').checked,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from('user_settings')
+    .upsert(settingsData, { onConflict: 'user_id' })
+    .select();
+
+  if (error) {
+    console.error("Error saving settings:", error);
+    alert("Failed to save settings.");
+  } else {
+    // show toast / feedback
+    const toast = document.getElementById("toast");
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2000);
+    saveBtn.disabled = true;
+  }
+
+
