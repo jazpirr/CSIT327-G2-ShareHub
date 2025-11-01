@@ -21,5 +21,7 @@ urlpatterns = [
     path("request-borrow/", views.create_request, name="request_borrow"),
     path('api/request/respond/', views.respond_request, name='api_respond_request'),
     path('return-items/', views.return_items, name='return_items'),
+    path("save_visibility/", views.save_visibility, name="save_visibility"),
+    path("save_contact/", views.save_contact, name="save_contact"), 
 ]
  

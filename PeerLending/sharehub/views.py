@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse
@@ -20,18 +21,34 @@ import json
 import re
 from django.views.decorators.http import require_POST
 from supabase import create_client as create_supabase_client
- 
+from django.views.decorators.csrf import csrf_exempt
+
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
 SUPABASE_SERVICE_ROLE_KEY = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None)
 SUPABASE_ANON_KEY = getattr(settings, "SUPABASE_ANON_KEY", None)
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) 
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
+@login_required
+def settings_view(request):
+    # Get or create settings for this user
+    user_settings, created = UserSettings.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        user_settings.show_email = "show_email" in request.POST
+        user_settings.show_profile = "show_profile" in request.POST
+        user_settings.allow_sharing = "allow_sharing" in request.POST
+        user_settings.profile_visibility = "profile_visibility" in request.POST
+        user_settings.contact_information = "contact_information" in request.POST
+        user_settings.save()
+        return redirect("settings")  # redirect to same page after saving
+
+    return render(request, "settings.html", {"user_settings": user_settings})
  
  
-@never_cache
+@never_cache  
 def register_view(request):
     if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
         form = CustomUserCreationForm(request.POST)
@@ -1135,3 +1152,20 @@ def return_items(request):
         "SUPABASE_URL": SUPABASE_URL,
         "SUPABASE_ANON_KEY": SUPABASE_ANON_KEY,
     })
+@csrf_exempt
+def save_visibility(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        request.user.profile.is_public = data.get("is_public", False)
+        request.user.profile.save()
+        return JsonResponse({"status": "success"})
+
+@csrf_exempt 
+def save_contact(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        profile = request.user.profile
+        profile.contact_email = data.get("email")
+        profile.contact_phone = data.get("phone")
+        profile.save()
+        return JsonResponse({"status": "success"})

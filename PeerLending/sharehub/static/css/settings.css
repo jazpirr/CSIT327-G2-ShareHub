@@ -885,3 +885,14 @@ body {
     .notification-overlay.active {
       display: block;
     }
+  .form-actions {
+    display: flex;
+    justify-content: flex-end; /* moves the buttons to the right */
+    gap: 15px; /* space between buttons */
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid var(--border-light);
+}
+  
+ 
+    
