@@ -7,8 +7,28 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'css/logoutdisplay.css' %}?v=1" />
 </head>
 <body>
+  <div id="successOverlay" class="overlay"></div>
+<div id="successPopup" class="popup">
+  <div class="popup-header">Notification</div>
+  <div class="popup-body">
+    <p>You have successfully Logout.</p>
+  </div>
+  <button class="ok-btn" onclick="closeSuccessPopup()">Okay</button>
+</div>
+<!-- Overlay Background -->
+<div id="successOverlay" class="overlay"></div>
+
+<!-- Popup Message -->
+<div id="successPopup" class="popup-box">
+  <h2>Notification</h2>
+  <p>You have successfully logged out!</p>
+  <button onclick="closeSuccessPopup()">Close</button> 
+</div>
+
+
 
   <!-- Popup overlay + single popup -->
   <div id="errorOverlay"></div>
@@ -16,20 +36,20 @@
       <div class="popup-header" id="popupHeader">Error</div>
       <div class="popup-body" id="popupBody"></div>
       <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
-  </div>
+  </div>  
 
-  <div class="container">
+  <div class="container">  
     <div class="left-side">
       <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image" />
     </div>
 
-    <div class="right-side">
+    <div class="right-side">  
       <div class="form-wrap login-form">
         <div class="logo-container">
           <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo" />
           <h3>Welcome Back</h3>
           <p>Signin to access ShareHub - CIT-U Peer Lending Library</p>
-        </div>
+        </div>   
 
         <form id="loginForm" method="POST" action="{% url 'login' %}">
           {% csrf_token %}
@@ -77,6 +97,37 @@
     </script>
   {% endif %}
 
+<!-- Logout Success Popup -->
+<div id="successOverlay" class="overlay"></div>
+
+<div id="successPopup" class="popup">
+  <div class="popup-header">Notification</div>
+  <div class="popup-body">
+    <p>You have successfully Logout.</p>
+  </div>
+  <button class="ok-btn" onclick="closeSuccessPopup()">Okay</button>
+</div>
+
+<script>
+function showSuccessPopup() {
+  document.getElementById("successOverlay").style.display = "block";
+  document.getElementById("successPopup").style.display = "flex";
+}
+
+function closeSuccessPopup() {
+  document.getElementById("successOverlay").style.display = "none";
+  document.getElementById("successPopup").style.display = "none";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("logout_success") === "1") {
+    showSuccessPopup();
+  }  
+});
+</script> 
+
+<script src="{% static 'js/confirmation_logout.js' %}?v=1"></script>
 
 </body>
 </html>

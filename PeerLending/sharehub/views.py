@@ -3,7 +3,9 @@ from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
- 
+from django.urls import reverse
+from django.contrib.auth import logout
+   
 from supabase import create_client, Client
 from supabase_auth._sync.gotrue_client import AuthApiError
  
@@ -148,18 +150,18 @@ def login_view(request):
 def logout_view(request):
     # Clear the session
     request.session.flush()
- 
+
     try:
         supabase.auth.sign_out()
     except Exception:
         pass
  
-    resp = redirect("login")
+    resp = redirect(reverse("login") + "?logout_success=1")
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp["Pragma"] = "no-cache"
     resp["Expires"] = "0"
     return resp
- 
+   
  
 @supabase_login_required
 def home(request):
