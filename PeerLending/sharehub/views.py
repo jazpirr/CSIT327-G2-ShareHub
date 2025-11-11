@@ -12,7 +12,7 @@ from supabase_auth._sync.gotrue_client import AuthApiError
  
 from .forms import CustomUserCreationForm
 from .utils import supabase_login_required
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import logging
  
 import os
@@ -22,6 +22,11 @@ import re
 from django.views.decorators.http import require_POST
 from supabase import create_client as create_supabase_client
 from django.views.decorators.csrf import csrf_exempt
+from django.utils.http import url_has_allowed_host_and_scheme
+from supabase_auth._sync.gotrue_client import AuthApiError
+from functools import wraps
+from django.http import HttpResponseForbidden
+
 
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_KEY = settings.SUPABASE_KEY
@@ -33,7 +38,7 @@ EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
 @login_required
 def settings_view(request):
-    # Get or create settings for this user
+   
     user_settings, created = UserSettings.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
@@ -43,7 +48,7 @@ def settings_view(request):
         user_settings.profile_visibility = "profile_visibility" in request.POST
         user_settings.contact_information = "contact_information" in request.POST
         user_settings.save()
-        return redirect("settings")  # redirect to same page after saving
+        return redirect("settings") 
 
     return render(request, "settings.html", {"user_settings": user_settings})
  
@@ -119,26 +124,39 @@ def register_view(request):
     resp["Expires"] = "0"
     return resp
  
- 
+def admin_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        
+        if request.session.get("is_admin"):
+            return view_func(request, *args, **kwargs)
+
+       
+        user_id = request.session.get("supabase_user_id")
+        if not user_id:
+            return HttpResponseForbidden("Not authenticated")
+
+        try:
+            resp = supabase.table("user").select("is_admin").eq("id", user_id).maybe_single().execute()
+            if getattr(resp, "data", None) and resp.data.get("is_admin"):
+                request.session["is_admin"] = True
+                return view_func(request, *args, **kwargs)
+        except Exception:
+            pass
+
+        return HttpResponseForbidden("Admin only")
+    return _wrapped
+
+
 @never_cache
 def login_view(request):
     if request.method == "POST":
         email = request.POST.get("email")
         password = request.POST.get("password")
- 
+        raw_next = request.POST.get("next") or request.GET.get("next") or ""
+
         try:
             response = supabase.auth.sign_in_with_password({"email": email, "password": password})
- 
-            if response.user:
-                request.session["supabase_user_id"] = response.user.id
-                request.session["user_email"] = email
-                messages.success(request, "Welcome back!")
-                return redirect("home")
-            else:
-                return render(request, "login-register/login.html", {
-                    "errors": {"invalid": [{"message": "Invalid credentials"}]}
-                })
- 
         except AuthApiError as e:
             error_msg = "Invalid credentials"
             try:
@@ -149,23 +167,55 @@ def login_view(request):
                     error_msg = err_data
             except Exception:
                 pass
- 
             return render(request, "login-register/login.html", {
                 "errors": {"email_not_confirmed": [{"message": error_msg}]}
             })
+
+
+        if not getattr(response, "user", None):
+            return render(request, "login-register/login.html", {
+                "errors": {"invalid": [{"message": "Invalid credentials"}]}
+            })
+
  
- 
-    resp = render(request, "login-register/login.html")
+        user_id = response.user.id
+        request.session["supabase_user_id"] = user_id
+        request.session["user_email"] = email
+
+  
+        is_admin = False
+        try:
+            uresp = supabase.table("user").select("is_admin").eq("id", user_id).maybe_single().execute()
+            if getattr(uresp, "data", None):
+                is_admin = bool(uresp.data.get("is_admin"))
+        except Exception:
+        
+            is_admin = False
+
+        request.session["is_admin"] = bool(is_admin)
+
+
+        if raw_next and url_has_allowed_host_and_scheme(raw_next, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            return redirect(raw_next)
+
+
+        if is_admin:
+            messages.success(request, "Welcome, admin!")
+            return redirect("admin_dashboard")
+        else:
+            messages.success(request, "Welcome back!")
+            return redirect("home")
+
+    resp = render(request, "login-register/login.html", {"next": request.GET.get("next", "")})
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp["Pragma"] = "no-cache"
     resp["Expires"] = "0"
     return resp
- 
- 
+
+
 # ---------- Logout ----------
 @never_cache
 def logout_view(request):
-    # Clear the session
     request.session.flush()
 
     try:
@@ -182,37 +232,23 @@ def logout_view(request):
  
 @supabase_login_required
 def home(request):
-
     logger = logging.getLogger(__name__)
-
     user_id = request.session.get("supabase_user_id")
 
-    # Load basic user/profile
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp and getattr(profile_resp, "data", None) else None
 
-    # Load notifications (recent)
-    try:
-        notifs_resp = supabase.table('notification') \
-            .select('*') \
-            .eq('user_id', user_id) \
-            .order('created_at', desc=True) \
-            .limit(10) \
-            .execute()
-        notifications = notifs_resp.data or []
-    except Exception:
-        notifications = []
 
-    # ---------- Incoming requests for items the current user owns (ONLY pending) ----------
+    notifications, unread_count = fetch_notifications_for(user_id)
+
+
     incoming_requests = []
     try:
-        # get items owned by current user
         items_resp = supabase.table('item').select('item_id,title').eq('user_id', user_id).execute()
         my_items = items_resp.data or []
         my_item_ids = [it.get('item_id') for it in my_items if it.get('item_id')]
 
         if my_item_ids:
-            # only pending requests for owner's UI
             req_resp = supabase.table('request') \
                         .select('request_id,item_id,user_id,request_date,status') \
                         .in_('item_id', my_item_ids) \
@@ -221,7 +257,6 @@ def home(request):
                         .execute()
             incoming_requests = req_resp.data or []
 
-            # fetch requester names in bulk
             req_user_ids = list({r.get('user_id') for r in incoming_requests if r.get('user_id')})
             users_map = {}
             if req_user_ids:
@@ -232,13 +267,10 @@ def home(request):
                         display = u.get('email') or u.get('id')
                     users_map[u.get('id')] = display
 
-            # map item_id -> title for owner's items
             items_map = {it.get('item_id'): it.get('title') for it in (my_items or [])}
-            # attach friendly fields
             for r in incoming_requests:
                 r['requester_name'] = users_map.get(r.get('user_id'), r.get('user_id'))
                 r['item_title'] = items_map.get(r.get('item_id'), r.get('item_id'))
-                # keep raw request_date and a human string
                 rd = r.get('request_date')
                 try:
                     r_dt = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
@@ -248,7 +280,6 @@ def home(request):
     except Exception:
         incoming_requests = []
 
-    # ---------- Available items (the grid on the right) - reuse your existing logic ----------
     fetched_items = []
     try:
         try:
@@ -263,7 +294,6 @@ def home(request):
                 raise Exception("Ordered query error")
             fetched_items = items_resp.data or []
         except Exception as q_exc:
-            # fallback: fetch all then sort
             items_resp = supabase.table("item").select("*").eq("available", True).neq("user_id", user_id).execute()
             fetched_items = items_resp.data or []
             def _sort_key(it):
@@ -298,7 +328,6 @@ def home(request):
         itm["created_at_iso"] = iso
         itm["created_at_human"] = human
 
-    # build owner_map quickly
     owner_ids = [itm.get('user_id') for itm in available_items if itm.get('user_id')]
     owner_map = {}
     if owner_ids:
@@ -327,32 +356,31 @@ def home(request):
     for itm in available_items:
         owner_id = itm.get('user_id') or itm.get('owner') or itm.get('user')
         itm['owner_display'] = owner_map.get(owner_id, 'Unknown')
+        itm['owner_id'] = owner_id
 
-    # ---------- Borrowed items for CURRENT USER (approved requests made by this user) ----------
+
     borrowed_items = []
     try:
-        # fetch approved requests where current user is the requester — include return_date
         br_req_resp = supabase.table('request') \
-                      .select('request_id,item_id,user_id,request_date,return_date,status') \
-                      .eq('user_id', user_id) \
-                      .eq('status', 'approved') \
-                      .order('request_date', desc=True) \
-                      .execute()
+              .select('request_id,item_id,user_id,request_date,return_date,status,return') \
+              .eq('user_id', user_id) \
+              .eq('status', 'approved') \
+              .neq('return', True) \
+              .order('request_date', desc=True) \
+              .execute()
         br_reqs = br_req_resp.data or []
 
         if br_reqs:
             item_ids = [r.get('item_id') for r in br_reqs if r.get('item_id')]
             items_map = {}
             if item_ids:
-                items_resp2 = supabase.table('item').select('item_id,title,user_id,image_url').in_('item_id', item_ids).execute()
+                items_resp2 = supabase.table('item').select('item_id,title,user_id,image_url,description').in_('item_id', item_ids).execute()
                 for it in (items_resp2.data or []):
                     items_map[it.get('item_id')] = it
 
-            # collect owner ids to fetch owner_display later
             owner_ids = [ (items_map.get(r.get('item_id')) or {}).get('user_id') for r in br_reqs ]
             owner_ids = [oid for oid in owner_ids if oid]
 
-            # fetch owner names in bulk
             owner_map = {}
             if owner_ids:
                 try:
@@ -365,14 +393,11 @@ def home(request):
                     for oid in owner_ids:
                         owner_map.setdefault(oid, str(oid))
 
-            # Build borrowed_items using return_date when available (fall back to request_date)
             for r in br_reqs:
                 itm = items_map.get(r.get('item_id')) or {}
-                # prefer return_date for display; if missing show request_date
                 rd = r.get('return_date') or r.get('request_date')
                 try:
                     r_dt = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
-                    # choose desired human format, e.g. 'Oct 31, 2025 · 11:59 AM'
                     return_date_human = r_dt.strftime("%b %d, %Y · %I:%M %p") if r_dt else rd
                 except Exception:
                     return_date_human = rd or ''
@@ -384,7 +409,7 @@ def home(request):
                     "owner_id": itm.get('user_id'),
                     "owner_display": owner_map.get(itm.get('user_id'), "Unknown"),
                     "item_image": itm.get('image_url') or None,
-                    # borrow_date kept if you still want it; otherwise omit
+                    "item_description": itm.get('description') or '',
                     "borrow_date": r.get('request_date'),
                     "return_date": r.get('return_date'),
                     "return_date_human": return_date_human,
@@ -393,6 +418,34 @@ def home(request):
     except Exception:
         borrowed_items = []
 
+
+    overdue_items = []
+    overdue_count = 0
+    try:
+        now_utc = datetime.now(timezone.utc)
+        for b in borrowed_items:
+            rd = b.get("return_date")
+            if not rd:
+                continue
+            try:
+                if isinstance(rd, str):
+                    parsed = datetime.fromisoformat(rd)
+                else:
+                    parsed = rd
+
+                if parsed.tzinfo is None:
+                    parsed_utc = parsed.replace(tzinfo=timezone.utc)
+                else:
+                    parsed_utc = parsed.astimezone(timezone.utc)
+
+                if parsed_utc < now_utc:
+                    overdue_items.append(b)
+            except Exception:
+                continue
+        overdue_count = len(overdue_items)
+    except Exception:
+        overdue_items = []
+        overdue_count = 0
 
 
     return render(request, "home.html", {
@@ -404,10 +457,10 @@ def home(request):
         "incoming_requests": incoming_requests,
         "borrowed_items": borrowed_items,
         "notifications": notifications,
+        "overdue_items": overdue_items,
+        "overdue_count": overdue_count,
+        "unread_count": unread_count,
     })
-
-
-
  
  
 @supabase_login_required
@@ -415,22 +468,112 @@ def profile(request):
     user_id = request.session.get("supabase_user_id")
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp.data else {}
- 
+
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
         if auth_user_resp.user and "email" not in user_info:
             user_info["email"] = auth_user_resp.user.email
     except Exception:
         pass
- 
-    return render(request, "profile/profile.html", {"user_info": user_info})
- 
+
+    borrow_stats = {
+        "total_requests": 0,
+        "total_borrowed": 0,
+        "currently_borrowed": 0,
+        "total_returned": 0,
+        "overdue": 0,
+        "months": [],
+        "month_counts": [],
+    }
+
+    try:
+        req_resp = supabase.table("request").select("*").eq("user_id", user_id).execute()
+        reqs = req_resp.data or []
+        borrow_stats["total_requests"] = len(reqs)
+
+        now_utc = datetime.now(timezone.utc)
+
+        # build monthly buckets for last 6 months (including current month)
+        months = []
+        month_keys = []
+        for i in range(5, -1, -1):
+            # safer month arithmetic: subtract months via timedelta approximation is ok for your use-case
+            m = (now_utc.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
+            key = m.strftime("%Y-%m")
+            months.append(m.strftime("%b %Y"))
+            month_keys.append(key)
+
+        counts = {k: 0 for k in month_keys}
+
+        for r in reqs:
+            status = (r.get("status") or "").lower()
+            is_returned = bool(r.get("return") in (True, "True", "true", 1, "1"))
+            if status == "approved":
+                borrow_stats["total_borrowed"] += 1
+                if not is_returned:
+                    borrow_stats["currently_borrowed"] += 1
+            if is_returned:
+                borrow_stats["total_returned"] += 1
+
+            # overdue: approved, not returned, return_date in past
+            if status == "approved" and not is_returned:
+                rd = r.get("return_date")
+                if rd:
+                    try:
+                        parsed = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
+                        if parsed.tzinfo is None:
+                            parsed_utc = parsed.replace(tzinfo=timezone.utc)
+                        else:
+                            parsed_utc = parsed.astimezone(timezone.utc)
+                        if parsed_utc < now_utc:
+                            borrow_stats["overdue"] += 1
+                    except Exception:
+                        pass
+
+            # monthly count by request_date
+            rd = r.get("request_date")
+            if rd:
+                try:
+                    parsed = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=timezone.utc)
+                    key = parsed.strftime("%Y-%m")
+                    if key in counts:
+                        counts[key] += 1
+                except Exception:
+                    pass
+
+        month_values = [counts.get(k, 0) for k in month_keys]
+        borrow_stats["months"] = months
+        borrow_stats["month_counts"] = month_values
+
+    except Exception:
+        # keep defaults if anything fails
+        pass
+
+    borrow_stats_json = json.dumps({
+        "total_requests": borrow_stats["total_requests"],
+        "total_borrowed": borrow_stats["total_borrowed"],
+        "currently_borrowed": borrow_stats["currently_borrowed"],
+        "total_returned": borrow_stats["total_returned"],
+        "overdue": borrow_stats["overdue"],
+        "months": borrow_stats["months"],
+        "month_counts": borrow_stats["month_counts"],
+    })
+
+    notifications, unread_count = fetch_notifications_for(user_id)
+    return render(request, "profile/profile.html", {
+        "user_info": user_info,
+        "notifications": notifications,
+        "unread_count": unread_count,
+        "borrow_stats_json": borrow_stats_json,
+        "borrow_stats": borrow_stats,   # <-- add parsed dict for template rendering
+    })
  
 @supabase_login_required
 def edit_profile(request):
     user_id = request.session.get("supabase_user_id")
  
-   
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data or {}
  
@@ -453,8 +596,7 @@ def edit_profile(request):
  
         file = request.FILES.get("profile_picture")
         profile_picture_url = user_info.get("profile_picture")
- 
-        # Upload to Supabase Storage
+
         if file:
             ext = os.path.splitext(file.name)[1]
             file_name = f"{user_id}/{uuid.uuid4()}{ext}"
@@ -484,7 +626,95 @@ def edit_profile(request):
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
  
-    return render(request, "profile/edit_profile.html", {"user_info": user_info})
+    borrow_stats = {
+        "total_requests": 0,
+        "total_borrowed": 0,
+        "currently_borrowed": 0,
+        "total_returned": 0,
+        "overdue": 0,
+        "months": [],
+        "month_counts": [],
+    }
+
+    try:
+        req_resp = supabase.table("request").select("*").eq("user_id", user_id).execute()
+        reqs = req_resp.data or []
+        borrow_stats["total_requests"] = len(reqs)
+
+        now_utc = datetime.now(timezone.utc)
+
+        months = []
+        month_keys = []
+        for i in range(5, -1, -1):
+            m = (now_utc.replace(day=1) - timedelta(days=30*i)).replace(day=1)
+            key = m.strftime("%Y-%m")
+            months.append(m.strftime("%b %Y"))
+            month_keys.append(key)
+
+        counts = {k: 0 for k in month_keys}
+
+        for r in reqs:
+            status = (r.get("status") or "").lower()
+            is_returned = bool(r.get("return") in (True, "True", "true", 1, "1"))
+            if status == "approved":
+                borrow_stats["total_borrowed"] += 1
+                if not is_returned:
+                    borrow_stats["currently_borrowed"] += 1
+            if is_returned:
+                borrow_stats["total_returned"] += 1
+
+            if status == "approved" and not is_returned:
+                rd = r.get("return_date")
+                if rd:
+                    try:
+                        parsed = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
+                        if parsed.tzinfo is None:
+                            parsed_utc = parsed.replace(tzinfo=timezone.utc)
+                        else:
+                            parsed_utc = parsed.astimezone(timezone.utc)
+                        if parsed_utc < now_utc:
+                            borrow_stats["overdue"] += 1
+                    except Exception:
+                        pass
+
+            rd = r.get("request_date")
+            if rd:
+                try:
+                    parsed = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
+                    if parsed.tzinfo is None:
+                        parsed = parsed.replace(tzinfo=timezone.utc)
+                    key = parsed.strftime("%Y-%m")
+                    if key in counts:
+                        counts[key] += 1
+                except Exception:
+                    pass
+
+        borrow_stats["months"] = months
+        borrow_stats["month_counts"] = [counts.get(k, 0) for k in month_keys]
+
+    except Exception:
+        pass
+
+    borrow_stats_json = json.dumps({
+        "total_requests": borrow_stats["total_requests"],
+        "total_borrowed": borrow_stats["total_borrowed"],
+        "currently_borrowed": borrow_stats["currently_borrowed"],
+        "total_returned": borrow_stats["total_returned"],
+        "overdue": borrow_stats["overdue"],
+        "months": borrow_stats["months"],
+        "month_counts": borrow_stats["month_counts"],
+    })
+
+    # fetch notifications for header as in other views
+    notifications, unread_count = fetch_notifications_for(user_id)
+
+    return render(request, "profile/edit_profile.html", {
+        "user_info": user_info,
+        "notifications": notifications,
+        "unread_count": unread_count,
+        "borrow_stats_json": borrow_stats_json,
+        "borrow_stats": borrow_stats,   # add this so template can use borrow_stats.total_borrowed etc.
+    })
  
  
 @supabase_login_required
@@ -504,7 +734,7 @@ def settings_view(request):
     return render(request, "settings.html", {"user_info": user_info})
 
 
-#change email and password in settings page
+
 
 @require_POST
 def update_email(request):
@@ -673,9 +903,11 @@ def update_password(request):
         return JsonResponse({'errors': {'general': [{'message': str(e)}]}}, status=400)
 
 
-#end of change email and password in settings page
 
 
+@never_cache
+@supabase_login_required
+@admin_required
 def admin_dashboard (request):
   return render(request, "admindashboard.html")
 
@@ -696,7 +928,6 @@ def forgot_password(request):
         supabase.auth.reset_password_for_email(email, {"redirect_to": redirect_to})
         return JsonResponse({"success": True, "message": "A reset link has been sent to your email."})
     except AuthApiError as e:
-        # Show the real error while DEBUG is True; otherwise keep it generic to avoid user enumeration
         if getattr(settings, "DEBUG", False):
             detail = None
             try:
@@ -817,17 +1048,15 @@ def borrow_items(request):
     available_items = []
 
     try:
-        # fetch items that are available and not owned by current user
         items_resp = supabase.table("item").select("*").eq("available", True).neq("user_id", user_id).execute()
         if getattr(items_resp, "error", None):
-            # fallback to empty
             available_items = []
         else:
             available_items = items_resp.data or []
     except Exception:
         available_items = []
 
-    # Build owner_map to avoid N queries
+
     owner_ids = {itm.get("user_id") for itm in available_items if itm.get("user_id")}
     owner_map = {}
     if owner_ids:
@@ -840,7 +1069,7 @@ def borrow_items(request):
                         display = o.get("email") or o.get("id")
                     owner_map[o.get("id")] = display
         except Exception:
-            # fallback to individual lookups (optional)
+
             for oid in owner_ids:
                 try:
                     oresp = supabase.table("user").select("id,first_name,last_name,email").eq("id", oid).single().execute()
@@ -851,19 +1080,21 @@ def borrow_items(request):
                 except Exception:
                     owner_map[oid] = str(oid)
 
-    # Attach display to items
     for itm in available_items:
         owner_id = itm.get("user_id") or itm.get("owner") or itm.get("user")
         itm["owner_display"] = owner_map.get(owner_id, "Unknown")
-        # keep explicit owner id for JS to reference if needed
         itm["owner_id"] = owner_id
+
+    # fetch notifications for current user to show in borrow_items header
+    notifications, unread_count = fetch_notifications_for(user_id)
 
     return render(request, "borrow_items.html", {
         "available_items": available_items,
         "SUPABASE_URL": SUPABASE_URL,
         "SUPABASE_ANON_KEY": SUPABASE_ANON_KEY,
-        # endpoint that the JS uses to send the create-request POST
         "REQUEST_BORROW_URL": "/request-borrow/",
+        "notifications": notifications,
+        "unread_count": unread_count,
     })
 
 
@@ -880,27 +1111,22 @@ def create_request(request):
         payload = {}
 
     item_id = payload.get('item_id') or request.POST.get('item_id')
-    end_date = payload.get('end_date') or request.POST.get('end_date')  # optional
+    end_date = payload.get('end_date') or request.POST.get('end_date')  
 
     if not item_id:
         return JsonResponse({'errors': {'item_id': [{'message': 'item_id required'}]}}, status=400)
 
-    # parse/validate end_date (if given) — we treat request_date (now) as the start
     parsed_end = None
-    from datetime import datetime, timezone
 
     if end_date:
         try:
-            # accept both 'YYYY-MM-DD' and full ISO
             parsed_end = datetime.fromisoformat(end_date)
-            # normalize to UTC naive ISO if you prefer to store without tz:
-            # parsed_end = parsed_end.astimezone(timezone.utc).replace(tzinfo=None)
+
         except Exception:
             return JsonResponse({'errors': {'date': [{'message': 'Invalid date format. Use ISO date (YYYY-MM-DD) or full ISO.'}]}}, status=400)
 
-        # require return_date > now
+
         now = datetime.utcnow()
-        # if parsed_end has tzinfo convert to naive UTC for comparison
         try:
             if parsed_end.tzinfo is not None:
                 parsed_end_utc = parsed_end.astimezone(timezone.utc).replace(tzinfo=None)
@@ -912,7 +1138,7 @@ def create_request(request):
         if parsed_end_utc <= now:
             return JsonResponse({'errors': {'date': [{'message': 'Return date must be in the future.'}]}}, status=400)
 
-    # fetch item to get owner and title
+
     try:
         item_resp = supabase.table('item').select('item_id,title,user_id').eq('item_id', item_id).single().execute()
         if getattr(item_resp, 'error', None) or not item_resp.data:
@@ -925,7 +1151,6 @@ def create_request(request):
     if owner_id == user_id:
         return JsonResponse({'errors': {'general': [{'message': "You can't request your own item"}]}}, status=400)
 
-    # create request row: request_date is 'now' (start), return_date stored only if provided
     req_id = str(uuid.uuid4())
     req_payload = {
         'request_id': req_id,
@@ -935,7 +1160,6 @@ def create_request(request):
         'status': 'pending',
     }
     if parsed_end:
-        # store as ISO string; DB column per your schema is `return_date`
         req_payload['return_date'] = parsed_end.isoformat()
 
     try:
@@ -945,7 +1169,6 @@ def create_request(request):
     except Exception as e:
         return JsonResponse({'errors': {'general': [{'message': str(e)}]}}, status=500)
 
-    # create notification for owner
     try:
         message = f"{request.session.get('user_email','Someone')} requested your item \"{item.get('title','item')}\"."
         notif_payload = {
@@ -987,7 +1210,7 @@ def respond_request(request):
     if not req_id or action not in ('approve', 'deny'):
         return JsonResponse({'errors': {'general': [{'message': 'Invalid parameters'}]}}, status=400)
 
-    # load request
+
     rresp = supabase.table('request').select('*').eq('request_id', req_id).single().execute()
     if getattr(rresp, 'error', None) or not rresp.data:
         return JsonResponse({'errors': {'general': [{'message': 'Request not found'}]}}, status=404)
@@ -997,23 +1220,22 @@ def respond_request(request):
     requester_id = req.get('user_id')
     current_status = (req.get('status') or '').lower()
 
-    # If request already handled, short-circuit
+
     if current_status in ('approved', 'denied'):
         return JsonResponse({'success': False, 'status': current_status, 'message': 'Request already processed.'}, status=409)
 
-    # load item and permission check
+
     item_resp = supabase.table('item').select('item_id,title,user_id,available').eq('item_id', item_id).single().execute()
     if getattr(item_resp, 'error', None) or not item_resp.data:
         return JsonResponse({'errors': {'general': [{'message': 'Item not found'}]}}, status=404)
     item = item_resp.data
 
-    # Only owner can respond
+
     if item.get('user_id') != user_id:
         return JsonResponse({'errors': {'general': [{'message': 'Permission denied'}]}}, status=403)
 
     new_status = 'approved' if action == 'approve' else 'denied'
 
-    # Update request row (set status)
     try:
         upd_resp = supabase.table('request').update({'status': new_status}).eq('request_id', req_id).execute()
         if getattr(upd_resp, 'error', None):
@@ -1021,26 +1243,15 @@ def respond_request(request):
     except Exception:
         return JsonResponse({'errors': {'general': [{'message': 'Failed to update request status'}]}}, status=500)
 
-    # If approved: mark item unavailable (transaction creation could go here)
+
     if new_status == 'approved':
         try:
             supabase.table('item').update({'available': False}).eq('item_id', item_id).execute()
-            # Optional: create a transaction row to represent the borrow
-            # tx_payload = {
-            #     "transaction_id": str(uuid.uuid4()),
-            #     "item_id": item_id,
-            #     "owner_id": user_id,
-            #     "borrower_id": requester_id,
-            #     "request_id": req_id,
-            #     "status": "active",
-            #     "created_at": datetime.utcnow().isoformat(),
-            # }
-            # supabase.table('transaction').insert(tx_payload).execute()
+
         except Exception:
-            # non-fatal; continue
             pass
 
-    # Notify the requester
+
     try:
         msg = f'Your request for "{item.get("title")}" was {new_status}.'
         notif_payload = {
@@ -1055,7 +1266,6 @@ def respond_request(request):
     except Exception:
         pass
 
-    # Return helpful JSON for the frontend
     return JsonResponse({
         'success': True,
         'status': new_status,
@@ -1067,62 +1277,71 @@ def respond_request(request):
 @supabase_login_required
 def return_items(request):
     """
-    Page that lists all items the current user has borrowed (approved requests).
+    Page that lists all items the current user has borrowed (approved requests)
+    and shows a history of items already marked as returned.
     """
     user_id = request.session.get("supabase_user_id")
     borrowed_items = []
+    returned_items = [] 
 
     try:
-        # fetch approved requests where current user is the requester — include return_date
+        # --- 1. FETCH BORROWED (same as your working version) ---
         br_req_resp = supabase.table('request') \
-                      .select('request_id,item_id,user_id,request_date,return_date,status') \
-                      .eq('user_id', user_id) \
-                      .eq('status', 'approved') \
-                      .order('request_date', desc=True) \
-                      .execute()
+              .select('request_id,item_id,user_id,request_date,return_date,status,return') \
+              .eq('user_id', user_id) \
+              .eq('status', 'approved') \
+              .neq('return', True) \
+              .order('request_date', desc=True) \
+              .execute()
         br_reqs = br_req_resp.data or []
 
         if br_reqs:
             item_ids = [r.get('item_id') for r in br_reqs if r.get('item_id')]
             items_map = {}
             if item_ids:
-                items_resp2 = supabase.table('item').select('item_id,title,user_id,image_url').in_('item_id', item_ids).execute()
+                items_resp2 = supabase.table('item').select(
+                    'item_id,title,user_id,image_url'
+                ).in_('item_id', item_ids).execute()
                 for it in (items_resp2.data or []):
                     items_map[it.get('item_id')] = it
 
-            # collect owner ids to fetch owner_display later (owner = item.user_id)
-            owner_ids = [ (items_map.get(r.get('item_id')) or {}).get('user_id') for r in br_reqs ]
+            owner_ids = [
+                (items_map.get(r.get('item_id')) or {}).get('user_id') for r in br_reqs
+            ]
             owner_ids = [oid for oid in owner_ids if oid]
 
             owner_map = {}
             if owner_ids:
                 try:
-                    owners_resp = supabase.table('user').select('id,first_name,last_name,email').in_('id', list(set(owner_ids))).execute()
+                    owners_resp = supabase.table('user').select(
+                        'id,first_name,last_name,email'
+                    ).in_('id', list(set(owner_ids))).execute()
                     if not getattr(owners_resp, 'error', None):
                         for o in (owners_resp.data or []):
-                            display = ((o.get('first_name') or '') + ' ' + (o.get('last_name') or '')).strip() or o.get('email') or o.get('id')
+                            display = (
+                                ((o.get('first_name') or '') + ' ' + (o.get('last_name') or '')).strip()
+                                or o.get('email')
+                                or o.get('id')
+                            )
                             owner_map[o.get('id')] = display
                 except Exception:
                     for oid in owner_ids:
                         owner_map.setdefault(oid, str(oid))
 
-            # Build borrowed_items list for template
             for r in br_reqs:
                 itm = items_map.get(r.get('item_id')) or {}
-                # human readable borrow/request date
                 rd_request = r.get('request_date')
                 try:
                     dt_req = datetime.fromisoformat(rd_request) if isinstance(rd_request, str) else rd_request
-                    borrow_date_human = dt_req.strftime("%b %d, %Y") if dt_req else (rd_request or '')
+                    borrow_date_human = dt_req.strftime("%b %d, %Y")
                 except Exception:
                     borrow_date_human = rd_request or ''
 
-                # human readable return date (prefer return_date if present)
-                rd_return = r.get('return_date') or None
+                rd_return = r.get('return_date')
                 try:
                     if rd_return:
                         dt_ret = datetime.fromisoformat(rd_return) if isinstance(rd_return, str) else rd_return
-                        return_date_human = dt_ret.strftime("%b %d, %Y") if dt_ret else (rd_return or '')
+                        return_date_human = dt_ret.strftime("%b %d, %Y")
                     else:
                         return_date_human = ''
                 except Exception:
@@ -1137,21 +1356,77 @@ def return_items(request):
                     "owner_id": owner_id,
                     "owner_display": owner_map.get(owner_id, "Unknown"),
                     "item_image": itm.get('image_url') or None,
-                    "borrow_date": rd_request,
                     "borrow_date_human": borrow_date_human,
-                    "return_date": rd_return,
                     "return_date_human": return_date_human,
                     "status": r.get('status'),
                 })
 
-    except Exception:
+        # --- 2. FETCH RETURNED ITEMS (fixed version without updated_at) ---
+        ret_req_resp = supabase.table('request') \
+            .select('request_id,item_id,user_id,request_date,return_date,status,return') \
+            .eq('user_id', user_id) \
+            .in_('return', [True, 'True', 'true']) \
+            .order('return_date', desc=True) \
+            .execute()
+        ret_reqs = ret_req_resp.data or []
+
+        if ret_reqs:
+            item_ids = [r.get('item_id') for r in ret_reqs if r.get('item_id')]
+            items_map = {}
+            if item_ids:
+                items_resp2 = supabase.table('item').select(
+                    'item_id,title,image_url'
+                ).in_('item_id', item_ids).execute()
+                for it in (items_resp2.data or []):
+                    items_map[it.get('item_id')] = it
+
+            for r in ret_reqs:
+                itm = items_map.get(r.get('item_id')) or {}
+                rd_request = r.get('request_date')
+                try:
+                    dt_req = datetime.fromisoformat(rd_request) if isinstance(rd_request, str) else rd_request
+                    borrow_date_human = dt_req.strftime("%b %d, %Y")
+                except Exception:
+                    borrow_date_human = rd_request or ''
+
+                rd_return = r.get('return_date') or None
+                try:
+                    if rd_return:
+                        dt_ret = datetime.fromisoformat(rd_return) if isinstance(rd_return, str) else rd_return
+                        return_date_human = dt_ret.strftime("%b %d, %Y")
+                    else:
+                        return_date_human = ''
+                except Exception:
+                    return_date_human = rd_return or ''
+
+                returned_items.append({
+                    "request_id": r.get('request_id'),
+                    "item_id": r.get('item_id'),
+                    "item_title": itm.get('title') or r.get('item_id'),
+                    "item_image": itm.get('image_url') or None,
+                    "borrow_date_human": borrow_date_human,
+                    "return_date_human": return_date_human,
+                    "status": r.get('status'),
+                })
+
+    except Exception as e:
+        print("Error in return_items:", e)
         borrowed_items = []
+        returned_items = []
+
+     # after your try/except and before final render:
+    notifications, unread_count = fetch_notifications_for(user_id)
 
     return render(request, "return_items.html", {
         "borrowed_items": borrowed_items,
+        "returned_items": returned_items,
         "SUPABASE_URL": SUPABASE_URL,
         "SUPABASE_ANON_KEY": SUPABASE_ANON_KEY,
+        "notifications": notifications,
+        "unread_count": unread_count,
     })
+
+
 @csrf_exempt
 def save_visibility(request):
     if request.method == "POST":
@@ -1169,3 +1444,113 @@ def save_contact(request):
         profile.contact_phone = data.get("phone")
         profile.save()
         return JsonResponse({"status": "success"})
+
+@require_POST
+@supabase_login_required
+def mark_notifications_read(request):
+    user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return JsonResponse({"errors": {"general": [{"message": "Not authenticated"}]}}, status=401)
+
+    try:
+        upd = supabase.table("notification").update({"is_read": True}).eq("user_id", user_id).eq("is_read", False).execute()
+        # supabase update may or may not return rows — best-effort
+        updated_count = 0
+        try:
+            if getattr(upd, "data", None):
+                updated_count = len(upd.data)
+        except Exception:
+            updated_count = 0
+        return JsonResponse({"success": True, "updated": updated_count})
+    except Exception as e:
+        logging.getLogger(__name__).exception("Error marking notifications read: %s", e)
+        return JsonResponse({"errors": {"general": [{"message": "Failed to mark notifications as read"}]}}, status=500)
+
+
+@require_POST
+@supabase_login_required
+def mark_returned(request):
+    user_id = request.session.get("supabase_user_id")
+    payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    req_id = payload.get('request_id')
+
+    if not req_id:
+        return JsonResponse({'errors': {'general': [{'message': 'request_id required'}]}}, status=400)
+
+    # Fetch the request row
+    rresp = supabase.table('request').select('*').eq('request_id', req_id).single().execute()
+    if getattr(rresp, 'error', None) or not rresp.data:
+        return JsonResponse({'errors': {'general': [{'message': 'Request not found'}]}}, status=404)
+    req = rresp.data
+
+    # Verify that this request belongs to the current user
+    if req.get('user_id') != user_id:
+        return JsonResponse({'errors': {'general': [{'message': 'Permission denied'}]}}, status=403)
+
+    try:
+        # ✅ ONLY update the 'return' field (boolean), NOT 'status'
+        supabase.table('request').update({'return': True}).eq('request_id', req_id).execute()
+
+        # Optional: Add notification for the item owner
+        try:
+            item_id = req.get('item_id')
+            item_resp = supabase.table('item').select('title,user_id').eq('item_id', item_id).maybe_single().execute()
+            if getattr(item_resp, 'data', None):
+                title = item_resp.data.get('title', 'an item')
+                owner_id = item_resp.data.get('user_id')
+                if owner_id:
+                    notif_payload = {
+                        'notification_id': str(uuid.uuid4()),
+                        'user_id': owner_id,
+                        'message': f"{request.session.get('user_email', 'Someone')} marked \"{title}\" as returned.",
+                        'notif_type': 'return_notification',
+                        'is_read': False,
+                        'created_at': datetime.utcnow().isoformat(),
+                    }
+                    supabase.table('notification').insert(notif_payload).execute()
+        except Exception:
+            pass
+
+    except Exception as e:
+        print("Error updating return status:", e)
+        return JsonResponse({'errors': {'general': [{'message': 'Failed to mark item as returned'}]}}, status=500)
+
+    return JsonResponse({'success': True})
+
+
+# ---------- helper to fetch notifications (reusable) ----------
+def fetch_notifications_for(user_id, limit=10):
+    """
+    Returns (notifications_list, unread_count).
+    Notifications will include a 'created_at_human' key for display.
+    """
+    if not user_id:
+        return [], 0
+
+    try:
+        resp = supabase.table('notification') \
+            .select('*') \
+            .eq('user_id', user_id) \
+            .order('created_at', desc=True) \
+            .limit(limit) \
+            .execute()
+        notifications = resp.data or []
+
+        for n in notifications:
+            created = n.get('created_at')
+            try:
+                if isinstance(created, str):
+                    dt = datetime.fromisoformat(created)
+                    n['created_at_human'] = dt.strftime("%b %d, %Y • %I:%M %p")
+                elif isinstance(created, datetime):
+                    n['created_at_human'] = created.strftime("%b %d, %Y • %I:%M %p")
+                else:
+                    n['created_at_human'] = created or ''
+            except Exception:
+                n['created_at_human'] = created or ''
+
+        unread_count = sum(1 for n in notifications if not n.get('is_read'))
+        return notifications, unread_count
+    except Exception:
+        return [], 0
+

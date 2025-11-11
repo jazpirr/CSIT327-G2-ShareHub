@@ -23,5 +23,7 @@ urlpatterns = [
     path('return-items/', views.return_items, name='return_items'),
     path("save_visibility/", views.save_visibility, name="save_visibility"),
     path("save_contact/", views.save_contact, name="save_contact"), 
+    path("notifications/mark-read/", views.mark_notifications_read, name="mark_notifications_read"),
+    path("mark-returned/", views.mark_returned, name="mark_returned"),
 ]
  

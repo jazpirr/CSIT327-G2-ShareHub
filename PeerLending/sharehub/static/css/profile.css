@@ -39,15 +39,6 @@ body {
   font-size: 14px;
 }
 
-/* ===== NAVIGATION BAR ===== */
-.navbar {
-  background: white;
-  padding: 15px 40px;
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
 .nav-container {
   display: flex;
   align-items: center;
@@ -255,148 +246,296 @@ form input:focus, form select:focus {
 
 
 .notification-popup {
-      display: none;
-      position: absolute;
-      top: 100%;
-      right: 0;
-      margin-top: 10px;
-      width: 400px;
-      max-height: 600px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      z-index: 1000;
-      overflow: hidden;
-    }
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  width: 400px;
+  max-height: 600px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+.notification-popup.active {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
 
-    .notification-popup.active {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
 
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+.notification-header h3 {
+  margin: 0;
+  color: #7B1E1E;
+  font-size: 20px;
+  font-weight: 600;
+}
+.mark-read-btn {
+  background: none;
+  border: none;
+  color: #7B1E1E;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
 
-    .notification-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      border-bottom: 1px solid #e5e5e5;
-    }
+.mark-read-btn:hover {
+  background: rgba(123, 30, 30, 0.1);
+}
+.close-popup {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 10px;
+}
 
-    .notification-header h3 {
-      margin: 0;
-      color: #7B1E1E;
-      font-size: 20px;
-      font-weight: 600;
-    }
+.notification-list {
+  max-height: 500px;
+  overflow-y: auto;
+}
+.notification-item {
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.2s;
+}
 
-    .mark-read-btn {
-      background: none;
-      border: none;
-      color: #7B1E1E;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      padding: 5px 10px;
-      border-radius: 6px;
-      transition: background 0.2s;
-    }
+.notification-item:hover {
+  background: #f9f9f9;
+}
 
-    .mark-read-btn:hover {
-      background: rgba(123, 30, 30, 0.1);
-    }
+.notification-item:last-child {
+  border-bottom: none;
+}
 
-    .close-popup {
-      background: none;
-      border: none;
-      color: #666;
-      font-size: 24px;
-      cursor: pointer;
-      padding: 0;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-left: 10px;
-    }
+ .notification-title {
+  color: #333;
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
 
-    .notification-list {
-      max-height: 500px;
-      overflow-y: auto;
-    }
+.notification-time {
+  color: #888;
+}
 
-    .notification-item {
-      padding: 20px;
-      border-bottom: 1px solid #f0f0f0;
-      transition: background 0.2s;
-    }
+.notification-status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 12px;
+}
 
-    .notification-item:hover {
-      background: #f9f9f9;
-    }
+.notification-status.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
 
-    .notification-item:last-child {
-      border-bottom: none;
-    }
+.notification-status.overdue {
+  background: #ffebee;
+  color: #c62828;
+}
 
-    .notification-title {
-      color: #333;
-      font-size: 15px;
-      font-weight: 500;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
+.notification-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  z-index: 999;
+}
 
-    .notification-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13px;
-    }
+.notification-overlay.active {
+  display: block;
+}
 
-    .notification-time {
-      color: #888;
-    }
+/* ===== ENHANCED BORROWING STATISTICS CARD (single-color accent) ===== */
+.profile-left .card.borrow-stats-card {
+  padding: 25px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 0 10px 30px rgba(123,30,30,0.08);
+  border: 1px solid rgba(122, 0, 25, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
 
-    .notification-status {
-      padding: 4px 10px;
-      border-radius: 4px;
-      font-weight: 500;
-      font-size: 12px;
-    }
+/* Decorative top border (single color) */
+.profile-left .card.borrow-stats-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--maroon); /* single color accent */
+}
 
-    .notification-status.active {
-      background: #e8f5e9;
-      color: #2e7d32;
-    }
+/* Give the main title the same feel */
+.profile-left .card.borrow-stats-card h3 {
+  color: #7a0019;
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.profile-left .card.borrow-stats-card h3::before {
+  content: '📊';
+  font-size: 1.2em;
+}
 
-    .notification-status.overdue {
-      background: #ffebee;
-      color: #c62828;
-    }
+/* stats grid and tiles */
+.profile-left .card.borrow-stats-card .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
 
-    .notification-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      z-index: 999;
-    }
+.profile-left .card.borrow-stats-card .stat {
+  background: white;
+  padding: 20px 15px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(123,30,30,0.06);
+  border: 2px solid transparent;
+  min-height: 85px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
 
-    .notification-overlay.active {
-      display: block;
-    }
+/* Solid (single-color) top border on each stat tile */
+.profile-left .card.borrow-stats-card .stat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--maroon);
+  transform: scaleX(1);
+  transition: transform 0.3s ease;
+}
+
+/* Hover effect retains accent but uses maroon */
+.profile-left .card.borrow-stats-card .stat:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(122, 0, 25, 0.15);
+  border-color: #7a0019;
+}
+.profile-left .card.borrow-stats-card .stat:hover::before {
+  transform: scaleX(1);
+}
+
+/* Stat value: solid maroon text (no gradient) */
+.profile-left .card.borrow-stats-card .stat-value {
+  font-size: 2.2em;
+  font-weight: 700;
+  color: var(--maroon);
+  line-height: 1;
+  margin-bottom: 8px;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
+  background-clip: initial;
+}
+
+/* labels */
+.profile-left .card.borrow-stats-card .stat-label {
+  font-size: 0.8em;
+  color: #666;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Chart container styling (keeps white tile look) */
+.profile-left .card.borrow-stats-card > div:has(canvas),
+.profile-left .card.borrow-stats-card > div canvas {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  margin-top: 12px;
+}
+
+.profile-left .card.borrow-stats-card canvas#borrowStatsChart {
+  width: 100% !important;
+  height: 140px !important;
+  display: block;
+  border-radius: 8px;
+}
+
+/* Add matching accent line to profile-card and right-side main card (other boxes) */
+.profile-card::before,
+.profile-right .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--maroon);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  z-index: 1;
+}
+
+/* Ensure those cards are positioned relative to host the ::before */
+.profile-card, .profile-right .card {
+  position: relative;
+  overflow: visible;
+  z-index: 0;
+}
+
+/* keep content readable above the accent */
+.profile-card > * , .profile-right .card > * {
+  position: relative;
+  z-index: 2;
+}
