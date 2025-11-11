@@ -1,0 +1,312 @@
+
+/* ---------------- Carousel Specific Styles ---------------- */
+.carousel-section { position: relative; margin-top: 20px; }
+
+/* header & nav */
+.carousel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.carousel-header h3 { margin:0; font-size:1.05rem; color:var(--maroon); font-weight:700; letter-spacing:.2px; }
+
+/* buttons */
+.carousel-btn{
+  position:absolute; top:50%; transform:translateY(-50%);
+  background:var(--card-bg); border:2px solid var(--maroon); color:var(--maroon);
+  width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08); z-index:60; cursor:pointer;
+}
+.carousel-btn-left { left:10px; }
+.carousel-btn-right { right:10px; }
+.carousel-btn:hover { transform:translateY(-50%) scale(1.05); background:var(--maroon); color:#fff; }
+
+/* track */
+.carousel-track {
+  display:flex;
+  gap:24px;
+  transition: transform .5s cubic-bezier(.4,0,.2,1);
+  will-change: transform;
+  align-items:center;
+  padding: 0 24px; /* small breathing room so scaled center doesn't clip */
+  transform: translate3d(0,0,0); /* hint for GPU */
+  backface-visibility: hidden;
+}
+
+/* item sizing */
+.carousel-item {
+  flex: 0 0 calc(33.333% - 16px);
+  min-width: calc(33.333% - 16px);
+  transition: transform .35s ease, opacity .35s ease, filter .35s ease;
+  opacity: 0.55;
+  transform: scale(.95);
+  overflow: visible;  /* important so inner scaling doesn't get clipped */
+  pointer-events: auto;
+}
+
+/* center item prominence */
+.carousel-item.center {
+  opacity: 1 !important;
+  transform: scale(1.02) !important; /* small scale on container (keeps layout stable) */
+  z-index: 70;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  
+}
+
+/* enlarge inner card (the thing that visually pops) */
+.carousel-item.center .item-box {
+  transform-origin: center top;
+  transform: translateY(-12px) scale(1.45); /* large visual pop without changing layout widths */
+  box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+  transition: transform .35s ease, box-shadow .35s ease;
+}
+
+/* dots */
+.carousel-dots { display:flex; justify-content:center; gap:8px; margin-top:20px; }
+.carousel-dot {
+  width:8px; height:8px; border-radius:50%; background:#ddd; border:none; cursor:pointer; padding:0; transition:all .25s ease;
+}
+.carousel-dot.active { background:var(--maroon); width:24px; border-radius:4px; }
+
+/* ---------- Fix: hide side cards, allow center pop vertically ---------- */
+
+/* Keep the card itself from letting the track spill horizontally */
+.card {
+  overflow-x: hidden;    /* hide side items */
+  overflow-y: visible;   /* allow vertical pop */
+  position: relative;
+}
+
+.card, .carousel-section {
+  overflow: hidden; /* card clips horizontally; container still allows vertical pop */
+}
+
+/* The container hides horizontal overflow (so sides are clipped)
+   but allows vertical overflow so center can "pop" up above the card */
+
+.carousel-container::-webkit-scrollbar { width: 0; height: 0; display: none; background: transparent; }
+
+/* Track stays visible inside container but will be clipped horizontally */
+.carousel-track {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  will-change: transform;
+  transform: translate3d(0,0,0);
+  overflow: visible; /* allow inner scaling to be visible */
+  padding: 0 20px;
+}
+.carousel-track::-webkit-scrollbar { display: none; }
+
+
+/* Normal items: keep them slightly reduced so they don't overlap edges */
+.carousel-item {
+  opacity: 0.55;
+  transform: scale(.95);
+  pointer-events: auto;
+  /* optional safety: limit max width so items don't grow too wide on big screens */
+  max-width: 420px;
+}
+
+/* Center item container (keeps layout stable) */
+.carousel-item.center {
+  flex: 0 0 calc(33.333% - 28px);
+  min-width: calc(33.333% - 28px);
+  max-width: 440px;              /* safety cap to avoid huge items */
+  transition: transform .32s ease, opacity .32s ease;
+  opacity: 0.6;
+  transform: scale(.96);
+  overflow: visible;
+  pointer-events: auto;
+}
+
+/* The visual pop: scale the inner card but keep it from expanding horizontally too much */
+.carousel-item .item-box {
+  transition: transform .35s ease, box-shadow .35s ease;
+  transform-origin: center top;
+  max-width: 420px;                /* keeps the popped card from pushing beyond container */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* The popped visual on the center item (vertical pop, moderate scale) */
+.carousel-item.center .item-box {
+  transform-origin: center top;
+  transform: translateY(-10px) scale(1.12);
+  transition: transform .28s ease, box-shadow .28s ease;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+}
+
+/* Buttons (left/right) should sit above track but inside card */
+.carousel-btn {
+  z-index: 90;
+}
+
+/* ensure the page vertical scrollbar isn't created by the carousel */
+.carousel-section { padding-top: 24px; padding-bottom: 24px; }
+
+/* mobile adjustments */
+@media (max-width:1024px) {
+  .carousel-item, .carousel-item .item-box { max-width: 360px; }
+  .carousel-item.center .item-box { transform: translateY(-10px) scale(1.12); }
+}
+@media (max-width:640px) {
+  .carousel-item, .carousel-item .item-box { max-width: 100%; }
+  .carousel-item.center .item-box { transform: translateY(-6px) scale(1.02); }
+  .carousel-btn { width:40px; height:40px; }
+}
+
+/* ---------- Carousel drop-in fix (paste after your existing CSS) ---------- */
+
+/* Make the card allow the center card to overflow vertically but clip horizontally */
+.card {
+  overflow-x: hidden;    /* hide side items */
+  overflow-y: visible;   /* allow vertical pop */
+  position: relative;
+}
+
+/* The visible viewport for the carousel — clip horizontally here */
+.carousel-container {
+  overflow-x: hidden;
+  overflow-y: visible;
+  position: relative;
+  padding-left: 0;  /* prefer no one-sided padding to keep symmetric peeking */
+  padding-right: 0;
+}
+
+/* Track: allow vertical overflow, keep GPU hints */
+.carousel-track {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  will-change: transform;
+  transform: translate3d(0,0,0);
+  overflow: visible; /* allow inner scaling to be visible */
+  padding: 0 20px;
+}
+
+/* Items: slightly smaller by default and limited width to prevent extreme overflow */
+.carousel-item {
+  flex: 0 0 calc(33.333% - 28px);
+  min-width: calc(33.333% - 28px);
+  max-width: 440px;              /* safety cap to avoid huge items */
+  transition: transform .32s ease, opacity .32s ease;
+  opacity: 0.6;
+  transform: scale(.96);
+  overflow: visible;
+  pointer-events: auto;
+}
+
+/* Center item container - keep layout stable */
+.carousel-item.center {
+  opacity: 1 !important;
+  transform: scale(1.01) !important; /* small change to preserve layout */
+  z-index: 40;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.12);
+}
+
+/* The inner visual pop — vertical raise + modest scale (won't be cut) */
+.carousel-item .item-box {
+  transition: transform .28s ease, box-shadow .28s ease;
+  transform-origin: center top;
+  position: relative;
+  margin: 0 auto;
+  max-width: 420px;              /* prevents horizontal overflow */
+}
+
+.carousel-item.center .item-box {
+  transform: translateY(-10px) scale(1.12); /* moderate pop that won't be clipped */
+  box-shadow: 0 20px 48px rgba(0,0,0,0.18);
+  z-index: 60;
+}
+
+/* Arrows: sit above everything */
+.carousel-btn { z-index: 80; }
+
+/* Prevent accidental scrollbars on track */
+.carousel-container::-webkit-scrollbar { display: none; }
+.carousel-track::-webkit-scrollbar { display: none; }
+
+/* Responsive */
+@media (max-width:1024px) {
+  .carousel-item { flex: 0 0 calc(50% - 16px); min-width: calc(50% - 16px); max-width: 360px; }
+  .carousel-item.center .item-box { transform: translateY(-8px) scale(1.08); }
+}
+@media (max-width:640px) {
+  .carousel-item { flex: 0 0 100%; min-width:100%; max-width:none; }
+  .carousel-item.center .item-box { transform: translateY(-6px) scale(1.02); }
+  .carousel-btn { display: none; }
+}
+
+
+
+/* ====== Carousel shadow & overflow fix (paste at end of design.css) ====== */
+
+/* Give the carousel card real vertical overflow so shadows can show.
+   Keep horizontal clipping so side items don't spill past the card. */
+.card.carousel-card {
+  overflow-x: hidden;     /* keep side items clipped horizontally */
+  overflow-y: visible;    /* allow vertical pop + shadow visibility */
+  position: relative;
+  /* if a previous rule forces overflow:hidden via higher specificity,
+     use the next line with !important as last resort:
+     overflow-x: hidden !important;
+     overflow-y: visible !important;
+  */
+}
+
+/* Also ensure the inner carousel viewport doesn't clip the shadow */
+.card.carousel-card .carousel-section,
+.card.carousel-card .carousel-container,
+.card.carousel-card .carousel-track {
+  overflow: visible;      /* allow inner box-shadows to render outside */
+}
+
+/* Add breathing room below the carousel so the shadow isn't visually cut */
+.card.carousel-card .carousel-container {
+  padding-bottom: 48px;   /* increase if shadow still cut; 48-64px is typical */
+  padding-top: 28px;      /* keeps layout same as your current top padding */
+}
+
+/* Make sure the popped center item sits above everything and its shadow is big enough */
+.card.carousel-card .carousel-item.center .item-box {
+  z-index: 120;                         /* must be above card controls */
+  transform: translateY(-12px) scale(1.12);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.22); /* larger shadow so it shows clearly */
+  will-change: transform, box-shadow;
+}
+
+.card.carousel-card {
+  overflow-x: hidden !important;   /* keep side clipping horizontally */
+  overflow-y: visible !important;  /* allow vertical overflow so shadows appear */
+  position: relative !important;
+}
+
+/* Make the carousel viewport & track not clip the inner box-shadow */
+.card.carousel-card .carousel-section,
+.card.carousel-card .carousel-container,
+.card.carousel-card .carousel-track {
+  overflow: visible !important;
+}
+
+/* Give breathing room below the carousel so the large shadow isn't clipped */
+.card.carousel-card .carousel-container {
+  padding-bottom: 64px !important; /* adjust 48-96px to taste */
+  padding-top: 28px !important;
+}
+
+/* Bring the center item and its visual box above everything else */
+.card.carousel-card .carousel-item.center {
+  z-index: 200 !important;
+  pointer-events: auto;
+}
+
+/* Ensure the popped inner box is highest and has a strong shadow */
+.card.carousel-card .carousel-item.center .item-box {
+  position: relative !important;
+  z-index: 300 !important;
+  transform: translateY(-12px) scale(1.12) !important;
+  box-shadow: 0 15px 33px rgba(128, 0, 0, 0.25) !important; /* tweak spread/opacity as needed */
+  will-change: transform, box-shadow;
+}
+
+/* If you still see clipping, the culprit is some ancestor with overflow:hidden.
+   The following debug helper draws outlines so you can spot the clippers in devtools:
+   (remove after debugging) */
+.debug-overflow * { outline: 1px dashed rgba(255,0,0,0.12); }

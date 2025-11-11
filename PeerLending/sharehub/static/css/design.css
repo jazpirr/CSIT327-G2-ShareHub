@@ -8,17 +8,13 @@
     font-family: 'Poppins', sans-serif;
     transition: 0.18s all ease-in-out;
 }
-/* Always reserve vertical scrollbar space so layout doesn't jump */
 html {
-  scrollbar-gutter: stable; /* modern browsers */
+  scrollbar-gutter: stable;
 }
 
-/* Fallback for older browsers: always show scrollbar */
 html {
   overflow-y: scroll;
 }
-
-
 
 :root {
   --maroon: #7a0019;
@@ -330,9 +326,9 @@ body {
 }
 
 .item-box {
-  background: #fff;
+  background: white;
   border-radius: 10px;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+  box-shadow: 10px 6px 14px rgba(124, 89, 89, 0.7);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -489,22 +485,24 @@ body {
 /* ===== NOTIFICATION POPUP ===== */
 .notification-popup {
   display: none;
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 10px;
+  position: fixed; 
+  top: 0; 
+  margin: 0;
   width: 400px;
   max-height: 600px;
   background: #f5f5f5;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.419);
-  z-index: 1000;
   overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.419);
+  z-index: 11000;                  
+  pointer-events: auto;    
+  -webkit-tap-highlight-color: transparent;
 }
 
 .notification-popup.active {
   display: block;
   animation: slideDown 0.3s ease;
+ 
 }
 
 @keyframes slideDown {
@@ -565,8 +563,15 @@ body {
 }
 
 .notification-list {
-  max-height: 500px;
+  max-height: 520px; 
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch; 
+  overscroll-behavior: contain;    
+  pointer-events: auto;
+  padding: 8px 0;
+}
+.mark-read-btn, .close-popup {
+  pointer-events: auto;
 }
 
 .notification-item {
@@ -619,19 +624,35 @@ body {
   color: #c62828;
 }
 
-.notification-overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  z-index: 999;
+/* accessibility defaults */
+.notification-popup[aria-hidden="true"] { visibility: hidden; opacity: 0; pointer-events: none; }
+.notification-popup[aria-hidden="false"] { visibility: visible; opacity: 1; pointer-events: auto; }
+.notification-overlay.ignore-under-popup { pointer-events: none !important; }
+
+/* ===== MATCH SITE SCROLLBAR STYLE ===== */
+.notification-list::-webkit-scrollbar {
+  width: 10px;                            /* consistent scrollbar width */
 }
 
-.notification-overlay.active {
-  display: block;
+.notification-list::-webkit-scrollbar-track {
+  background: #e9e9e9;                    /* same light gray track */
+  border-radius: 8px;
+}
+
+.notification-list::-webkit-scrollbar-thumb {
+  background-color: #7B1E1E;              /* maroon thumb (your main theme color) */
+  border-radius: 8px;
+  border: 2px solid #e9e9e9;              /* gives it a little gap effect */
+}
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+  background-color: #5a1515;              /* darker maroon on hover */
+}
+
+/* Firefox compatibility */
+.notification-list {
+  scrollbar-width: thin;
+  scrollbar-color: #7B1E1E #e9e9e9;
 }
 
 /* ===== SEARCH BAR STYLES ===== */
@@ -2155,8 +2176,9 @@ textarea.form-control {
   padding: 18px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
+
+
 
 /* header row with title + count */
 .borrowed-header {
@@ -2431,8 +2453,11 @@ textarea.form-control {
 }
 
 .content-grid > .card:first-child h3 {
-  color: #721c24;
-  margin-bottom: 20px;
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--maroon);
+  letter-spacing: 0.2px;
+  font-weight: 700;
 }
 
 .content-grid > .card:first-child .placeholder {
@@ -2759,4 +2784,19 @@ textarea.form-control {
     padding: 14px;
     margin-bottom: 16px;
   }
+}
+
+
+.returned-history {
+  overflow: hidden;
+}
+
+.returned-history .borrowed-header:hover {
+  background-color: #faf7f7;
+  transition: background-color 0.2s ease;
+}
+
+.returned-history h3 {
+  color: #7B1E1E;
+  font-weight: 600;
 }

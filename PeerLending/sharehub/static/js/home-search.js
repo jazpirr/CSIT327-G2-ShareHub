@@ -1,9 +1,5 @@
 // home-search.js
 document.addEventListener('DOMContentLoaded', () => {
-  const notificationBtn = document.querySelector('.notification-btn');
-  const notificationPopup = document.getElementById('notificationPopup');
-  const notificationOverlay = document.getElementById('notificationOverlay');
-  const notificationClose = document.getElementById('closePopup');
 
   const filterBtn = document.querySelector('.search-filter-btn');
   const filterPopup = document.getElementById('filterPopup');
@@ -18,36 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const sortSelect = document.getElementById('sortSelect'); // may live inside the popup
 
   /* -----------------------------
-     Popups / Notification handlers
+     Popups
      ----------------------------- */
-  if (notificationBtn) {
-    notificationBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      notificationPopup?.classList.toggle('active');
-      notificationOverlay?.classList.toggle('active');
-      filterPopup?.classList.remove('active');
-    });
-  }
-
-  notificationClose?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    notificationPopup?.classList.remove('active');
-    notificationOverlay?.classList.remove('active');
-  });
-
-  notificationOverlay?.addEventListener('click', () => {
-    notificationPopup?.classList.remove('active');
-    notificationOverlay.classList.remove('active');
-  });
-
-  notificationPopup?.addEventListener('click', (e) => e.stopPropagation());
+  
 
   if (filterBtn && filterPopup) {
     filterBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       filterPopup.classList.toggle('active');
-      notificationPopup?.classList.remove('active');
-      notificationOverlay?.classList.remove('active');
     });
 
     filterClose?.addEventListener('click', (e) => {

@@ -4,11 +4,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const cancelBtn = document.getElementById('cancelAddItem');
   const uploadArea = document.getElementById('uploadArea');
   const fileInput = document.getElementById('itemImage');
-  const actionOverlay = document.getElementById('actionOverlay');
-  const actionPopup = document.getElementById('actionPopup');
-  const actionPopupHeader = document.getElementById('actionPopupHeader');
-  const actionPopupBody = document.getElementById('actionPopupBody');
-  const actionPopupClose = document.getElementById('actionPopupClose');
+
+  // re-declare these so other parts of the file that still reference them won't error
+  const actionOverlay = document.getElementById('actionOverlay') || document.getElementById('errorOverlay');
+  const actionPopup   = document.getElementById('actionPopup')   || document.getElementById('errorPopup');
 
   let addItemForm = document.getElementById('addItemForm') || (modal ? modal.querySelector('form') : null);
 
@@ -21,60 +20,53 @@ document.addEventListener('DOMContentLoaded', function () {
     actionOverlay.classList.remove('show');
   }
 
+  // ------ Popup integration (use the shared popup.js API when available) ------
+
+  function _joinMessages(messages) {
+    if (!messages && messages !== 0) return '';
+    if (Array.isArray(messages)) return messages.join('\n');
+    return String(messages);
+  }
+
   function showActionPopup(headerText, messages) {
-    if (!actionPopup || !actionPopupHeader || !actionPopupBody) {
-      if (Array.isArray(messages)) alert(headerText + "\n\n" + messages.join("\n"));
-      else alert(headerText + "\n\n" + String(messages));
+    const msg = _joinMessages(messages);
+    // prefer the shared popup API
+    if (window.showMessagePopup) {
+      // auto-close success messages after 2.5s; errors stay until user closes
+      const autoClose = headerText && String(headerText).toLowerCase().includes('success') ? 2500 : 0;
+      window.showMessagePopup(headerText || 'Message', msg, { autoCloseMs: autoClose });
       return;
     }
-
-    actionPopupHeader.textContent = headerText || 'Message';
-
-    actionPopupBody.innerHTML = '';
-    if (Array.isArray(messages)) {
-      messages.forEach(m => {
-        const d = document.createElement('div');
-        d.textContent = m;
-        actionPopupBody.appendChild(d);
-      });
-    } else if (typeof messages === 'string') {
-      const div = document.createElement('div');
-      div.textContent = messages;
-      actionPopupBody.appendChild(div);
-    } else {
-      const div = document.createElement('div');
-      div.textContent = String(messages);
-      actionPopupBody.appendChild(div);
-    }
-
-    _showOverlay();
-    actionPopup.style.display = 'flex';
-    setTimeout(() => actionPopup.classList.add('show'), 10);
+    // fallback to alert if shared popup isn't loaded for any reason
+    alert((headerText ? headerText + '\n\n' : '') + msg);
   }
 
   function closeActionPopup() {
-    if (!actionPopup) return;
-    actionPopup.classList.remove('show');
-    _hideOverlay();
-    setTimeout(() => {
-      actionPopup.style.display = 'none';
-      if (actionPopupHeader) {
-        actionPopupHeader.classList.remove('success', 'error');
-      }
-    }, 220);
+    // try to use the popup close button if it exists (popup.js wired it)
+    const closeBtn = document.querySelector('#errorPopup .close-btn, #actionPopup .close-btn, .close-btn');
+    if (closeBtn) {
+      try { closeBtn.click(); return; } catch (e) {}
+    }
+
+    // fallback: hide known popup nodes manually
+    const popup = document.getElementById('errorPopup') || document.getElementById('actionPopup');
+    const overlay = document.getElementById('errorOverlay') || document.getElementById('actionOverlay');
+    if (popup) {
+      popup.classList.remove('show');
+      popup.style.display = 'none';
+      popup.style.pointerEvents = 'none';
+    }
+    if (overlay) {
+      overlay.classList.remove('show');
+      overlay.style.pointerEvents = 'none';
+    }
   }
 
   function showActionPopupWithType(headerText, messages, type) {
-    const t = type === 'success' ? 'success' : 'error';
-    if (actionPopupHeader) {
-      actionPopupHeader.classList.remove('success', 'error');
-      actionPopupHeader.classList.add(t);
-    }
+    // popup.js handles any header styling; just forward text
     showActionPopup(headerText, messages);
   }
 
-  if (actionPopupClose) actionPopupClose.addEventListener('click', closeActionPopup);
-  if (actionOverlay) actionOverlay.addEventListener('click', closeActionPopup);
 
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
