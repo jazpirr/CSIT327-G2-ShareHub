@@ -1057,7 +1057,7 @@ def add_item(request):
         }
 
         logger.debug("INSERT payload: %s", payload)
-        insert_res = admin_client.table("item").insert(payload).execute()
+        insert_res = supabase.table("item").insert(payload).execute()
 
         if getattr(insert_res, "error", None):
             err = insert_res.error
@@ -1066,10 +1066,18 @@ def add_item(request):
             return JsonResponse({"errors": {"general": [{"message": f"Failed to create item: {msg}"}]}}, status=500)
 
         logger.info("✅ [add_item] success item_id=%s", item_id)
-        return JsonResponse({"success": True, "item_id": item_id})
+        return JsonResponse({
+            "success": True,
+            "item_id": item_id,
+            "message": "Item added successfully!"
+        })
+
     except Exception as e:
         logger.exception("Insert exception")
-        return JsonResponse({"errors": {"general": [{"message": str(e)}]}}, status=500)
+        return JsonResponse({
+            "errors": {"general": [{"message": str(e)}]}},
+            status=500
+        )
 
 
 @supabase_login_required

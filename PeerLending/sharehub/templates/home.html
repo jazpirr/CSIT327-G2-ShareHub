@@ -142,7 +142,7 @@
         <p>Share your academic items with fellow students</p>
       </div>
       
-      <form id="addItemForm" class="modal-body">
+      <form id="addItemForm" novalidate class="modal-body">
         {% csrf_token %}
         <div class="form-group">
           <label>Item Image</label>
@@ -728,6 +728,21 @@
   <script src="{% static 'js/carousel.js' %}"></script>
   <script src="{% static 'js/borrowed-item-modal.js' %}"></script>
   <script src="{% static 'js/overdue-toggle.js' %}"></script>
+
+<!-- Add Item Success/Error Modal -->
+<div id="addItemOverlay" class="modal-overlay">
+    <div id="addItemPopup" class="modal-content">
+        <div class="modal-header">
+            <span id="addItemPopupTitle">Success!</span>
+        </div>
+        <div class="modal-body">
+            <div id="addItemPopupMessage">Your item has been added successfully!</div>
+        </div>
+        <div class="modal-footer" style="padding: 16px 24px; text-align: right; border-top: 1px solid #e0e0e0;">
+            <button id="addItemCloseBtn" class="modal-btn" style="background: #800000; color: #fff; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
