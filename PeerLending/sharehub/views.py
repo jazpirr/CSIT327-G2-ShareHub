@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.urls import reverse
 from django.contrib.auth import logout
-   
+from supabase import create_client   
 from supabase import create_client, Client
 from supabase_auth._sync.gotrue_client import AuthApiError
  
@@ -758,7 +758,7 @@ def settings_view(request):
 
 @require_POST
 def update_email(request):
-    """Update user's email with proper sync"""
+    """Update email without requiring URL configuration in Supabase"""
     user_id = request.session.get('supabase_user_id')
     if not user_id:
         return JsonResponse({'errors': {'general': [{'message': 'Not authenticated'}]}}, status=401)
@@ -790,78 +790,103 @@ def update_email(request):
     if not current_email:
         return JsonResponse({'errors': {'general': [{'message': 'Unable to determine current email'}]}}, status=400)
 
-    print(f'🔍 DEBUG: Current email: {current_email}, New email: {new_email}')
-
     # Step 1: Verify password
     try:
-        signin_resp = supabase.auth.sign_in_with_password({'email': current_email, 'password': current_password})
+        signin_resp = supabase.auth.sign_in_with_password({
+            'email': current_email, 
+            'password': current_password
+        })
         user_obj = getattr(signin_resp, 'user', None)
         session_obj = getattr(signin_resp, 'session', None)
         
         if not user_obj or not session_obj:
-            print('❌ DEBUG: Sign-in failed')
             return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
         
         access_token = session_obj.access_token
         refresh_token = session_obj.refresh_token
-        print(f'✅ DEBUG: Sign-in successful! User ID: {user_obj.id}')
         
     except Exception as e:
-        print(f'❌ Sign-in error: {e}')
         return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
 
-    # Step 2: Update Supabase Auth email
+    # Step 2: Update email in Supabase Auth (with service role - no email verification needed)
     try:
-        from supabase import create_client
-        user_supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        user_supabase.auth.set_session(access_token, refresh_token)
+        sync_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         
-        print(f'🔄 DEBUG: Calling update_user with email: {new_email}')
-        update_resp = user_supabase.auth.update_user({'email': new_email})
+        # ✅ KEY: Use admin API to update without verification
+        update_resp = sync_client.auth.admin.update_user_by_id(
+            user_id, 
+            {"email": new_email, "email_confirm": True}  # Skip verification!
+        )
         
         if hasattr(update_resp, 'error') and update_resp.error:
-            print(f'❌ Email update error: {update_resp.error}')
-            return JsonResponse({'errors': {'general': [{'message': 'Failed to update email in auth'}]}}, status=400)
+            return JsonResponse({'errors': {'general': [{'message': 'Failed to update email'}]}}, status=400)
         
-        updated_user = getattr(update_resp, 'user', None)
-        if updated_user:
-            print(f'✅ DEBUG: Auth email updated to: {getattr(updated_user, "email", "NOT FOUND")}')
+        # Step 3: Update user table immediately
+        try:
+            table_update = sync_client.table('user').update({
+                'email': new_email
+            }).eq('id', user_id).execute()
+        except Exception as sync_err:
+            print(f'⚠️ Table sync warning: {sync_err}')
+        
+        # Step 4: Update session
+        request.session['user_email'] = new_email
+        request.session.modified = True
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Email updated successfully! You can now login with your new email.',
+            'new_email': new_email
+        })
         
     except Exception as e:
-        print(f'❌ Email update exception: {type(e).__name__}: {str(e)}')
-        return JsonResponse({'errors': {'general': [{'message': str(e)}]}}, status=400)
+        print(f'❌ Email update error: {e}')
+        return JsonResponse({'errors': {'general': [{'message': 'Failed to update email. Try again.'}]}}, status=400)
 
-    # Step 3: Sync to user table using service role key for reliability
+
+@never_cache
+def confirm_email_change(request):
+    """Handle email change confirmation from Supabase link"""
     try:
-        if not SUPABASE_SERVICE_ROLE_KEY:
-            print('⚠️ WARNING: No service role key, using regular key for table sync')
-            sync_client = supabase
-        else:
-            sync_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        # Get the token from URL
+        access_token = request.GET.get('access_token')
+        refresh_token = request.GET.get('refresh_token')
+        token_type = request.GET.get('type')
         
-        table_update = sync_client.table('user').update({'email': new_email}).eq('id', user_id).execute()
-        
-        if getattr(table_update, 'error', None):
-            print(f'⚠️ Table sync error: {table_update.error}')
-            # Don't fail the whole request, auth email is already updated
-        else:
-            print(f'✅ DEBUG: User table synced with new email')
+        if token_type == 'email_change' and access_token:
+            # Exchange the session
+            from supabase import create_client
+            temp_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            temp_client.auth.set_session(access_token, refresh_token)
             
+            # Get updated user
+            user_resp = temp_client.auth.get_user()
+            updated_user = getattr(user_resp, 'user', None)
+            
+            if updated_user:
+                new_email = updated_user.email
+                user_id = updated_user.id
+                
+                # Update user table
+                sync_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+                sync_client.table('user').update({'email': new_email}).eq('id', user_id).execute()
+                
+                # Update session
+                request.session['user_email'] = new_email
+                request.session['supabase_user_id'] = user_id
+                request.session.modified = True
+                
+                messages.success(request, f'Email successfully changed to {new_email}!')
+                return redirect('home')
+        
+        # If no valid token, just redirect to login
+        messages.info(request, 'Please log in with your new email')
+        return redirect('login')
+        
     except Exception as e:
-        print(f'⚠️ Table sync warning: {e}')
-        # Continue - auth email is the source of truth
-
-    # Step 4: Update session
-    request.session['user_email'] = new_email
-    request.session.modified = True
-    
-    print(f'✅ Email update complete for user {user_id}')
-    return JsonResponse({
-        'success': True, 
-        'message': 'Email updated! Please check your new email inbox for a confirmation link if required.',
-        'new_email': new_email
-    })
-
+        print(f'❌ Email confirmation error: {e}')
+        messages.error(request, 'Email confirmation failed. Please try again.')
+        return redirect('login')
 
 
 @require_POST
