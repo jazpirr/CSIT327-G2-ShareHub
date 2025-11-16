@@ -238,6 +238,17 @@ def home(request):
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp and getattr(profile_resp, "data", None) else None
 
+    # ALWAYS get email from Supabase Auth (source of truth)
+    if user_info:
+        try:
+            auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
+            if auth_user_resp.user:
+                user_info["email"] = auth_user_resp.user.email
+                request.session['user_email'] = auth_user_resp.user.email
+        except Exception as e:
+            print(f"Error fetching auth email: {e}")
+            if request.session.get('user_email'):
+                user_info["email"] = request.session.get('user_email')
 
     notifications, unread_count = fetch_notifications_for(user_id)
 
@@ -466,16 +477,24 @@ def home(request):
 @supabase_login_required
 def profile(request):
     user_id = request.session.get("supabase_user_id")
+    
+    # Fetch from database
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp.data else {}
 
+    # ALWAYS get email from Supabase Auth (source of truth)
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
-        if auth_user_resp.user and "email" not in user_info:
+        if auth_user_resp.user:
             user_info["email"] = auth_user_resp.user.email
-    except Exception:
-        pass
+            request.session['user_email'] = auth_user_resp.user.email  # Update session too
+    except Exception as e:
+        print(f"Error fetching auth email: {e}")
+        # Fallback to session
+        if request.session.get('user_email'):
+            user_info["email"] = request.session.get('user_email')
 
+    # ... rest of your existing borrow_stats code ...
     borrow_stats = {
         "total_requests": 0,
         "total_borrowed": 0,
@@ -493,11 +512,9 @@ def profile(request):
 
         now_utc = datetime.now(timezone.utc)
 
-        # build monthly buckets for last 6 months (including current month)
         months = []
         month_keys = []
         for i in range(5, -1, -1):
-            # safer month arithmetic: subtract months via timedelta approximation is ok for your use-case
             m = (now_utc.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
             key = m.strftime("%Y-%m")
             months.append(m.strftime("%b %Y"))
@@ -515,7 +532,6 @@ def profile(request):
             if is_returned:
                 borrow_stats["total_returned"] += 1
 
-            # overdue: approved, not returned, return_date in past
             if status == "approved" and not is_returned:
                 rd = r.get("return_date")
                 if rd:
@@ -530,7 +546,6 @@ def profile(request):
                     except Exception:
                         pass
 
-            # monthly count by request_date
             rd = r.get("request_date")
             if rd:
                 try:
@@ -548,7 +563,6 @@ def profile(request):
         borrow_stats["month_counts"] = month_values
 
     except Exception:
-        # keep defaults if anything fails
         pass
 
     borrow_stats_json = json.dumps({
@@ -567,9 +581,10 @@ def profile(request):
         "notifications": notifications,
         "unread_count": unread_count,
         "borrow_stats_json": borrow_stats_json,
-        "borrow_stats": borrow_stats,   # <-- add parsed dict for template rendering
+        "borrow_stats": borrow_stats,
     })
- 
+
+
 @supabase_login_required
 def edit_profile(request):
     user_id = request.session.get("supabase_user_id")
@@ -577,13 +592,16 @@ def edit_profile(request):
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data or {}
  
-   
+    # ALWAYS get email from Supabase Auth (source of truth)
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
         if auth_user_resp.user:
             user_info["email"] = auth_user_resp.user.email
-    except Exception:
-        pass
+            request.session['user_email'] = auth_user_resp.user.email
+    except Exception as e:
+        print(f"Error fetching auth email: {e}")
+        if request.session.get('user_email'):
+            user_info["email"] = request.session.get('user_email')
  
     if request.method == "POST":
         first_name = request.POST.get("first_name")
@@ -626,6 +644,7 @@ def edit_profile(request):
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
  
+    # ... rest of your existing borrow_stats code ...
     borrow_stats = {
         "total_requests": 0,
         "total_borrowed": 0,
@@ -705,7 +724,6 @@ def edit_profile(request):
         "month_counts": borrow_stats["month_counts"],
     })
 
-    # fetch notifications for header as in other views
     notifications, unread_count = fetch_notifications_for(user_id)
 
     return render(request, "profile/edit_profile.html", {
@@ -713,7 +731,7 @@ def edit_profile(request):
         "notifications": notifications,
         "unread_count": unread_count,
         "borrow_stats_json": borrow_stats_json,
-        "borrow_stats": borrow_stats,   # add this so template can use borrow_stats.total_borrowed etc.
+        "borrow_stats": borrow_stats,
     })
  
  
@@ -724,21 +742,23 @@ def settings_view(request):
     profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
     user_info = profile_resp.data if profile_resp.data else {}
  
+    # ALWAYS get email from Supabase Auth (source of truth)
     try:
         auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
-        if auth_user_resp.user and "email" not in user_info:
+        if auth_user_resp.user:
             user_info["email"] = auth_user_resp.user.email
-    except Exception:
-        pass
+            request.session['user_email'] = auth_user_resp.user.email
+    except Exception as e:
+        print(f"Error fetching auth email: {e}")
+        if request.session.get('user_email'):
+            user_info["email"] = request.session.get('user_email')
  
     return render(request, "settings.html", {"user_info": user_info})
 
 
-
-
 @require_POST
 def update_email(request):
-    """Update user's email with detailed logging"""
+    """Update user's email with proper sync"""
     user_id = request.session.get('supabase_user_id')
     if not user_id:
         return JsonResponse({'errors': {'general': [{'message': 'Not authenticated'}]}}, status=401)
@@ -772,6 +792,7 @@ def update_email(request):
 
     print(f'🔍 DEBUG: Current email: {current_email}, New email: {new_email}')
 
+    # Step 1: Verify password
     try:
         signin_resp = supabase.auth.sign_in_with_password({'email': current_email, 'password': current_password})
         user_obj = getattr(signin_resp, 'user', None)
@@ -789,6 +810,7 @@ def update_email(request):
         print(f'❌ Sign-in error: {e}')
         return JsonResponse({'errors': {'current_password': [{'message': 'Invalid password'}]}}, status=400)
 
+    # Step 2: Update Supabase Auth email
     try:
         from supabase import create_client
         user_supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -799,35 +821,46 @@ def update_email(request):
         
         if hasattr(update_resp, 'error') and update_resp.error:
             print(f'❌ Email update error: {update_resp.error}')
-            return JsonResponse({'errors': {'general': [{'message': 'Failed to update email'}]}}, status=400)
+            return JsonResponse({'errors': {'general': [{'message': 'Failed to update email in auth'}]}}, status=400)
         
         updated_user = getattr(update_resp, 'user', None)
         if updated_user:
-            print(f'✅ DEBUG: Supabase Auth returned updated user. Email in response: {getattr(updated_user, "email", "NOT FOUND")}')
-            print(f'✅ DEBUG: User confirmed: {getattr(updated_user, "email_confirmed_at", "NOT CONFIRMED")}')
-        else:
-            print(f'⚠️ WARNING: No user object in update response!')
-        
-        try:
-            supabase.table('user').update({'email': new_email}).eq('id', user_id).execute()
-            print(f'✅ DEBUG: User table updated')
-        except Exception as e:
-            print(f'⚠️ Table sync warning: {e}')
-        
-    
-        request.session['user_email'] = new_email
-        
-        print(f'✅ Email update complete for user {user_id}')
-        return JsonResponse({
-            'success': True, 
-            'message': 'Email updated! Please check your new email inbox for a confirmation link if required.'
-        })
+            print(f'✅ DEBUG: Auth email updated to: {getattr(updated_user, "email", "NOT FOUND")}')
         
     except Exception as e:
         print(f'❌ Email update exception: {type(e).__name__}: {str(e)}')
-        import traceback
-        traceback.print_exc()
         return JsonResponse({'errors': {'general': [{'message': str(e)}]}}, status=400)
+
+    # Step 3: Sync to user table using service role key for reliability
+    try:
+        if not SUPABASE_SERVICE_ROLE_KEY:
+            print('⚠️ WARNING: No service role key, using regular key for table sync')
+            sync_client = supabase
+        else:
+            sync_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        
+        table_update = sync_client.table('user').update({'email': new_email}).eq('id', user_id).execute()
+        
+        if getattr(table_update, 'error', None):
+            print(f'⚠️ Table sync error: {table_update.error}')
+            # Don't fail the whole request, auth email is already updated
+        else:
+            print(f'✅ DEBUG: User table synced with new email')
+            
+    except Exception as e:
+        print(f'⚠️ Table sync warning: {e}')
+        # Continue - auth email is the source of truth
+
+    # Step 4: Update session
+    request.session['user_email'] = new_email
+    request.session.modified = True
+    
+    print(f'✅ Email update complete for user {user_id}')
+    return JsonResponse({
+        'success': True, 
+        'message': 'Email updated! Please check your new email inbox for a confirmation link if required.',
+        'new_email': new_email
+    })
 
 
 
