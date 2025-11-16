@@ -238,7 +238,59 @@ document.addEventListener('DOMContentLoaded', function () {
     return data;
   }
 
-  let handlersAttached = false;
+  // ===== SUCCESS/ERROR POPUP FUNCTIONS =====
+function showAddItemPopup(message, isSuccess = true) {
+    const overlay = document.getElementById('addItemOverlay');
+    const popup = document.getElementById('addItemPopup');
+    const title = document.getElementById('addItemPopupTitle');
+    const msgBody = document.getElementById('addItemPopupMessage');
+    const closeBtn = document.getElementById('addItemCloseBtn');
+    
+    if (!overlay || !popup) return;
+    
+    // Set title and message
+    title.textContent = isSuccess ? 'Success!' : 'Error!';
+    msgBody.textContent = message;
+    
+    // Toggle error/success styling
+    if (isSuccess) {
+        popup.classList.remove('error');
+        popup.classList.add('success');
+    } else {
+        popup.classList.add('error');
+        popup.classList.remove('success');
+    }
+    
+    // Show popup
+    overlay.classList.add('show');
+    
+    // Close button handler
+    closeBtn.onclick = () => {
+        overlay.classList.remove('show');
+        
+        // If success, reload or redirect
+        if (isSuccess) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        }
+    };
+    
+    // Auto-close success messages after 3 seconds
+    if (isSuccess) {
+        setTimeout(() => {
+            if (overlay.classList.contains('show')) {
+                overlay.classList.remove('show');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300);
+            }
+        }, 3000);
+    }
+}
+
+let handlersAttached = false;
+
   function attachHandlers(formElem) {
     if (!formElem) return;
     if (handlersAttached) return;
@@ -254,9 +306,26 @@ document.addEventListener('DOMContentLoaded', function () {
       const condition = (document.getElementById('itemCondition') || {}).value || '';
       const description = (document.getElementById('itemDescription') || {}).value?.trim?.() || '';
 
-      if (!itemName || !category || !condition || !description) {
-        showActionPopupWithType('Please fill required fields', ['Please fill in all required fields.'], 'error');
-        return;
+      // ===== CUSTOM VALIDATION WITH CUSTOM POPUP =====
+      if (!itemName) {
+          showAddItemPopup('Please fill in the Item Name field.', false);
+          return;
+      }
+      if (!category || category === 'Select Category') {
+          showAddItemPopup('Please select a Category.', false);
+          return;
+      }
+      if (!condition || condition === 'Select Condition') {
+          showAddItemPopup('Please select a Condition.', false);
+          return;
+      }
+      if (!description) {
+          showAddItemPopup('Please fill in the Description field.', false);
+          return;
+      }
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+          showAddItemPopup('Please upload an image of the item.', false);
+          return;
       }
 
       const btn = submitBtn;
@@ -267,39 +336,39 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.innerHTML = '<span class="spinner"></span> Adding...';
       }
 
-      try {
-        const formData = new FormData();
-        formData.append('itemName', itemName);
-        formData.append('category', category);
-        formData.append('condition', condition);
-        formData.append('description', description);
+try {
+    const formData = new FormData();
+    formData.append('itemName', itemName);
+    formData.append('category', category);
+    formData.append('condition', condition);
+    formData.append('description', description);
+    const availRadio = document.querySelector('input[name="availability"]:checked');
+    formData.append('availability', availRadio ? availRadio.value : 'available');
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        formData.append('image', fileInput.files[0], fileInput.files[0].name);
+    } else if (selectedFile) {
+        formData.append('image', selectedFile, selectedFile.name);
+    }
 
-        const availRadio = document.querySelector('input[name="availability"]:checked');
-        formData.append('availability', availRadio ? availRadio.value : 'available');
+    const result = await submitAddItemToServer(formData);
 
-        if (fileInput && fileInput.files && fileInput.files.length > 0) {
-          formData.append('image', fileInput.files[0], fileInput.files[0].name);
-        } else if (selectedFile) {
-          formData.append('image', selectedFile, selectedFile.name);
-        }
-
-        const result = await submitAddItemToServer(formData);
-
-        if (result && result.success) {
-          if (modal) {
+    if (result && result.success) {
+        if (modal) {
             modal.classList.remove('active');
             document.body.style.overflow = '';
-          }
-          safeResetForm();
-
-          showActionPopupWithType('Success', ['Item added successfully!'], 'success');
-
-        } else {
-          showActionPopupWithType('Unexpected Response', ['Unexpected server response.'], 'error');
-          console.error('Unexpected response', result);
         }
 
-      } catch (err) {
+        safeResetForm();
+        
+        // ===== NEW: Show custom confirmation popup =====
+        showAddItemPopup('Your item has been added successfully and is now available for borrowing!', true);
+
+    } else {
+        showActionPopupWithType('Unexpected Response', ['Unexpected server response.'], 'error');
+        console.error('Unexpected response', result);
+    }
+
+} catch (err) {
         let serverData = err._serverData || null;
         const messages = [];
 
