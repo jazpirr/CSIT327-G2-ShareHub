@@ -1,4 +1,3 @@
-// static/js/mark-returned.js
 (function () {
   "use strict";
   console.log("[mark-returned] loaded");
@@ -8,23 +7,18 @@
     return c ? decodeURIComponent(c.split("=")[1]) : null;
   }
 
-  // ensure popup helpers fallback
-  function ensurePopup() {
-    if (typeof window.showConfirmPopup !== "function") {
-      window.showConfirmPopup = (title, msg, yes, no) => Promise.resolve(window.confirm(msg));
-    }
-    if (typeof window.showMessagePopup !== "function") {
-      window.showMessagePopup = (title, msg, opts) => window.alert(msg);
-    }
+  // ensure popup fallbacks
+  if (typeof window.showConfirmPopup !== "function") {
+    window.showConfirmPopup = (title, msg, yes, no) => Promise.resolve(window.confirm(msg));
   }
-  ensurePopup();
+  if (typeof window.showMessagePopup !== "function") {
+    window.showMessagePopup = (title, msg, opts) => window.alert(msg);
+  }
 
-  // Event delegation - handle clicks on Mark as Returned buttons
   document.addEventListener("click", async function (ev) {
     const btn = ev.target.closest("button[data-borrow-id]");
     if (!btn) return;
 
-    // only handle explicit return buttons
     if (!btn.classList.contains("mark-returned-btn") && !btn.textContent.toLowerCase().includes("mark as returned")) {
       return;
     }
@@ -37,7 +31,6 @@
       return;
     }
 
-    // Ask user (custom popup)
     const confirmed = await window.showConfirmPopup(
       "Mark this item as returned?",
       "Mark this item as returned? This will notify the owner so they can confirm receipt.",
@@ -47,7 +40,6 @@
 
     if (!confirmed) return;
 
-    // UI lock
     const prevText = btn.textContent;
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
@@ -60,7 +52,9 @@
         credentials: "same-origin",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken") || ""
+          "X-CSRFToken": getCookie("csrftoken") || "",
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
         },
         body: JSON.stringify({ request_id: requestId })
       });
@@ -82,15 +76,14 @@
         return;
       }
 
-      // success — remove the item row (smooth collapse)
+      // success — notify and remove row
       const row = btn.closest(".borrowed-item");
-      window.showMessagePopup("Returned", "Item marked as returned. The owner has been notified.", { autoCloseMs: 2200 });
+      window.showMessagePopup("Returned", json.message || "Item marked as returned. The owner has been notified.", { autoCloseMs: 2200 });
 
       if (row) {
-        // collapse animation
         row.style.transition = "opacity .22s ease, transform .22s ease, height .28s ease, margin .22s ease";
         const height = row.offsetHeight + "px";
-        row.style.height = height; // freeze height
+        row.style.height = height;
         row.style.opacity = "1";
         requestAnimationFrame(() => {
           row.style.opacity = "0";
@@ -102,7 +95,6 @@
           if (row && row.parentNode) row.parentNode.removeChild(row);
         }, 300);
       } else {
-        // fallback reload
         setTimeout(() => location.reload(), 600);
       }
 

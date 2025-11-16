@@ -55,7 +55,7 @@
       const popupW = popupRect.width || popup.offsetWidth || 400;
       const popupH = popupRect.height || popup.offsetHeight || 520;
 
-      // target coordinates: place popup so its top is just under the button
+      // place popup so its top is just under the button
       let top = Math.round(btnRect.bottom + 8); // 8px gap
       let left = Math.round(btnRect.left + btnRect.width - popupW); // align right edge of popup to button right
 
@@ -74,7 +74,24 @@
       popup.style.position = 'fixed';
       popup.style.left = `${left}px`;
       popup.style.top = `${top}px`;
+
+      // ---- compute pointer position relative to popup right edge ----
+      // pointer should point near the center of the bell
+      const btnCenterX = btnRect.left + (btnRect.width / 2);
+      // popup's right edge x coordinate:
+      const popupRightX = left + popupW;
+      // distance from popup right edge to button center (in px)
+      let distFromRight = Math.round(popupRightX - btnCenterX);
+      // clamp within reasonable values (12px .. popupW - 20px)
+      const minPointer = 12;
+      const maxPointer = Math.max(12, popupW - 20);
+      if (distFromRight < minPointer) distFromRight = minPointer;
+      if (distFromRight > maxPointer) distFromRight = maxPointer;
+
+      // set CSS variable (value is distance from right edge)
+      popup.style.setProperty('--popup-pointer-right', `${distFromRight}px`);
     }
+
 
 
 

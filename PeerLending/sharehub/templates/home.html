@@ -1,16 +1,13 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - ShareHub</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/design.css' %}">
+{% extends "base.html" %}
+{% block title %}Dashboard - ShareHub{% endblock %}
+{% load static %}
+
+{% block extra_head %}
   <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
   <link rel="stylesheet" href="{% static 'css/carousel.css' %}">
-</head>
-<body>
+{% endblock %}
 
+{% block content %}
   <!-- Action popup (shared with login style) -->
   <div id="errorOverlay"></div>
   <div id="errorPopup">
@@ -19,195 +16,11 @@
     <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
   </div>
 
-  <!-- Top Navigation -->
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="nav-left">
-        <div class="logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
-            <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span>ShareHub - CIT-U</span>
-        </div>
-      </div>
-        
-      <nav class="nav-center">
-        <a href="#" class="nav-link active">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Home
-        </a>
-        <a href="{% url 'profile' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Profile
-        </a>
-        <a href="{% url 'borrow_items' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2"/>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Borrow Items
-        </a>
-        <a href="{% url 'return_items' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-            <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
-            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
-            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Return Items
-        </a>
-        <a href="{% url 'settings' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Settings
-        </a>
-      </nav>
-     
-      <div class="nav-right">
-        <button class="add-item-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
-            <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Add Item
-        </button>
-        <div style="position: relative;">
-          <button class="notification-btn" aria-expanded="false" aria-controls="notificationPopup">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <span class="notification-badge" id="notificationBadge">{{ unread_count|default:0 }}</span>
-          </button>
-         
-          <!-- Notification Popup -->
-          <div class="notification-popup" id="notificationPopup">
-            <div class="notification-header">
-              <h3>Notifications</h3>
-              <div style="display: flex; align-items: center; gap: 5px;">
-                <button class="mark-read-btn">Mark all as read</button>
-                <button class="close-popup" id="closePopup">×</button>
-              </div>
-            </div>
-
-            <div class="mini-notifs">
-              <ul class="notification-list">
-                {% for n in notifications %}
-                  <li class="notification-item {% if not n.is_read %}unread{% endif %}">
-                    <div class="notification-title">{{ n.message }}</div>
-                    <div class="notification-meta">
-                      <div class="notification-time">{{ n.created_at_human|default:n.created_at }}</div>
-                      {% if not n.is_read %}
-                        <div class="notification-status overdue">New</div>
-                      {% endif %}
-                    </div>
-                  </li>
-                {% empty %}
-                  <li class="notification-item">
-                    <div class="notification-title">No notifications</div>
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        </div>
-        <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" class="logout-btn" id="logoutBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2"/>
-              <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2"/>
-              <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            Logout
-          </button>
-        </form>
-      </div>
-    </div>
-  </header>
- 
-  <!-- Add Item Modal -->
-  <div class="modal-overlay" id="addItemModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Add New Item</h2>
-        <p>Share your academic items with fellow students</p>
-      </div>
-      
-      <form id="addItemForm" novalidate class="modal-body">
-        {% csrf_token %}
-        <div class="form-group">
-          <label>Item Image</label>
-          <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17,8 12,3 7,8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-            </div>
-            <div class="upload-text">Click to upload image</div>
-            <div class="upload-subtext">PNG, JPG up to 10MB</div>
-            <input type="file" id="itemImage" name="image" accept="image/png, image/jpeg" style="display: none;">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="itemName">Item Name <span class="required">*</span></label>
-          <input type="text" id="itemName" class="form-control" placeholder="e.g., Scientific Calculator" required>
-        </div>
-
-        <div class="form-group">
-          <label for="itemCategory">Category <span class="required">*</span></label>
-          <select id="itemCategory" class="form-control" required>
-            <option value="">Select Category</option>
-            <option value="textbooks">Textbooks</option>
-            <option value="calculators">Calculators</option>
-            <option value="lab-equipment">Lab Equipment</option>
-            <option value="electronics">Electronics</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="itemCondition">Condition <span class="required">*</span></label>
-          <select id="itemCondition" class="form-control" required>
-            <option value="">Select Condition</option>
-            <option value="new">New</option>
-            <option value="like-new">Like New</option>
-            <option value="good">Good</option>
-            <option value="fair">Fair</option>
-            <option value="poor">Poor</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="itemDescription">Description <span class="required">*</span></label>
-          <textarea id="itemDescription" class="form-control" placeholder="Provide details about the item, including any accessories or special notes..." required></textarea>
-        </div>
-      </form>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-cancel" id="cancelAddItem">Cancel</button>
-        <button type="submit" form="addItemForm" class="btn btn-add">Add Item</button>
-      </div>
-    </div>
-  </div>
-
-
   <main class="dashboard">
     <section class="welcome">
       <h2>Welcome, <span class="username">Student</span></h2>
       <p>Manage your borrowed items and discover available resources for your studies</p>
-      
+
       <!-- Search Bar -->
       <div class="search-container">
         <div class="search-wrapper">
@@ -215,6 +28,7 @@
             <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
             <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
+
           <input type="text" class="search-input" placeholder="Search for items, categories, or users..." id="searchInput">
           <button class="search-clear" id="searchClear" style="display: none;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -223,6 +37,7 @@
             </svg>
           </button>
         </div>
+
         <div class="filter-btn-wrapper">
           <button class="search-filter-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -230,17 +45,18 @@
             </svg>
             Filters
           </button>
-          
+
           <!-- Filter Popup -->
           <div class="filter-popup" id="filterPopup">
             <div class="filter-header">
               <h3>Filters</h3>
               <button class="filter-close" id="filterClose">×</button>
             </div>
-            
+
             <div class="filter-body">
               <div class="filter-section">
                 <div class="filter-section-title">Category</div>
+
                 <div class="filter-option">
                   <input type="checkbox" id="cat-textbooks" value="textbooks">
                   <label for="cat-textbooks">Textbooks</label>
@@ -262,9 +78,10 @@
                   <label for="cat-other">Other</label>
                 </div>
               </div>
-              
+
               <div class="filter-section">
                 <div class="filter-section-title">Availability</div>
+
                 <div class="filter-option">
                   <input type="checkbox" id="avail-available" value="available">
                   <label for="avail-available">Available Now</label>
@@ -274,9 +91,10 @@
                   <label for="avail-borrowed">Currently Borrowed</label>
                 </div>
               </div>
-              
+
               <div class="filter-section">
                 <div class="filter-section-title">Condition</div>
+
                 <div class="filter-option">
                   <input type="checkbox" id="cond-new" value="new">
                   <label for="cond-new">New</label>
@@ -295,7 +113,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="filter-footer">
               <button class="filter-clear-btn" id="filterClearBtn">Clear All</button>
               <button class="filter-apply-btn" id="filterApplyBtn">Apply Filters</button>
@@ -303,7 +121,7 @@
           </div>
         </div>
       </div>
-      
+
       {% if overdue_count and overdue_count > 0 %}
         <div class="alert" role="status" aria-live="polite" style="background:#ffeced;border:1px solid #f3c6c8;color:#7b1e1e;padding:12px 16px;border-radius:6px;">
           ⚠️ You have {{ overdue_count }} overdue {{ overdue_count|pluralize:"item,items" }}.
@@ -311,7 +129,8 @@
             Please return "{{ overdue_items.0.item_title }}" as soon as possible.
             {% if overdue_items.0.return_date_human %} (was due {{ overdue_items.0.return_date_human }}){% endif %}
           {% else %}
-            Please return them as soon as possible. <button type="button" id="showOverdueList" style="margin-left:10px;border:none;background:transparent;color:var(--maroon);text-decoration:underline;cursor:pointer;">View list</button>
+            Please return them as soon as possible.
+            <button type="button" id="showOverdueList" style="margin-left:10px;border:none;background:transparent;color:var(--maroon);text-decoration:underline;cursor:pointer;">View list</button>
           {% endif %}
         </div>
 
@@ -319,10 +138,13 @@
           <div id="overdueList" style="display:none;margin-top:8px;">
             <ul>
               {% for it in overdue_items %}
-                <li>{{ it.item_title }}{% if it.return_date_human %} — due {{ it.return_date_human }}{% endif %}</li>
+                <li>
+                  {{ it.item_title }}{% if it.return_date_human %} — due {{ it.return_date_human }}{% endif %}
+                </li>
               {% endfor %}
             </ul>
           </div>
+
           <script>
             document.addEventListener('click', function(e){
               if (e.target && e.target.id === 'showOverdueList') {
@@ -333,15 +155,14 @@
           </script>
         {% endif %}
       {% endif %}
-
     </section>
- 
+
     <section class="content-grid">
       <div class="card">
         <h3>Quick Actions</h3>
         <div class="placeholder"></div>
       </div>
- 
+
       <div class="card borrowed-card">
         <div class="borrowed-header">
           <h3>Currently Borrowed Items</h3>
@@ -351,21 +172,23 @@
         <div id="borrowedItemsList" role="list" aria-label="Currently borrowed items">
           {% if borrowed_items %}
             {% for b in borrowed_items %}
-              <div class="borrowed-item" role="listitem" title="{{ b.item_title }}"
-                data-item-id="{{ b.item_id }}"
-                data-item-title="{{ b.item_title|escape }}"
-                data-item-image="{{ b.item_image|default:''|escape }}"
-                data-item-owner="{{ b.owner_display|escape }}"
-                data-description="{{ b.item_description|default:''|escape }}"
-                data-borrow-date="{{ b.borrow_date|default:''|escape }}"
-                data-borrow-date-human="{{ b.borrow_date_human|default:''|escape }}"
-                data-return-date="{{ b.return_date|default:''|escape }}"
-                data-return-date-human="{{ b.return_date_human|default:''|escape }}"
-                data-status="{{ b.status|default:'Borrowed'|escape }}">
+              <div class="borrowed-item"
+                   role="listitem"
+                   title="{{ b.item_title }}"
+                   data-item-id="{{ b.item_id }}"
+                   data-item-title="{{ b.item_title|escape }}"
+                   data-item-image="{{ b.item_image|default:''|escape }}"
+                   data-item-owner="{{ b.owner_display|escape }}"
+                   data-description="{{ b.item_description|default:''|escape }}"
+                   data-borrow-date="{{ b.borrow_date|default:''|escape }}"
+                   data-borrow-date-human="{{ b.borrow_date_human|default:''|escape }}"
+                   data-return-date="{{ b.return_date|default:''|escape }}"
+                   data-return-date-human="{{ b.return_date_human|default:''|escape }}"
+                   data-status="{{ b.status|default:'Borrowed'|escape }}">
                 {% if b.item_image %}
                   <div class="borrowed-item-thumb">
                     <img src="{{ b.item_image }}" alt="{{ b.item_title|escape }}"
-                        onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';">
+                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';">
                   </div>
                 {% else %}
                   <div class="borrowed-item-thumb-placeholder">📦</div>
@@ -373,6 +196,7 @@
 
                 <div class="borrowed-item-info">
                   <div class="borrowed-item-title">{{ b.item_title }}</div>
+
                   <div class="borrowed-item-meta">
                     <div class="borrowed-item-owner">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -381,6 +205,7 @@
                       </svg>
                       <span>{{ b.owner_display }}</span>
                     </div>
+
                     <div class="borrowed-item-date">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -400,12 +225,12 @@
             </div>
           {% endif %}
         </div>
-        
+
         <div class="show-all-container" style="margin-top: 8px; display:flex; justify-content:center;">
           <a href="{% url 'return_items' %}" class="show-all-link" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; background:linear-gradient(135deg,#7B1E1E,#5a1515); color:white; font-weight:600; box-shadow:0 6px 16px rgba(123,30,30,0.12);">
             View All Borrowed / Return Items
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:inherit;">
-              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+              <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
           </a>
         </div>
@@ -425,9 +250,8 @@
                     data-request-id="{{ r.request_id }}"
                     data-item-id="{{ r.item_id }}"
                     data-item-title="{{ r.item_title|escape }}">
-                  
                   <div class="request-item-title">{{ r.item_title }}</div>
-                  
+
                   <div class="request-requester-info">
                     <div class="request-requester-name">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px;">
@@ -436,6 +260,7 @@
                       </svg>
                       {{ r.requester_name }}
                     </div>
+
                     <div class="request-date">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:3px;">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
@@ -492,16 +317,15 @@
                 {% for item in available_items %}
                   <div class="carousel-item">
                     <div class="item-box"
-                      data-item-id="{{ item.item_id }}"
-                      data-title="{{ item.title|escape }}"
-                      data-image="{{ item.image_url|default:''|escape }}"
-                      data-owner-name="{{ item.owner_display|escape }}"
-                      data-owner-id="{{ item.owner_id|default:item.user_id|default:'' }}"
-                      data-category="{{ item.category|default:''|escape }}"
-                      data-condition="{{ item.condition|default:''|escape }}"
-                      data-description="{{ item.description|default:''|escape }}"
-                      data-created-at="{{ item.created_at_iso }}">
-                      
+                         data-item-id="{{ item.item_id }}"
+                         data-title="{{ item.title|escape }}"
+                         data-image="{{ item.image_url|default:''|escape }}"
+                         data-owner-name="{{ item.owner_display|escape }}"
+                         data-owner-id="{{ item.owner_id|default:item.user_id|default:'' }}"
+                         data-category="{{ item.category|default:''|escape }}"
+                         data-condition="{{ item.condition|default:''|escape }}"
+                         data-description="{{ item.description|default:''|escape }}"
+                         data-created-at="{{ item.created_at_iso }}">
                       <div class="item-thumb">
                         {% if item.image_url %}
                           <img src="{{ item.image_url }}" alt="{{ item.title|default:'Item image' }}">
@@ -515,9 +339,7 @@
                         <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category }}</div>
                       </div>
 
-                      <button type="button" class="request-btn open-borrow-modal">
-                        Request to Borrow
-                      </button>
+                      <button type="button" class="request-btn open-borrow-modal">Request to Borrow</button>
                     </div>
                   </div>
                 {% endfor %}
@@ -529,11 +351,9 @@
             </div>
           </div>
 
-          <!-- Carousel Dots -->
           <div class="carousel-dots" id="carouselDots"></div>
         </div>
 
-        <!-- Show all link -->
         <div class="show-all-container">
           <a href="{% url 'borrow_items' %}" class="show-all-link">
             View All Items
@@ -545,7 +365,7 @@
       </div>
     </section>
 
-    <!-- Borrow Request Modal -->
+    <!-- Borrow Request Modal (page-specific) -->
     <div class="modal-overlay" id="borrowModal" style="display:none;">
       <div class="modal-content">
         <div class="modal-header">
@@ -557,19 +377,16 @@
           <form id="borrowForm">
             <input type="hidden" id="modalItemId" name="item_id">
 
-            <!-- Image -->
             <div id="modalThumb">
               <img id="modalImage" src="" alt="Item image" style="display:none;">
               <div id="modalImagePlaceholder">No image available</div>
             </div>
 
-            <!-- Description -->
             <div class="modal-description-section">
               <label>Description</label>
               <div id="modalDescription">No description provided</div>
             </div>
 
-            <!-- DETAILS VIEW -->
             <div id="modalDetailsView">
               <div class="modal-info-grid">
                 <div class="form-group">
@@ -594,7 +411,6 @@
               </div>
             </div>
 
-            <!-- REQUEST FORM VIEW -->
             <div id="modalRequestView">
               <div class="modal-info-grid">
                 <div class="form-group">
@@ -645,104 +461,234 @@
       </div>
     </div>
 
+    <!-- Borrowed Item Details Modal (page-specific) -->
+    <div class="modal-overlay" id="borrowedItemModal" style="display:none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Borrowed Item Details</h2>
+          <p>Information about your borrowed item</p>
+        </div>
 
+        <div class="modal-body">
+          <div id="borrowedModalThumb" style="margin-bottom:12px;">
+            <img id="borrowedModalImage" src="" alt="Item image" style="display:none; width:100%; max-height:240px; object-fit:cover; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.08);">
+            <div id="borrowedModalImagePlaceholder" style="display:none; padding:28px; background:#fafafa; border-radius:6px; text-align:center; color:#999;">
+              No image available
+            </div>
+          </div>
 
-  <!-- Borrowed Item Details Modal -->
-  <div class="modal-overlay" id="borrowedItemModal" style="display:none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Borrowed Item Details</h2>
-        <p>Information about your borrowed item</p>
-      </div>
+          <div class="modal-description-section">
+            <label>Description</label>
+            <div id="borrowedModalDescription">No description provided</div>
+          </div>
 
-      <div class="modal-body">
-        <div id="borrowedModalThumb" style="margin-bottom:12px;">
-          <img id="borrowedModalImage"
-              src=""
-              alt="Item image"
-              style="display:none; width:100%; max-height:240px; object-fit:cover; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.08);">
-          <div id="borrowedModalImagePlaceholder"
-              style="display:none; padding:28px; background:#fafafa; border-radius:6px; text-align:center; color:#999;">
-            No image available
+          <div class="modal-info-grid">
+            <div class="form-group">
+              <label>Item</label>
+              <div class="form-display" id="borrowedModalItemName">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Owner</label>
+              <div class="form-display" id="borrowedModalOwner">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Borrowed On</label>
+              <div class="form-display" id="borrowedModalBorrowDate">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Return Date</label>
+              <div class="form-display" id="borrowedModalReturnDate">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Status</label>
+              <div class="form-display" id="borrowedModalStatus">Borrowed</div>
+            </div>
           </div>
         </div>
 
-
-        <div class="modal-description-section">
-          <label>Description</label>
-          <div id="borrowedModalDescription">No description provided</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-cancel" id="closeBorrowedModal">Close</button>
         </div>
-
-        <div class="modal-info-grid">
-          <div class="form-group">
-            <label>Item</label>
-            <div class="form-display" id="borrowedModalItemName">—</div>
-          </div>
-
-          <div class="form-group">
-            <label>Owner</label>
-            <div class="form-display" id="borrowedModalOwner">—</div>
-          </div>
-
-          <div class="form-group">
-            <label>Borrowed On</label>
-            <div class="form-display" id="borrowedModalBorrowDate">—</div>
-          </div>
-
-          <div class="form-group">
-            <label>Return Date</label>
-            <div class="form-display" id="borrowedModalReturnDate">—</div>
-          </div>
-
-          <div class="form-group">
-            <label>Status</label>
-            <div class="form-display" id="borrowedModalStatus">Borrowed</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-cancel" id="closeBorrowedModal">Close</button>
       </div>
     </div>
-  </div>
-
   </main>
-  
-  
+
+  <!-- Add Item Success/Error Modal (if you prefer page-specific override, otherwise base already includes it) -->
+  <!-- base.html already includes the global addItemOverlay, so you can omit this -->
+{% endblock %}
+
+{% block extra_scripts %}
   <script src="{% static 'js/popup.js' %}"></script>
   <script src="{% static 'js/borrow_items.js' %}"></script>
   <script src="{% static 'js/home-search.js' %}"></script>
-  <script src="{% static 'js/add-item-modal.js' %}"></script>
-  <script src="{% static 'js/confirmation_logout.js' %}"></script>
-  <script>
-    window.NOTIF_MARK_READ_URL = "{% url 'mark_notifications_read' %}";
-  </script>
-  <script src="{% static 'js/notification.js' %}"></script>
-  
-    
-  <script>
-    window.RESPOND_URL = "{% url 'api_respond_request' %}"; 
-  </script>
-  <script src="{% static 'js/respond_request.js' %}"></script>
   <script src="{% static 'js/carousel.js' %}"></script>
   <script src="{% static 'js/borrowed-item-modal.js' %}"></script>
   <script src="{% static 'js/overdue-toggle.js' %}"></script>
+  <script>
+(function(){
+  // Ensure RESPOND_URL is available
+  const RESPOND_URL = window.RESPOND_URL || "{% url 'api_respond_request' %}";
 
-<!-- Add Item Success/Error Modal -->
-<div id="addItemOverlay" class="modal-overlay">
-    <div id="addItemPopup" class="modal-content">
-        <div class="modal-header">
-            <span id="addItemPopupTitle">Success!</span>
-        </div>
-        <div class="modal-body">
-            <div id="addItemPopupMessage">Your item has been added successfully!</div>
-        </div>
-        <div class="modal-footer" style="padding: 16px 24px; text-align: right; border-top: 1px solid #e0e0e0;">
-            <button id="addItemCloseBtn" class="modal-btn" style="background: #800000; color: #fff; padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
-        </div>
-    </div>
-</div>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let c of cookies) {
+        const cookie = c.trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
 
-</body>
-</html>
+  // Helper: update the numeric badge inside the card that contains the incoming requests.
+  function decrementIncomingCardCount(listItemEl) {
+    // find the card container that holds the list (closest .card or .borrowed-card)
+    const card = listItemEl.closest('.card') || listItemEl.closest('.borrowed-card') || listItemEl.closest('.borrowed-card, .card');
+    if (!card) return;
+    // find the count element inside this card (class borrowed-count in template)
+    const countEl = card.querySelector('.borrowed-count, .borrowed-count');
+    if (!countEl) return;
+    const cur = parseInt(countEl.textContent) || 0;
+    const newv = Math.max(0, cur - 1);
+    countEl.textContent = newv;
+  }
+
+  // Also update the small incomingRequests ul length if present
+  function decrementIncomingRequestsUl() {
+    const ul = document.getElementById('incomingRequestsUl');
+    if (!ul) return;
+    // If using <li> children
+    const items = ul.querySelectorAll('li.incoming-request-row');
+    // prefer visible count
+    const newv = Math.max(0, items.length);
+    // find card .borrowed-count (global)
+    const anyCardCount = document.querySelector('.card .borrowed-count, .borrowed-card .borrowed-count');
+    if (anyCardCount) {
+      anyCardCount.textContent = newv;
+    }
+  }
+
+  async function respondRequest(requestId, action, btn) {
+    if (!requestId) return;
+    btn.disabled = true;
+    const orig = btn.innerHTML;
+    btn.innerHTML = action === 'approve' ? 'Approving...' : 'Denying...';
+
+    try {
+      const res = await fetch(RESPOND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ request_id: requestId, action: action })
+      });
+
+      const data = await res.json().catch(()=>({}));
+
+      if (res.ok && data.success) {
+        // find the list item and remove it
+        const li = document.querySelector(`[data-request-id="${requestId}"], #req-${requestId}`);
+        if (li) {
+          // animate out
+          li.style.transition = 'all 0.22s ease';
+          li.style.opacity = '0';
+          li.style.transform = 'translateX(18px)';
+          setTimeout(() => {
+            // update status span in the row if present
+            const statusSpan = document.getElementById('status-' + requestId) || li.querySelector(`#status-${requestId}`);
+            if (statusSpan) {
+              statusSpan.textContent = (action === 'approve') ? 'approved' : 'denied';
+              statusSpan.classList.remove('pending');
+              statusSpan.classList.add(action === 'approve' ? 'approved' : 'denied');
+            }
+
+            // remove from DOM
+            li.remove();
+
+            // update counts
+            decrementIncomingCardCount(li);
+            decrementIncomingRequestsUl();
+
+            // if there are no more <li> in incomingRequestsUl, show the no-requests placeholder if available
+            const ul = document.getElementById('incomingRequestsUl');
+            if (ul && ul.querySelectorAll('li').length === 0) {
+              const container = document.getElementById('borrowingStatsRequests') || ul.parentElement;
+              if (container) {
+                container.innerHTML = `
+                  <div class="no-requests">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.3;">
+                      <path d="M9 12h6M9 16h6M9 8h6"/>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    </svg>
+                    <p>No incoming requests</p>
+                  </div>
+                `;
+              }
+            }
+          }, 240);
+        } else {
+          // fallback to reload if we can't find the element to remove
+          window.location.reload();
+        }
+      } else {
+        // error from server
+        const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
+        alert('Failed: ' + msg);
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    } catch (err) {
+      console.error('Network error', err);
+      alert('Network error. Try again.');
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+
+  // Delegate clicks for approve/deny buttons
+  document.addEventListener('click', function(e){
+    const approve = e.target.closest('.btn-approve, .btn-approve-new, button.btn-approve');
+    const deny = e.target.closest('.btn-deny, .btn-deny-new, button.btn-deny');
+
+    if (approve) {
+      const requestId = approve.dataset.requestId || approve.getAttribute('data-request-id');
+      respondRequest(requestId, 'approve', approve);
+    } else if (deny) {
+      const requestId = deny.dataset.requestId || deny.getAttribute('data-request-id');
+      respondRequest(requestId, 'deny', deny);
+    }
+  });
+
+  // Defensive: normalize the incoming count on load
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      const ul = document.getElementById('incomingRequestsUl');
+      if (ul) {
+        const count = ul.querySelectorAll('li.incoming-request-row').length;
+        const cardCount = document.querySelector('.card .borrowed-count, .borrowed-card .borrowed-count');
+        if (cardCount) cardCount.textContent = count;
+      }
+    } catch (e) {
+      // ignore
+      console.error('normalize incoming count failed', e);
+    }
+  });
+})();
+</script>
+
+
+  <script>
+    window.RESPOND_URL = "{% url 'api_respond_request' %}";
+  </script>
+{% endblock %}

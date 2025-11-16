@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="my-items-page-wrapper page-container">
+  <!-- Enhanced Header with Stats -->
+  <div class="my-items-header">
+    <div class="header-left">
+      <h1 class="page-title">My Items</h1>
+      <p class="page-subtitle">Manage your shared items and approve incoming requests</p>
+    </div>
+  </div>
+
+  <!-- Stats Dashboard -->
+  <div class="my-items-stats">
+    <div class="stat-box">
+      <div class="stat-icon" style="background: rgba(123, 15, 18, 0.1);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <h3 id="totalItems">{{ items|length }}</h3>
+        <p>Total Items</p>
+      </div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-icon" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <h3 id="availableCount">{{ available_count }}</h3>
+        <p>Available</p>
+      </div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <h3 id="pendingCount">{{ pending_count }}</h3>
+        <p>Pending Requests</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items Grid -->
+  {% if items %}
+  <div class="items-grid">
+    {% for it in items %}
+    <div class="item-card-enhanced" data-item-id="{{ it.item_id }}" data-status="{{ it.status_label }}">
+      <!-- Item Image with Status Overlay -->
+      <div class="item-image-wrapper">
+        <div class="item-image">
+          {% if it.image_url %}
+            <img src="{{ it.image_url }}" alt="{{ it.title }}">
+          {% else %}
+            <div class="placeholder-image">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </div>
+          {% endif %}
+        </div>
+
+        <span class="status-badge-floating {% if it.status_label == 'available' %}available{% elif it.status_label == 'returned' %}returned{% else %}borrowed{% endif %}">
+            <svg viewBox="0 0 8 8" fill="currentColor">
+                <circle cx="4" cy="4" r="4"/>
+            </svg>
+            {% if it.status_label == 'available' %}
+                Available
+            {% elif it.status_label == 'returned' %}
+                Returned
+            {% else %}
+                Borrowed
+            {% endif %}
+        </span>
+      </div>
+
+      <!-- Item Details -->
+      <div class="item-body-enhanced">
+        <div class="item-header-row">
+          <h3 class="item-title-enhanced">{{ it.title }}</h3>
+          {% if it.pending_requests %}
+          <span class="requests-count-badge" aria-label="pending-count">{{ it.pending_requests|length }}</span>
+          {% endif %}
+        </div>
+
+        <div class="item-meta-row">
+          <span class="meta-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 7h-9M14 17H5M17 3v18M7 3v18"/>
+            </svg>
+            {{ it.category }}
+          </span>
+          <span class="meta-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            {{ it.condition }}
+          </span>
+        </div>
+
+        <p class="item-description-enhanced">{{ it.description|truncatechars:120 }}</p>
+
+        <!-- Action Buttons -->
+        <div class="item-actions-row">
+          <a href="{% url 'edit_item' it.item_id %}" class="action-btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit Item
+          </a>
+          <button class="action-btn-secondary" onclick="viewItemDetails('{{ it.item_id }}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Pending Requests Section (shows only pending_requests) -->
+        {% if it.pending_requests %}
+        <div class="requests-section-enhanced" data-requests-for="{{ it.item_id }}">
+          <div class="requests-header">
+            <h4>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Pending Requests
+            </h4>
+            <span class="requests-badge">{{ it.pending_requests|length }}</span>
+          </div>
+
+          <div class="requests-list-enhanced">
+            {% for r in it.pending_requests %}
+            <div class="request-item" id="req-{{ r.request_id }}" data-request-id="{{ r.request_id }}" data-item-id="{{ it.item_id }}">
+              <div class="requester-info">
+                <div class="requester-avatar">
+                  {{ r.requester_name|first|upper }}
+                </div>
+                <div class="requester-details">
+                  <div class="requester-name">{{ r.requester_name }}</div>
+                  <div class="request-time">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <circle cx="12" cy="12" r="10"/>
+                      <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    {{ r.request_date_human }}
+                  </div>
+                </div>
+              </div>
+              <div class="request-actions">
+                <button class="btn-approve-new" data-request-id="{{ r.request_id }}" data-item-id="{{ it.item_id }}"> 
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Approve
+                </button>
+                <button class="btn-deny-new" data-request-id="{{ r.request_id }}" data-item-id="{{ it.item_id }}">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  Deny
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% else %}
+        <div class="no-requests-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 15h8M9 9h.01M15 9h.01"/>
+          </svg>
+          <p>No pending requests</p>
+        </div>
+        {% endif %}
+
+        <!-- OPTIONAL: Request History (approved/denied) -->
+        {% if it.requests %}
+          {% with history=it.requests|dictsortreversed:"raw_request_date" %}
+            {% comment %}
+              compute pending_count safely: default to empty string so length returns 0 if missing
+            {% endcomment %}
+            {% with pending_count=it.pending_requests|default:""|length %}
+              {% if history|length > pending_count %}
+                <div class="requests-history">
+                  <h5>Request History</h5>
+                  <div class="history-list">
+                    {% for hr in it.requests %}
+                      {% if hr.status != 'pending' %}
+                        <div class="history-item">
+                          <div class="history-left">
+                            <strong>{{ hr.requester_name }}</strong>
+                            <div class="history-date">{{ hr.request_date_human }}</div>
+                          </div>
+                          <div class="history-right">
+                            <span class="history-status">{{ hr.status|capfirst }}</span>
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endwith %}
+          {% endwith %}
+        {% endif %}
+
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- Enhanced Empty State -->
+  <div class="empty-state-enhanced">
+    <div class="empty-icon-large">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+      </svg>
+    </div>
+    <h2>No Items Yet</h2>
+    <p>Start sharing with the community by adding your first item</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  // Helpers
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let c of cookies) {
+        const cookie = c.trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  function updateStatCount(elId, delta) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    const current = parseInt(el.textContent) || 0;
+    el.textContent = Math.max(0, current + delta);
+  }
+
+  function findCardByRequest(reqEl) {
+    return reqEl.closest('.item-card-enhanced');
+  }
+
+  async function respondRequest(requestId, action, elButton) {
+    const url = "{% url 'api_respond_request' %}";
+    try {
+      elButton.disabled = true;
+      const originalHTML = elButton.innerHTML;
+      elButton.innerHTML = action === 'approve' ? 'Approving...' : 'Denying...';
+
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ request_id: requestId, action: action })
+      });
+
+      const data = await resp.json();
+
+      if (resp.ok && data.success) {
+        // Remove request item visually
+        const reqEl = document.getElementById('req-' + requestId);
+        if (reqEl) {
+          reqEl.style.transition = 'all 0.25s ease';
+          reqEl.style.opacity = '0';
+          reqEl.style.transform = 'translateX(20px)';
+          setTimeout(() => {
+            // Before removing, update counts and UI
+            const card = findCardByRequest(reqEl);
+            const itemId = reqEl.dataset.itemId || (card && card.dataset.itemId);
+            // decrease per-card pending badge
+            if (card) {
+              // update per-card requests-count-badge (if present)
+              const perCardBadge = card.querySelector('.requests-count-badge');
+              if (perCardBadge) {
+                const current = parseInt(perCardBadge.textContent) || 0;
+                const updated = Math.max(0, current - 1);
+                if (updated > 0) {
+                  perCardBadge.textContent = updated;
+                } else {
+                  perCardBadge.remove();
+                }
+              }
+              // update requests-badge (in the requests header)
+              const requestsBadge = card.querySelector('.requests-badge');
+              if (requestsBadge) {
+                const cur = parseInt(requestsBadge.textContent) || 0;
+                const newv = Math.max(0, cur - 1);
+                if (newv > 0) {
+                  requestsBadge.textContent = newv;
+                } else {
+                  // replace requests section with "no pending requests" state
+                  const requestsSection = card.querySelector('.requests-section-enhanced');
+                  if (requestsSection) {
+                    requestsSection.innerHTML = `
+                      <div class="no-requests-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <circle cx="12" cy="12" r="10"/>
+                          <path d="M8 15h8M9 9h.01M15 9h.01"/>
+                        </svg>
+                        <p>No pending requests</p>
+                      </div>
+                    `;
+                  }
+                }
+              }
+            }
+
+            // Update global pending stat
+            updateStatCount('pendingCount', -1);
+
+            // If action == approve, the item becomes borrowed => if card previously had data-status "available" decrement availableCount
+            if (action === 'approve' && card) {
+              const prevStatus = (card.dataset.status || '').toLowerCase();
+              if (prevStatus === 'available') {
+                updateStatCount('availableCount', -1);
+              }
+              // set new status to borrowed and update the status badge display
+              card.dataset.status = 'borrowed';
+              const statusBadge = card.querySelector('.status-badge-floating');
+              if (statusBadge) {
+                statusBadge.classList.remove('available','returned');
+                statusBadge.classList.add('borrowed');
+                statusBadge.textContent = ''; // clear so we can insert SVG + text
+                statusBadge.innerHTML = `
+                  <svg viewBox="0 0 8 8" fill="currentColor">
+                    <circle cx="4" cy="4" r="4"/>
+                  </svg>
+                  Borrowed
+                `;
+              }
+            }
+
+            // Finally remove element
+            reqEl.remove();
+          }, 260);
+        } else {
+          // fallback - reload if something is off
+          window.location.reload();
+        }
+      } else {
+        const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
+        alert('Failed: ' + msg);
+        elButton.disabled = false;
+        elButton.innerHTML = originalHTML;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error');
+      elButton.disabled = false;
+      elButton.innerHTML = action === 'approve' ? 'Approve' : 'Deny';
+    }
+  }
+
+  // Delegate click for approve / deny buttons
+  document.addEventListener('click', function(e) {
+    const approveBtn = e.target.closest('.btn-approve-new');
+    const denyBtn = e.target.closest('.btn-deny-new');
+
+    if (approveBtn) {
+      const requestId = approveBtn.dataset.requestId;
+      respondRequest(requestId, 'approve', approveBtn);
+    } else if (denyBtn) {
+      const requestId = denyBtn.dataset.requestId;
+      respondRequest(requestId, 'deny', denyBtn);
+    }
+  });
+
+  // View item details helper
+  function viewItemDetails(itemId) {
+    window.location.href = `/item/${itemId}/`;
+  }
+
+  // On DOMContentLoaded: ensure pendingCount is consistent with DOM (defensive)
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      // Recalculate pending from badges (if server and template got out of sync)
+      const badges = document.querySelectorAll('.requests-count-badge');
+      let totalPending = 0;
+      badges.forEach(b => { totalPending += parseInt(b.textContent) || 0; });
+      const pendingStat = document.getElementById('pendingCount');
+      if (pendingStat && (!pendingStat.textContent || parseInt(pendingStat.textContent) !== totalPending)) {
+        pendingStat.textContent = totalPending;
+      }
+    } catch (e) {
+      // no-op
+      console.error('Error normalizing pending stat', e);
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,221 @@
+{% load static %}
+
+<nav class="navbar">
+  <div class="nav-container">
+    <!-- Left: Logo -->
+    <div class="nav-left">
+      <a href="{% url 'home' %}" class="logo">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M8 12h8M12 8v8"/>
+        </svg>
+        ShareHub - CIT-U
+      </a>
+    </div>
+
+    <!-- Center: Navigation Links -->
+    <div class="nav-center">
+      <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        </svg>
+        Home
+      </a>
+      <a href="{% url 'borrow_items' %}" class="nav-link {% if request.resolver_match.url_name == 'borrow_items' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        Borrow Items
+      </a>
+      <a href="{% url 'my_items' %}" class="nav-link {% if request.resolver_match.url_name == 'my_items' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        My Items
+      </a>
+      <a href="{% url 'return_items' %}" class="nav-link {% if request.resolver_match.url_name == 'return_items' %}active{% endif %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <polyline points="9 11 12 14 22 4"/>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        Return Items
+      </a>
+    </div>
+
+    <!-- Right: Actions & Profile -->
+    <div class="nav-right">
+      <!-- Add Item Button -->
+      <button class="add-item-btn" >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add Item
+      </button>
+
+      <!-- Notifications -->
+    <button class="notification-btn" type="button" aria-expanded="false" aria-controls="notificationPopup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    {% if unread_count > 0 %}
+        <span id="notificationBadge" class="notification-badge">{{ unread_count }}</span>
+    {% else %}
+        <span id="notificationBadge" class="notification-badge" style="display:none;"></span>
+    {% endif %}
+    </button>
+
+      <!-- Profile Dropdown -->
+       
+      <div class="profile-dropdown">
+        <button class="profile-trigger" type="button" id="profileTrigger">
+          <div class="profile-avatar">
+            {% if user_info and user_info.profile_picture %}
+            <img src="{{ user_info.profile_picture }}" alt="{{ user_info.first_name }} {{ user_info.last_name }}">
+            {% else %}
+            {% if user_info and user_info.first_name %}
+                {{ user_info.first_name|first|upper }}{% if user_info.last_name %}{{ user_info.last_name|first|upper }}{% endif %}
+            {% else %}
+                {% if user_info and user_info.email %}
+                {{ user_info.email|first|upper }}
+                {% else %}
+                <!-- fallback static avatar -->
+                <img src="{% static 'images/default-avatar.png' %}" alt="avatar">
+                {% endif %}
+            {% endif %}
+            {% endif %}
+
+          </div>
+        </button>
+
+        <div class="profile-menu" id="profileMenu">
+          <div class="profile-info">
+            <div class="profile-name">
+              {% if user_info.first_name or user_info.last_name %}
+                {{ user_info.first_name }} {{ user_info.last_name }}
+              {% else %}
+                {{ user_info.email }}
+              {% endif %}
+            </div>
+            <div class="profile-email">{{ user_info.email }}</div>
+          </div>
+
+          <a href="{% url 'profile' %}" class="profile-menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Profile
+          </a>
+
+          <a href="{% url 'settings' %}" class="profile-menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
+            </svg>
+            Settings
+          </a>
+
+          <div class="profile-menu-divider"></div>
+
+          <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="profile-menu-item logout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Logout
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+<div id="profileOverlay" class="notification-overlay" aria-hidden="true"></div>
+<!-- Notification overlay + popup (place near </body>) -->
+<div id="notificationOverlay" class="notification-overlay" aria-hidden="true"></div>
+
+<div id="notificationPopup" class="notification-popup" aria-hidden="true" role="dialog" aria-label="Notifications">
+  <div class="popup-header">
+    <div class="title">Notifications</div>
+    <div class="controls">
+      <button class="mark-read-btn" type="button" style="background:none;border:0;padding:6px 8px;font-size:13px;cursor:pointer;color:#6b0000;">Mark all read</button>
+      <button id="closePopup" type="button" aria-label="Close notifications" style="background:none;border:0;padding:6px 8px;cursor:pointer;font-size:16px;color:#666;">✕</button>
+    </div>
+  </div>
+
+  <div class="notification-list" role="list" aria-live="polite">
+    {% if notifications %}
+      {% for n in notifications %}
+      <div class="notification-item {% if not n.is_read %}unread{% endif %}" role="listitem">
+        <div class="notification-message">{{ n.message }}</div>
+        <div class="notification-meta">{{ n.created_at_human }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="notification-item" role="listitem">
+        <div class="notification-message">No notifications yet.</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  /* PROFILE DROPDOWN ---------------------------- */
+  const profileTrigger = document.getElementById('profileTrigger');
+  const profileDropdown = document.querySelector('.profile-dropdown');
+  const profileMenu = document.getElementById('profileMenu');
+  const profileOverlay = document.getElementById('profileOverlay');
+
+  function positionProfileMenu() {
+    const btnRect = profileTrigger.getBoundingClientRect();
+    const rightOffset = window.innerWidth - btnRect.right - 20; // 10px margin
+
+    profileMenu.style.position = 'fixed';
+    profileMenu.style.top = (btnRect.bottom + 10) + 'px';
+    profileMenu.style.right = (rightOffset ) + 'px';
+  }
+
+  function openProfile() {
+    positionProfileMenu();
+    profileDropdown.classList.add('active');
+    profileOverlay.classList.add('active');
+  }
+
+  function closeProfile() {
+    profileDropdown.classList.remove('active');
+    profileOverlay.classList.remove('active');
+  }
+
+  if (profileTrigger) {
+    profileTrigger.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (profileDropdown.classList.contains('active')) closeProfile();
+      else openProfile();
+    });
+  }
+
+  profileOverlay.addEventListener('click', closeProfile);
+
+  document.addEventListener('click', function(e) {
+    if (!profileDropdown.contains(e.target) && !profileTrigger.contains(e.target)) {
+      closeProfile();
+    }
+  });
+
+  window.addEventListener('resize', positionProfileMenu);
+  window.addEventListener('scroll', positionProfileMenu);
+
+
+  /* NOTIFICATIONS (leave your existing notification.js for logic) */
+});
+</script>

@@ -220,30 +220,26 @@ textarea.form-control {
 
 /* Add Item Modal/Popup Styles */
 #addItemOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 2000;
-    display: none;
-    justify-content: center;
-    align-items: center;
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 2200; /* slightly higher than .modal-overlay (1000/2000) to avoid stacking issues */
 }
 
-#addItemOverlay.show {
-    display: flex;
-}
+#addItemOverlay.show { display:flex; }
 
 #addItemPopup {
-    background: #fff;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 450px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-    animation: slideUp 0.3s ease-out;
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 720px;         /* same comfortable desktop width as other modals */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  box-sizing: border-box;
 }
 
 @keyframes slideUp {

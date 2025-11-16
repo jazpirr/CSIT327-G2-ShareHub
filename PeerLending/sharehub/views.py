@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.contrib.auth import logout
 from supabase import create_client   
 from supabase import create_client, Client
+from django.views.decorators.http import require_http_methods
 from supabase_auth._sync.gotrue_client import AuthApiError
  
 from .forms import CustomUserCreationForm
@@ -1536,7 +1537,7 @@ def mark_notifications_read(request):
 @require_POST
 @supabase_login_required
 def mark_returned(request):
-    user_id = request.session.get("supabase_user_id")
+    user_id = request.session.get('supabase_user_id')
     payload = json.loads(request.body.decode('utf-8')) if request.body else {}
     req_id = payload.get('request_id')
 
@@ -1549,17 +1550,20 @@ def mark_returned(request):
         return JsonResponse({'errors': {'general': [{'message': 'Request not found'}]}}, status=404)
     req = rresp.data
 
-    # Verify that this request belongs to the current user
+    # Verify that this request belongs to the current user (borrower marks returned)
     if req.get('user_id') != user_id:
         return JsonResponse({'errors': {'general': [{'message': 'Permission denied'}]}}, status=403)
 
+    item_id = req.get('item_id')
+
     try:
-        # ✅ ONLY update the 'return' field (boolean), NOT 'status'
         supabase.table('request').update({'return': True}).eq('request_id', req_id).execute()
 
-        # Optional: Add notification for the item owner
+        # FIX: Make the item available again so new requests make sense
+        supabase.table('item').update({'available': True}).eq('item_id', item_id).execute()
+
+        # Optional: notify the owner
         try:
-            item_id = req.get('item_id')
             item_resp = supabase.table('item').select('title,user_id').eq('item_id', item_id).maybe_single().execute()
             if getattr(item_resp, 'data', None):
                 title = item_resp.data.get('title', 'an item')
@@ -1568,7 +1572,7 @@ def mark_returned(request):
                     notif_payload = {
                         'notification_id': str(uuid.uuid4()),
                         'user_id': owner_id,
-                        'message': f"{request.session.get('user_email', 'Someone')} marked \"{title}\" as returned.",
+                        'message': f"{request.session.get('user_email','Someone')} marked \"{title}\" as returned.",
                         'notif_type': 'return_notification',
                         'is_read': False,
                         'created_at': datetime.utcnow().isoformat(),
@@ -1582,6 +1586,7 @@ def mark_returned(request):
         return JsonResponse({'errors': {'general': [{'message': 'Failed to mark item as returned'}]}}, status=500)
 
     return JsonResponse({'success': True})
+
 
 
 # ---------- helper to fetch notifications (reusable) ----------
@@ -1620,3 +1625,248 @@ def fetch_notifications_for(user_id, limit=10):
     except Exception:
         return [], 0
 
+def user_context(request):
+    """
+    Add user info and notification count to all templates
+    This replaces the need for passing these in every view
+    """
+    context = {
+        'user_info': None,
+        'notifications': [],
+        'unread_count': 0,
+    }
+    
+    user_id = request.session.get('supabase_user_id')
+    
+    if user_id:
+        try:
+            # Initialize Supabase client
+            supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+            
+            # Fetch user info
+            profile_resp = supabase.table("user").select("*").eq("id", user_id).single().execute()
+            user_info = profile_resp.data if profile_resp and getattr(profile_resp, "data", None) else {}
+            
+            # Get email from Supabase Auth (source of truth)
+            if user_info:
+                try:
+                    auth_user_resp = supabase.auth.admin.get_user_by_id(user_id)
+                    if auth_user_resp.user:
+                        user_info["email"] = auth_user_resp.user.email
+                        request.session['user_email'] = auth_user_resp.user.email
+                except Exception as e:
+                    if request.session.get('user_email'):
+                        user_info["email"] = request.session.get('user_email')
+            
+            context['user_info'] = user_info
+            
+            # Use your existing fetch_notifications_for function
+            from .views import fetch_notifications_for
+            notifications, unread_count = fetch_notifications_for(user_id)
+            
+            context['notifications'] = notifications
+            context['unread_count'] = unread_count
+            
+        except Exception as e:
+            print(f"Error in user_context: {e}")
+            # Return empty context on error
+            pass
+    
+    return context
+
+
+@supabase_login_required
+def my_items(request):
+    user_id = request.session.get("supabase_user_id")
+    notifications, unread_count = fetch_notifications_for(user_id)
+
+    # fetch items owned by this user
+    items = []
+    try:
+        items_resp = supabase.table("item").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        items = items_resp.data or []
+    except Exception:
+        items = []
+
+    items_with_requests = []
+    try:
+        item_ids = [itm.get("item_id") for itm in items if itm.get("item_id")]
+        reqs = []
+        if item_ids:
+            # fetch all requests for these items (we need latest + pending info)
+            req_resp = supabase.table("request") \
+                .select("request_id,item_id,user_id,request_date,return,status,request_date") \
+                .in_("item_id", item_ids) \
+                .order("request_date", desc=True) \
+                .execute()
+            reqs = req_resp.data or []
+
+        # build user map for requester display
+        requester_ids = list({r.get("user_id") for r in reqs if r.get("user_id")})
+        users_map = {}
+        if requester_ids:
+            uresp = supabase.table("user").select("id,first_name,last_name,email").in_("id", requester_ids).execute()
+            for u in (uresp.data or []):
+                display = ((u.get("first_name") or "") + " " + (u.get("last_name") or "")).strip()
+                if not display:
+                    display = u.get("email") or u.get("id")
+                users_map[u.get("id")] = display
+
+        # group requests by item_id (ordered by request_date desc already)
+        reqs_by_item = {}
+        for r in reqs:
+            iid = r.get("item_id")
+            rd = r.get("request_date")
+            # create human date
+            try:
+                r_dt = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
+                human = r_dt.strftime("%b %d, %Y · %I:%M %p") if r_dt else rd
+            except Exception:
+                human = rd or ""
+            entry = {
+                "request_id": r.get("request_id"),
+                "user_id": r.get("user_id"),
+                "requester_name": users_map.get(r.get("user_id"), r.get("user_id")),
+                "request_date_human": human,
+                "status": r.get("status"),
+                "return": bool(r.get("return")),
+                "raw_request_date": r.get("request_date"),
+            }
+            reqs_by_item.setdefault(iid, []).append(entry)
+
+        total_available = 0
+        total_pending = 0
+
+        for it in items:
+            iid = it.get("item_id")
+            item_reqs = reqs_by_item.get(iid, [])
+
+            # Determine status label for item based on latest request (list is desc by date)
+            status_label = "available"
+            latest_approved = None
+            latest_req = item_reqs[0] if item_reqs else None
+
+            # if there is an approved request (first approved in list) find it:
+            for r in item_reqs:
+                if r.get("status") == "approved":
+                    latest_approved = r
+                    break
+
+            # priority:
+            # 1) if latest approved request exists and return==True -> returned
+            # 2) elif latest approved exists and return==False -> borrowed
+            # 3) elif there's any pending request -> pending
+            # 4) else available
+            if latest_approved:
+                if latest_approved.get("return") is True:
+                    status_label = "returned"
+                else:
+                    status_label = "borrowed"
+            else:
+                # check for pending requests
+                has_pending = any(r.get("status") == "pending" for r in item_reqs)
+                if has_pending:
+                    status_label = "pending"
+                else:
+                    status_label = "available"
+
+            # counts for dashboard
+            if status_label == "available":
+                total_available += 1
+            if any(r.get("status") == "pending" for r in item_reqs):
+                total_pending += sum(1 for r in item_reqs if r.get("status") == "pending")
+
+            pending_reqs = [r for r in item_reqs if (r.get("status") or "").lower() == "pending"]
+
+            items_with_requests.append({
+                "item_id": iid,
+                "title": it.get("title"),
+                "description": it.get("description") or "",
+                "image_url": it.get("image_url") or "",
+                "category": it.get("category") or "",
+                "condition": it.get("condition") or "",
+                "available": bool(it.get("available")),
+                "status_label": status_label,
+                "requests": item_reqs,            # full request history (optional)
+                "pending_requests": pending_reqs, # only pending ones for the pending UI
+            })
+    except Exception as e:
+        print("Error in my_items:", e)
+
+    return render(request, "my_items.html", {
+        "items": items_with_requests,
+        "notifications": notifications,
+        "unread_count": unread_count,
+        "available_count": total_available,
+        "pending_count": total_pending,
+    })
+
+
+
+@supabase_login_required
+@require_http_methods(["GET", "POST"])
+def edit_item(request, item_id):
+    user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return redirect("login")
+    # fetch item
+    try:
+        resp = supabase.table("item").select("*").eq("item_id", item_id).single().execute()
+        if getattr(resp, "error", None) or not resp.data:
+            messages.error(request, "Item not found.")
+            return redirect("my_items")
+        item = resp.data
+    except Exception:
+        messages.error(request, "Failed to fetch item.")
+        return redirect("my_items")
+
+    if item.get("user_id") != user_id:
+        return HttpResponseForbidden("Permission denied")
+
+    if request.method == "POST":
+        title = (request.POST.get("title") or "").strip()
+        description = (request.POST.get("description") or "").strip()
+        category = (request.POST.get("category") or "").strip()
+        condition = (request.POST.get("condition") or "").strip()
+        availability = (request.POST.get("available") or "true").lower() in ("true","1","on","yes","available")
+
+        # handle image if uploaded (use service role client)
+        file = request.FILES.get("image")
+        image_url = item.get("image_url")
+        if file:
+            from supabase import create_client as create_supabase_client
+            admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+            ext = os.path.splitext(file.name)[1] or ".bin"
+            filename = f"{user_id}/{uuid.uuid4()}{ext}"
+            try:
+                upload_res = admin_client.storage.from_("item-images").upload(filename, file.read())
+                if getattr(upload_res, "error", None):
+                    messages.error(request, "Failed to upload image.")
+                else:
+                    public = admin_client.storage.from_("item-images").get_public_url(filename)
+                    image_url = (public.get("publicUrl") if isinstance(public, dict) and public.get("publicUrl")
+                                 else getattr(public, "public_url", None) or getattr(public, "publicUrl", None) or public)
+            except Exception:
+                messages.error(request, "Image upload failed.")
+
+        try:
+            update_resp = supabase.table("item").update({
+                "title": title,
+                "description": description,
+                "category": category,
+                "condition": condition,
+                "available": availability,
+                "image_url": image_url,
+            }).eq("item_id", item_id).execute()
+
+            if getattr(update_resp, "error", None):
+                messages.error(request, "Failed to update item.")
+            else:
+                messages.success(request, "Item updated.")
+                return redirect("my_items")
+        except Exception as e:
+            messages.error(request, "Update failed: " + str(e))
+
+    # Prepare item for template
+    item['image_url'] = item.get('image_url')
+    return render(request, "my_items/edit_item.html", {"item": item})
