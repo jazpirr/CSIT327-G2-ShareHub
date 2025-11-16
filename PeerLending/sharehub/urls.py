@@ -13,6 +13,7 @@ urlpatterns = [
     path("settings/", views.settings_view, name="settings"),
     path("admindashboard/", views.admin_dashboard, name="admin_dashboard"),
     path("settings/update_email/", views.update_email, name="update_email"),
+    path('confirm-email/', views.confirm_email_change, name='confirm_email'),
     path("settings/update_password/", views.update_password, name="update_password"),
     path("forgot-password", views.forgot_password, name="forgot_password"),
     path("reset-password", views.reset_password_page, name="reset_password_page"),
