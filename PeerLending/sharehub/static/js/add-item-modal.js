@@ -1,3 +1,96 @@
+// static/js/add-item-modal.js
+// Copy-paste ready — single popup implementation, no duplicates.
+// Requires popup.js to be loaded BEFORE this file (preferred).
+// IDs expected in HTML: addItemModal, addItemForm, uploadArea, itemImage,
+// errorPopup, errorOverlay, popupHeader, popupBody (popup.js markup).
+// If popup.js isn't present, this falls back to DOM errorPopup or alert.
+
+(function(){
+  // ---- Popup helper IIFE (single source of truth) ----
+  function _hideDomPopup() {
+    try {
+      const popup = document.getElementById('errorPopup');
+      const overlay = document.getElementById('errorOverlay');
+      if (popup) {
+        popup.classList.remove('show');
+        popup.setAttribute('aria-hidden','true');
+        popup.style.pointerEvents = 'none';
+        setTimeout(()=> {
+          popup.style.display = 'none';
+          const body = popup.querySelector('#popupBody') || popup.querySelector('.popup-body');
+          if (body) body.innerHTML = '';
+        }, 250);
+      }
+      if (overlay) {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden','true');
+        overlay.style.pointerEvents = 'none';
+        setTimeout(()=> { overlay.style.display = 'none'; }, 250);
+      }
+    } catch (e) { console.warn('hideDomPopup error', e); }
+  }
+
+  window.closeActionPopup = function closeActionPopup() {
+    try {
+      _hideDomPopup();
+    } catch(e){ console.warn('closeActionPopup error', e); }
+
+    // hide addItem-specific overlay/popup if present
+    try {
+      const addOv = document.getElementById('addItemOverlay');
+      const addPop = document.getElementById('addItemPopup');
+      if (addPop) { addPop.classList.remove('show'); addPop.style.pointerEvents='none'; setTimeout(()=>addPop.style.display='none',200); }
+      if (addOv) { addOv.classList.remove('show'); addOv.style.pointerEvents='none'; setTimeout(()=>addOv.style.display='none',200); }
+    } catch(e){}
+  };
+
+  window.showAddItemPopup = function showAddItemPopup(message, isSuccess = true) {
+    // prefer shared API (popup.js)
+    if (window.showMessagePopup) {
+      const title = isSuccess ? 'Success!' : 'Error';
+      const autoCloseMs = isSuccess ? 3000 : 0;
+      window.showMessagePopup(title, message, { autoCloseMs });
+      return;
+    }
+
+    // DOM fallback using errorPopup / errorOverlay
+    const popup = document.getElementById('errorPopup');
+    const overlay = document.getElementById('errorOverlay');
+    const header = document.getElementById('popupHeader');
+    const body = document.getElementById('popupBody');
+
+    if (!popup || !overlay || !header || !body) {
+      try { alert((isSuccess ? 'Success: ' : 'Error: ') + message); } catch(e){ console.log(message); }
+      return;
+    }
+
+    try {
+      header.textContent = isSuccess ? 'Success!' : 'Error';
+      body.innerText = (typeof message === 'string') ? message : JSON.stringify(message);
+
+      overlay.style.display = 'block';
+      setTimeout(()=>{ overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); overlay.style.pointerEvents='auto'; }, 10);
+
+      popup.style.display = 'flex';
+      setTimeout(()=>{ popup.classList.add('show'); popup.style.pointerEvents='auto'; popup.setAttribute('aria-hidden','false'); }, 10);
+
+      const closeBtn = popup.querySelector('.close-btn');
+      if (closeBtn) closeBtn.onclick = () => { window.closeActionPopup(); };
+
+      if (isSuccess) setTimeout(()=>{ window.closeActionPopup(); }, 3000);
+    } catch(e) {
+      console.error('showAddItemPopup error', e);
+      try { alert((isSuccess ? 'Success: ' : 'Error: ') + message); }catch(_) {}
+    }
+  };
+
+  window.showActionPopupWithType = function(headerText, messages, type) {
+    const text = Array.isArray(messages) ? messages.join('\n') : String(messages || headerText || '');
+    const isSuccess = String(headerText||'').toLowerCase().includes('success') || type === 'success';
+    window.showAddItemPopup(text, isSuccess);
+  };
+})();
+
 document.addEventListener('DOMContentLoaded', function () {
   const openModalBtn = document.querySelector('.add-item-btn');
   const modal = document.getElementById('addItemModal');            // overlay modal
@@ -5,79 +98,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const uploadArea = document.getElementById('uploadArea');
   const fileInput = document.getElementById('itemImage');
 
-  // re-declare these so other parts of the file that still reference them won't error
   const actionOverlay = document.getElementById('actionOverlay') || document.getElementById('errorOverlay');
   const actionPopup   = document.getElementById('actionPopup')   || document.getElementById('errorPopup');
 
   let addItemForm = document.getElementById('addItemForm') || (modal ? modal.querySelector('form') : null);
-
-  function _showOverlay() {
-    if (!actionOverlay) return;
-    actionOverlay.classList.add('show');
-  }
-  function _hideOverlay() {
-    if (!actionOverlay) return;
-    actionOverlay.classList.remove('show');
-  }
-
-  // ------ Popup integration (use the shared popup.js API when available) ------
-
-  function _joinMessages(messages) {
-    if (!messages && messages !== 0) return '';
-    if (Array.isArray(messages)) return messages.join('\n');
-    return String(messages);
-  }
-
-  function showActionPopup(headerText, messages) {
-    const msg = _joinMessages(messages);
-    // prefer the shared popup API
-    if (window.showMessagePopup) {
-      // auto-close success messages after 2.5s; errors stay until user closes
-      const autoClose = headerText && String(headerText).toLowerCase().includes('success') ? 2500 : 0;
-      window.showMessagePopup(headerText || 'Message', msg, { autoCloseMs: autoClose });
-      return;
-    }
-    // fallback to alert if shared popup isn't loaded for any reason
-    alert((headerText ? headerText + '\n\n' : '') + msg);
-  }
-
-  function closeActionPopup() {
-    // try to use the popup close button if it exists (popup.js wired it)
-    const closeBtn = document.querySelector('#errorPopup .close-btn, #actionPopup .close-btn, .close-btn');
-    if (closeBtn) {
-      try { closeBtn.click(); return; } catch (e) {}
-    }
-
-    // fallback: hide known popup nodes manually
-    const popup = document.getElementById('errorPopup') || document.getElementById('actionPopup');
-    const overlay = document.getElementById('errorOverlay') || document.getElementById('actionOverlay');
-    if (popup) {
-      popup.classList.remove('show');
-      popup.style.display = 'none';
-      popup.style.pointerEvents = 'none';
-    }
-    if (overlay) {
-      overlay.classList.remove('show');
-      overlay.style.pointerEvents = 'none';
-    }
-  }
-
-  function showActionPopupWithType(headerText, messages, type) {
-    // popup.js handles any header styling; just forward text
-    showActionPopup(headerText, messages);
-  }
-
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') {
-      if (actionPopup && actionPopup.classList.contains('show')) closeActionPopup();
-      if (modal && modal.classList.contains('active')) {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-        safeResetForm();
-      }
-    }
-  });
 
   function resetFileInputUI() {
     try { if (fileInput) fileInput.value = ''; } catch (_) {}
@@ -98,15 +122,22 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   if (openModalBtn && modal) {
-    openModalBtn.addEventListener('click', function () {
+    openModalBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
       modal.classList.add('active');
+      modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     });
   }
 
   if (cancelBtn) {
-    cancelBtn.addEventListener('click', function () {
-      if (modal) modal.classList.remove('active');
+    cancelBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = '';
+      }
       document.body.style.overflow = '';
       safeResetForm();
     });
@@ -116,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
     modal.addEventListener('click', function (e) {
       if (e.target === modal) {
         modal.classList.remove('active');
+        modal.style.display = '';
         document.body.style.overflow = '';
         safeResetForm();
       }
@@ -155,11 +187,11 @@ document.addEventListener('DOMContentLoaded', function () {
   function handleFileSelect(file) {
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (!validTypes.includes(file.type)) {
-      showActionPopupWithType('Invalid file', ['Please select PNG or JPG image.'], 'error');
+      window.showActionPopupWithType && window.showActionPopupWithType('Invalid file', ['Please select PNG or JPG image.'], 'error');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      showActionPopupWithType('File too large', ['Image must be smaller than 10MB.'], 'error');
+      window.showActionPopupWithType && window.showActionPopupWithType('File too large', ['Image must be smaller than 10MB.'], 'error');
       return;
     }
     selectedFile = file;
@@ -205,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function () {
     reader.readAsDataURL(file);
   }
 
-
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -238,58 +269,9 @@ document.addEventListener('DOMContentLoaded', function () {
     return data;
   }
 
-  // ===== SUCCESS/ERROR POPUP FUNCTIONS =====
-function showAddItemPopup(message, isSuccess = true) {
-    const overlay = document.getElementById('addItemOverlay');
-    const popup = document.getElementById('addItemPopup');
-    const title = document.getElementById('addItemPopupTitle');
-    const msgBody = document.getElementById('addItemPopupMessage');
-    const closeBtn = document.getElementById('addItemCloseBtn');
-    
-    if (!overlay || !popup) return;
-    
-    // Set title and message
-    title.textContent = isSuccess ? 'Success!' : 'Error!';
-    msgBody.textContent = message;
-    
-    // Toggle error/success styling
-    if (isSuccess) {
-        popup.classList.remove('error');
-        popup.classList.add('success');
-    } else {
-        popup.classList.add('error');
-        popup.classList.remove('success');
-    }
-    
-    // Show popup
-    overlay.classList.add('show');
-    
-    // Close button handler
-    closeBtn.onclick = () => {
-        overlay.classList.remove('show');
-        
-        // If success, reload or redirect
-        if (isSuccess) {
-            setTimeout(() => {
-                window.location.reload();
-            }, 300);
-        }
-    };
-    
-    // Auto-close success messages after 3 seconds
-    if (isSuccess) {
-        setTimeout(() => {
-            if (overlay.classList.contains('show')) {
-                overlay.classList.remove('show');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 300);
-            }
-        }, 3000);
-    }
-}
-
-let handlersAttached = false;
+  // ===== add-item popup (UI for form validation/result) =====
+  // This uses window.showAddItemPopup (above) or popup.js showMessagePopup when available.
+  let handlersAttached = false;
 
   function attachHandlers(formElem) {
     if (!formElem) return;
@@ -306,25 +288,24 @@ let handlersAttached = false;
       const condition = (document.getElementById('itemCondition') || {}).value || '';
       const description = (document.getElementById('itemDescription') || {}).value?.trim?.() || '';
 
-      // ===== CUSTOM VALIDATION WITH CUSTOM POPUP =====
       if (!itemName) {
-          showAddItemPopup('Please fill in the Item Name field.', false);
+          window.showAddItemPopup('Please fill in the Item Name field.', false);
           return;
       }
       if (!category || category === 'Select Category') {
-          showAddItemPopup('Please select a Category.', false);
+          window.showAddItemPopup('Please select a Category.', false);
           return;
       }
       if (!condition || condition === 'Select Condition') {
-          showAddItemPopup('Please select a Condition.', false);
+          window.showAddItemPopup('Please select a Condition.', false);
           return;
       }
       if (!description) {
-          showAddItemPopup('Please fill in the Description field.', false);
+          window.showAddItemPopup('Please fill in the Description field.', false);
           return;
       }
       if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-          showAddItemPopup('Please upload an image of the item.', false);
+          window.showAddItemPopup('Please upload an image of the item.', false);
           return;
       }
 
@@ -336,39 +317,40 @@ let handlersAttached = false;
         btn.innerHTML = '<span class="spinner"></span> Adding...';
       }
 
-try {
-    const formData = new FormData();
-    formData.append('itemName', itemName);
-    formData.append('category', category);
-    formData.append('condition', condition);
-    formData.append('description', description);
-    const availRadio = document.querySelector('input[name="availability"]:checked');
-    formData.append('availability', availRadio ? availRadio.value : 'available');
-    if (fileInput && fileInput.files && fileInput.files.length > 0) {
-        formData.append('image', fileInput.files[0], fileInput.files[0].name);
-    } else if (selectedFile) {
-        formData.append('image', selectedFile, selectedFile.name);
-    }
-
-    const result = await submitAddItemToServer(formData);
-
-    if (result && result.success) {
-        if (modal) {
-            modal.classList.remove('active');
-            document.body.style.overflow = '';
+      try {
+        const formData = new FormData();
+        formData.append('itemName', itemName);
+        formData.append('category', category);
+        formData.append('condition', condition);
+        formData.append('description', description);
+        const availRadio = document.querySelector('input[name="availability"]:checked');
+        formData.append('availability', availRadio ? availRadio.value : 'available');
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            formData.append('image', fileInput.files[0], fileInput.files[0].name);
+        } else if (selectedFile) {
+            formData.append('image', selectedFile, selectedFile.name);
         }
 
-        safeResetForm();
-        
-        // ===== NEW: Show custom confirmation popup =====
-        showAddItemPopup('Your item has been added successfully and is now available for borrowing!', true);
+        const result = await submitAddItemToServer(formData);
 
-    } else {
-        showActionPopupWithType('Unexpected Response', ['Unexpected server response.'], 'error');
-        console.error('Unexpected response', result);
-    }
+        if (result && result.success) {
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = '';
+                document.body.style.overflow = '';
+            }
 
-} catch (err) {
+            safeResetForm();
+
+            // show success popup (will auto-close)
+            window.showAddItemPopup('Your item has been added successfully and is now available for borrowing!', true);
+
+        } else {
+            window.showActionPopupWithType && window.showActionPopupWithType('Unexpected Response', ['Unexpected server response.'], 'error');
+            console.error('Unexpected response', result);
+        }
+
+      } catch (err) {
         let serverData = err._serverData || null;
         const messages = [];
 
@@ -391,10 +373,9 @@ try {
           }
         }
 
-        showActionPopupWithType('Error', messages.length ? messages : ['Something went wrong.'], 'error');
+        window.showActionPopupWithType && window.showActionPopupWithType('Error', messages.length ? messages : ['Something went wrong.'], 'error');
         console.error('Add item error:', err);
       } finally {
-        // restore btn
         if (btn) {
           btn.disabled = false;
           btn.classList.remove('btn-spinner');
@@ -421,6 +402,6 @@ try {
 
   window.safeResetAddItemForm = safeResetForm;
 
- //debug
-  console.log('ADD-MODAL: ready, modal?', !!modal, 'form?', !!addItemForm, 'popup?', !!actionPopup, 'overlay?', !!actionOverlay);
+  // debug
+  console.log('ADD-MODAL: ready, modal?', !!modal, 'form?', !!addItemForm, 'showMessagePopup?', !!window.showMessagePopup, 'showAddItemPopup?', !!window.showAddItemPopup);
 });

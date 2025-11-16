@@ -1,631 +1,369 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - ShareHub</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/settings.css' %}">
-    <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
-    
-  
-</head>
-<body>
-    <!-- Top Navigation -->
-    <header class="navbar">
-        <div class="nav-container">
-            <div class="nav-left">
-                <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
-                    <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <span>ShareHub - CIT-U</span>
-                </div>
-            </div>
+{% extends "base.html" %}
+{% load static %}
 
-            <nav class="nav-center">
-                <a href="{% url 'home' %}" class="nav-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Home
-                </a>
-                <a href="{% url 'profile' %}" class="nav-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Profile
-                </a>
-                <a href="{% url 'borrow_items' %}" class="nav-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2"/>
-                        <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Borrow Items
-                </a>
-                <a href="{% url 'return_items' %}" class="nav-link">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-                        <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
-                        <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
-                        <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Return Items
-                </a>
-                <a href="#" class="nav-link active">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Settings
-                </a>
-            </nav>
-            
-            <div class="nav-right">
-                <button class="add-item-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
-                        <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Add Item
-                </button>
-                <div style="position: relative;">
-                    <button class="notification-btn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <span class="notification-badge">1</span>
-                    </button>
-                    
-                    <!-- Notification Popup -->
-                    <div class="notification-popup" id="notificationPopup">
-                        <div class="notification-header">
-                            <h3>Notifications</h3>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <button class="mark-read-btn">Mark all as read</button>
-                                <button class="close-popup" id="closePopup">×</button>
-                            </div>
-                        </div>
-                        <div class="notification-list">
-                            <div class="notification-item">
-                                <div class="notification-title">Return <strong>'Organic Chemistry Textbook'</strong> by Jan 20, 2026</div>
-                                <div class="notification-meta">
-                                    <span class="notification-time">Today, 3:15 PM</span>
-                                    <span class="notification-status active">Active</span>
-                                </div>
-                            </div>
-                            <div class="notification-item">
-                                <div class="notification-title">Return <strong>'Scientific Calculator'</strong> by Sept 16, 2026</div>
-                                <div class="notification-meta">
-                                    <span class="notification-time">Today, 3:15 PM</span>
-                                    <span class="notification-status overdue">Overdue</span>
-                                </div>
-                            </div>
-                            <div class="notification-item">
-                                <div class="notification-title">Return <strong>'Lab Equipment Kit'</strong> by Jan 22, 2026</div>
-                                <div class="notification-meta">
-                                    <span class="notification-time">Today, 3:15 PM</span>
-                                    <span class="notification-status active">Active</span>
-                                </div>
-                            </div>
-                            <div class="notification-item">
-                                <div class="notification-title">Return <strong>'Organic Chemistry Textbook'</strong> by Jan 20, 2026</div>
-                                <div class="notification-meta">
-                                    <span class="notification-time">Today, 3:15 PM</span>
-                                    <span class="notification-status active">Active</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:inline;">
-                {% csrf_token %}
-                <button class="logout-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2"/>
-                        <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2"/>
-                        <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                    Logout
-                </button>
-                </form>
-            </div>
-        </div>
-    </header>
+{% block title %}Settings - ShareHub{% endblock %}
 
-    <!-- Add Item Modal -->
-<div class="modal-overlay" id="addItemModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2>Add New Item</h2>
-      <p>Share your academic items with fellow students</p>
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/settings.css' %}">
+<link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="main-content">
+  <div class="container">
+    <div class="page-header">
+      <h1>Settings</h1>
+      <p>Manage your account settings and preferences</p>
     </div>
-    
-    <form id="addItemForm" class="modal-body">
-      <div class="form-group">
-        <label>Item Image</label>
-        <div class="upload-area" id="uploadArea">
-          <div class="upload-icon">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17,8 12,3 7,8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </div>
-          <div class="upload-text">Click to upload image</div>
-          <div class="upload-subtext">PNG, JPG up to 10MB</div>
-          <input type="file" id="itemImage" accept="image/png, image/jpeg" style="display: none;">
+
+    <div class="settings-layout">
+      <!-- Sidebar -->
+      <nav class="settings-sidebar" role="navigation" aria-label="Settings">
+        <button class="sidebar-item active" data-tab="account" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg>
+          Account
+          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+
+        <button class="sidebar-item" data-tab="notifications" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/><path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/></svg>
+          Notifications
+          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+
+        <button class="sidebar-item" data-tab="privacy" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/></svg>
+          Privacy
+          <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/></svg>
+        </button>
+      </nav>
+
+      <!-- Content -->
+      <div class="settings-content">
+        <!-- ACCOUNT TAB -->
+        <div id="account-tab" class="tab-content active">
+          <h2>Account Settings</h2>
+
+          <form id="account-form" class="settings-form" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" name="firstName" data-field="first_name"
+                       value="{{ user_info.first_name|default_if_none:'' }}" required placeholder="First name" autocomplete="given-name">
+              </div>
+
+              <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" name="lastName" data-field="last_name"
+                       value="{{ user_info.last_name|default_if_none:'' }}" required placeholder="Last name" autocomplete="family-name">
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" data-field="email"
+                       value="{{ user_info.email|default_if_none:'' }}" required placeholder="you@school.edu" autocomplete="email">
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" data-field="phone"
+                       value="{{ user_info.phone_number|default_if_none:'' }}" placeholder="09xxxxxxxxx" autocomplete="tel">
+              </div>
+
+              <div class="form-group">
+                <label for="college">College Department</label>
+                <input type="text" id="college" name="college" data-field="college"
+                       value="{{ user_info.college_dept|default_if_none:'' }}" placeholder="College / Department">
+              </div>
+
+              <div class="form-group">
+                <label for="yearLevel">Year Level</label>
+                <select id="yearLevel" name="yearLevel" data-field="year_level">
+                  <option value="">Select Year Level</option>
+                  <option value="1st Year" {% if user_info.year_level == "1st Year" %}selected{% endif %}>1st Year</option>
+                  <option value="2nd Year" {% if user_info.year_level == "2nd Year" %}selected{% endif %}>2nd Year</option>
+                  <option value="3rd Year" {% if user_info.year_level == "3rd Year" %}selected{% endif %}>3rd Year</option>
+                  <option value="4th Year" {% if user_info.year_level == "4th Year" %}selected{% endif %}>4th Year</option>
+                  <option value="Graduate" {% if user_info.year_level == "Graduate" %}selected{% endif %}>Graduate</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="password-section">
+              <h3>Change Password</h3>
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label for="currentPassword">Current Password</label>
+                  <input type="password" id="currentPassword" name="currentPassword" placeholder="Current password" autocomplete="current-password">
+                  <span class="validation-message" id="current-password-error"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="newPassword">New Password</label>
+                  <input type="password" id="newPassword" name="newPassword" placeholder="New password" autocomplete="new-password">
+                  <span class="validation-message" id="new-password-error"></span>
+                </div>
+
+                <div class="form-group">
+                  <label for="confirmPassword">Confirm New Password</label>
+                  <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm new password" autocomplete="new-password">
+                  <span class="validation-message" id="confirm-password-error"></span>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- NOTIFICATIONS TAB -->
+        <div id="notifications-tab" class="tab-content" hidden>
+          <h2>Notification Preferences</h2>
+          <p>Control how you receive updates and reminders from ShareHub</p>
+
+          <form id="notifications-form" class="settings-form">
+            <div class="toggle-group">
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="emailNotificationsLabel">Email Notifications</h3>
+                  <p>Receive updates about borrowed and shared items via email</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="emailNotifications" data-field="email_notifications" aria-labelledby="emailNotificationsLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="smsNotificationsLabel">SMS Notifications</h3>
+                  <p>Receive important alerts via text message</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="smsNotifications" data-field="sms_notifications" aria-labelledby="smsNotificationsLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="inAppNotificationsLabel">In-App Notifications</h3>
+                  <p>Receive notifications directly inside ShareHub</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="inAppNotifications" data-field="in_app_notifications" aria-labelledby="inAppNotificationsLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="dueDateRemindersLabel">Due Date Reminders</h3>
+                  <p>Get notified 2 days before borrowed items are due</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders" aria-labelledby="dueDateRemindersLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- PRIVACY TAB -->
+        <div id="privacy-tab" class="tab-content" hidden>
+          <h2>Privacy Settings</h2>
+          <form id="privacy-form" class="settings-form">
+            <div class="settings-box">
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="showEmailLabel">Show Email</h3>
+                  <p>Allow others to see your email address on your profile</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="showEmail" data-field="show_email" aria-labelledby="showEmailLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="publicProfileLabel">Public Profile</h3>
+                  <p>Make your profile visible to everyone on ShareHub</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="publicProfile" data-field="public_profile" aria-labelledby="publicProfileLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="itemSharingLabel">Allow Item Sharing</h3>
+                  <p>Permit other users to share your listed items</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="itemSharing" data-field="allow_item_sharing" aria-labelledby="itemSharingLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="profileVisibilityLabel">Profile Visibility</h3>
+                  <p>Make your profile visible to other students</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="profileVisibility" data-field="profile_visibility" aria-labelledby="profileVisibilityLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div class="toggle-item">
+                <div class="toggle-info">
+                  <h3 id="contactInfoLabel">Contact Information</h3>
+                  <p>Share your contact details with item owners</p>
+                </div>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="contactInfo" data-field="contact_info" aria-labelledby="contactInfoLabel">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="saveBtn" class="btn btn-primary" disabled>Save Changes</button>
+          <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
         </div>
       </div>
-
-      <div class="form-group">
-        <label for="itemName">Item Name <span class="required">*</span></label>
-        <input type="text" id="itemName" class="form-control" placeholder="e.g., Scientific Calculator" required>
-      </div>
-
-      <div class="form-group">
-        <label for="itemCategory">Category <span class="required">*</span></label>
-        <select id="itemCategory" class="form-control" required>
-          <option value="">Select Category</option>
-          <option value="textbooks">Textbooks</option>
-          <option value="calculators">Calculators</option>
-          <option value="lab-equipment">Lab Equipment</option>
-          <option value="electronics">Electronics</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="itemCondition">Condition <span class="required">*</span></label>
-        <select id="itemCondition" class="form-control" required>
-          <option value="">Select Condition</option>
-          <option value="new">New</option>
-          <option value="like-new">Like New</option>
-          <option value="good">Good</option>
-          <option value="fair">Fair</option>
-          <option value="poor">Poor</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="itemDescription">Description <span class="required">*</span></label>
-        <textarea id="itemDescription" class="form-control" placeholder="Provide details about the item, including any accessories or special notes..." required></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Availability</label>
-        <div class="availability-options">
-          <label class="availability-option">
-            <input type="radio" name="availability" value="available" checked>
-            <span>Available Now</span>
-          </label>
-          <label class="availability-option">
-            <input type="radio" name="availability" value="unavailable">
-            <span>Currently Unavailable</span>
-          </label>
-        </div>
-      </div>
-    </form>
-
-    <div class="modal-footer">
-      <button type="button" class="btn btn-cancel" id="cancelAddItem">Cancel</button>
-      <button type="submit" form="addItemForm" class="btn btn-add">Add Item</button>
     </div>
   </div>
+</main>
+
+<!-- toast -->
+<div id="toast" class="toast" role="status" aria-live="polite">
+  <div class="toast-content">
+    <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="20,6 9,17 4,12" stroke="currentColor" stroke-width="2"/></svg>
+    <span class="toast-message">Settings saved</span>
+  </div>
 </div>
+{% endblock %}
 
-    <div class="notification-overlay" id="notificationOverlay"></div>
+{% block extra_scripts %}
+<script src="{% static 'js/settings.js' %}"></script>
 
-    <main class="main-content">
-        <div class="container">
-            <div class="page-header">
-                <h1>Settings</h1> 
-                <p>Manage your account settings and preferences</p>
-            </div>
-            
-            <div class="settings-layout">
-   
-                <nav class="settings-sidebar">
-                    <button class="sidebar-item active" data-tab="account">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Account
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                    
-                    <button class="sidebar-item" data-tab="notifications">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Notifications
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                    
-                    <button class="sidebar-item" data-tab="privacy">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
-                            <circle cx="12" cy="16" r="1" stroke="currentColor" stroke-width="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Privacy
-                        <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                            <polyline points="9,18 15,12 9,6" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </nav>
-
-                <div class="settings-content">
-                  
-                    <div id="account-tab" class="tab-content active">
-                        <h2>Account Settings</h2>
-                        
-                        <form id="account-form" class="settings-form">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="firstName">First Name</label>
-                                    <input type="text" id="firstName" name="firstName" data-field="first_name"
-                                    value="{{ user_info.first_name|default_if_none:'' }}" required
-                                    placeholder="First name" autocomplete="given-name">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="lastName">Last Name</label>
-                                    <input type="text" id="lastName" name="lastName" data-field="last_name"
-                                    value="{{ user_info.last_name|default_if_none:'' }}" required
-                                    placeholder="Last name" autocomplete="family-name">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="email">Email</label>
-                                    <input type="email" id="email" name="email" data-field="email"
-                                    value="{{ user_info.email|default_if_none:'' }}" required
-                                    placeholder="you@school.edu" autocomplete="email">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="phone">Phone</label>
-                                    <input type="tel" id="phone" name="phone" data-field="phone"
-                                    value="{{ user_info.phone_number|default_if_none:'' }}"
-                                    placeholder="09xxxxxxxxx" autocomplete="tel">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="college">College Department</label>
-                                    <input type="text" id="college" name="college" data-field="college"
-                                    value="{{ user_info.college_dept|default_if_none:'' }}"
-                                    placeholder="College / Department">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="yearLevel">Year Level</label>
-                                    <select id="yearLevel" name="yearLevel" data-field="year_level">
-                                        <option value="">Select Year Level</option>
-                                        <option value="1st Year" {% if user_info.year_level == "1st Year" %}selected{% endif %}>1st Year</option>
-                                        <option value="2nd Year" {% if user_info.year_level == "2nd Year" %}selected{% endif %}>2nd Year</option>
-                                        <option value="3rd Year" {% if user_info.year_level == "3rd Year" %}selected{% endif %}>3rd Year</option>
-                                        <option value="4th Year" {% if user_info.year_level == "4th Year" %}selected{% endif %}>4th Year</option>
-                                        <option value="Graduate" {% if user_info.year_level == "Graduate" %}selected{% endif %}>Graduate</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                          
-                            <div class="password-section">
-                                <h3>Change Password</h3>
-                                <div class="form-grid">
-                                    <div class="form-group full-width">
-                                        <label for="currentPassword">Current Password</label>
-                                        <input type="password" id="currentPassword" name="currentPassword"
-                                        placeholder="Current password" autocomplete="current-password">
-                                        <span class="validation-message" id="current-password-error"></span>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="newPassword">New Password</label>
-                                        <input type="password" id="newPassword" name="newPassword"
-                                        placeholder="New password" autocomplete="new-password">
-                                        <span class="validation-message" id="new-password-error"></span>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="confirmPassword">Confirm New Password</label>
-                                        <input type="password" id="confirmPassword" name="confirmPassword"
-                                        placeholder="Confirm new password" autocomplete="new-password">
-                                        <span class="validation-message" id="confirm-password-error"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-
- <!-- ✅ Notification Settings -->
-<div id="notifications-tab" class="tab-content">
-  <h2>Notification Preferences</h2>
-  <p>Control how you receive updates and reminders from ShareHub</p>
-
-  <form id="notifications-form" class="settings-form">
-    <div class="toggle-group">
-
-      <!-- Email Notifications -->
-      <div class="toggle-item">
-        
-        <div class="toggle-info">
-          <h3 id="emailNotificationsLabel">Email Notifications</h3>
-          <p>Receive updates about borrowed and shared items via email</p>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="emailNotifications" data-field="email_notifications"
-                 aria-labelledby="emailNotificationsLabel" title="Email Notifications">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <!-- SMS Notifications -->
-      <div class="toggle-item">
-        <div class="toggle-info">
-          <h3 id="smsNotificationsLabel">SMS Notifications</h3>
-          <p>Receive important alerts via text message</p>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="smsNotifications" data-field="sms_notifications"
-                 aria-labelledby="smsNotificationsLabel" title="SMS Notifications">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <!-- In-App Notifications -->
-      <div class="toggle-item">
-        <div class="toggle-info">
-          <h3 id="inAppNotificationsLabel">In-App Notifications</h3>
-          <p>Receive notifications directly inside ShareHub</p>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="inAppNotifications" data-field="in_app_notifications"
-                 aria-labelledby="inAppNotificationsLabel" title="In-App Notifications">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-      <!-- Due Date Reminders -->
-      <div class="toggle-item">
-        <div class="toggle-info">
-          <h3 id="dueDateRemindersLabel">Due Date Reminders</h3>
-          <p>Get notified 2 days before borrowed items are due</p>
-        </div>
-        <label class="toggle-switch">
-          <input type="checkbox" id="dueDateReminders" data-field="due_date_reminders"
-                 aria-labelledby="dueDateRemindersLabel" title="Due Date Reminders">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-
-    </div> <!-- end toggle-group --> 
-  </form> 
-</div> <!-- end notification tab -->
-
-
-
-                    <div id="privacy-tab" class="tab-content">
-                        <h2>Privacy Settings</h2>
-                        
-                        <form id="privacy-form" class="settings-form">
-        <div class="settings-box">
-            <!-- Show Email -->
-            <div class="toggle-item">
-                <div class="toggle-info">
-                    <h3 id="showEmailLabel">Show Email</h3>
-                    <p>Allow others to see your email address on your profile</p>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="showEmail" data-field="show_email"
-                        aria-labelledby="showEmailLabel" title="Show Email">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-
-            <!-- Public Profile -->
-            <div class="toggle-item">
-                <div class="toggle-info">
-                    <h3 id="publicProfileLabel">Public Profile</h3>
-                    <p>Make your profile visible to everyone on ShareHub</p>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="publicProfile" data-field="public_profile"
-                        aria-labelledby="publicProfileLabel" title="Public Profile">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-
-            <!-- Allow Item Sharing -->
-            <div class="toggle-item">
-                <div class="toggle-info">
-                    <h3 id="itemSharingLabel">Allow Item Sharing</h3>
-                    <p>Permit other users to share your listed items</p>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="itemSharing" data-field="allow_item_sharing"
-                        aria-labelledby="itemSharingLabel" title="Allow Item Sharing">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-
-            <!-- Profile Visibility -->
-            <div class="toggle-item">
-                <div class="toggle-info">
-                    <h3 id="profileVisibilityLabel">Profile Visibility</h3>
-                    <p>Make your profile visible to other students</p>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="profileVisibility" data-field="profile_visibility"
-                        aria-labelledby="profileVisibilityLabel" title="Profile Visibility">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-
-            <!-- Contact Information -->
-            <div class="toggle-item">
-                <div class="toggle-info">
-                    <h3 id="contactInfoLabel">Contact Information</h3>
-                    <p>Share your contact details with item owners</p>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="contactInfo" data-field="contact_info"
-                        aria-labelledby="contactInfoLabel" title="Contact Information">
-                    <span class="toggle-slider"></span>
-                </label>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="form-actions">
-                        <button type="button" id="saveBtn" class="btn btn-primary" disabled>Save Changes</button>
-                        <button type="button" id="cancelBtn" class="btn btn-secondary">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <div id="toast" class="toast" role="status" aria-live="polite">
-        <div class="toast-content">
-            <svg class="toast-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <polyline points="20,6 9,17 4,12" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <span class="toast-message">Settings saved</span>
-        </div>
-    </div>
-
-    <script src="{% static 'js/settings.js' %}"></script>
-    <script>
-        const notificationBtn = document.querySelector('.notification-btn');
-        const notificationPopup = document.getElementById('notificationPopup');
-        const notificationOverlay = document.getElementById('notificationOverlay');
-        const closePopup = document.getElementById('closePopup');
-
-        notificationBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            notificationPopup.classList.toggle('active');
-            notificationOverlay.classList.toggle('active'); 
-        });
-
-        closePopup.addEventListener('click', () => {
-            notificationPopup.classList.remove('active');
-            notificationOverlay.classList.remove('active');
-        });
-
-        notificationOverlay.addEventListener('click', () => {
-            notificationPopup.classList.remove('active');
-            notificationOverlay.classList.remove('active');
-        });
-
-        notificationPopup.addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    </script>
-
-   <!-- ✅ Supabase SDK -->
+<!-- Supabase (page-specific usage) -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-
 <script>
-  // ✅ Initialize Supabase
-  const supabaseUrl = "https://YOUR-PROJECT-ID.supabase.co";  // <-- replace with your real project URL
-  const supabaseAnonKey = "YOUR-ANON-KEY";                     // <-- replace with your anon key
+  // Replace these with environment-configured values in production
+  const supabaseUrl = "https://YOUR-PROJECT-ID.supabase.co";   // <-- replace
+  const supabaseAnonKey = "YOUR-ANON-KEY";                     // <-- replace
   const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
 
   const saveBtn = document.getElementById('saveBtn');
 
-  // ✅ Load saved settings from Supabase
   document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn("No user logged in.");
-      return;
+    // optional: guard if supabase not configured
+    if (!supabaseUrl || supabaseUrl.includes('YOUR-PROJECT-ID')) {
+      console.warn('Supabase not configured — replace project URL and anon key.');
     }
 
-    // Fetch existing settings
-    const { data, error } = await supabase
-      .from('user_settings')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return console.warn('No supabase user session.');
 
-    if (error && error.code !== 'PGRST116') console.error("Error loading settings:", error);
+      // load settings (single row per user)
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-    // If user has saved settings, apply them
-    if (data) {
-      document.getElementById('emailNotifications').checked = data.email_notifications;
-      document.getElementById('dueDateReminders').checked = data.due_date_reminders;
-      document.getElementById('showEmail').checked = data.show_email;
-      document.getElementById('publicProfile').checked = data.public_profile;
-      document.getElementById('itemSharing').checked = data.allow_item_sharing;
-      document.getElementById('profileVisibility').checked = data.profile_visibility;
-      document.getElementById('contactInfo').checked = data.contact_info;
-      document.getElementById('smsNotifications').checked = data.sms_notifications;
-      document.getElementById('inAppNotifications').checked = data.in_app_notifications;
+      if (error && error.code !== 'PGRST116') console.error('Error loading settings:', error);
 
+      if (data) {
+        document.getElementById('emailNotifications').checked = !!data.email_notifications;
+        document.getElementById('dueDateReminders').checked = !!data.due_date_reminders;
+        document.getElementById('showEmail').checked = !!data.show_email;
+        document.getElementById('publicProfile').checked = !!data.public_profile;
+        document.getElementById('itemSharing').checked = !!data.allow_item_sharing;
+        document.getElementById('profileVisibility').checked = !!data.profile_visibility;
+        document.getElementById('contactInfo').checked = !!data.contact_info;
+        document.getElementById('smsNotifications').checked = !!data.sms_notifications;
+        document.getElementById('inAppNotifications').checked = !!data.in_app_notifications;
+      }
+    } catch (err) {
+      console.error('Supabase init error', err);
     }
 
-    // Enable save button when any toggle changes
-    document.querySelectorAll('input[type="checkbox"]').forEach(toggle => {
-      toggle.addEventListener('change', () => {
-        saveBtn.disabled = false;
+    // enable save when toggles or inputs change
+    document.querySelectorAll('input, select').forEach(el => {
+      el.addEventListener('change', () => { saveBtn.disabled = false; });
+      el.addEventListener('input', () => { saveBtn.disabled = false; });
+    });
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { alert('You must be logged in to save settings.'); return; }
+
+      const settingsData = {
+        user_id: user.id,
+        email_notifications: document.getElementById('emailNotifications').checked,
+        due_date_reminders: document.getElementById('dueDateReminders').checked,
+        show_email: document.getElementById('showEmail').checked,
+        public_profile: document.getElementById('publicProfile').checked,
+        allow_item_sharing: document.getElementById('itemSharing').checked,
+        profile_visibility: document.getElementById('profileVisibility').checked,
+        contact_info: document.getElementById('contactInfo').checked,
+        sms_notifications: document.getElementById('smsNotifications').checked,
+        in_app_notifications: document.getElementById('inAppNotifications').checked,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert(settingsData, { onConflict: ['user_id'] });
+
+      if (error) {
+        console.error('Error saving settings:', error);
+        alert('Failed to save settings.');
+        return;
+      }
+
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+      saveBtn.disabled = true;
+    } catch (err) {
+      console.error(err);
+      alert('Failed to save settings.');
+    }
+  });
+
+  // sidebar tab switching (small helper)
+  document.querySelectorAll('.settings-sidebar .sidebar-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.settings-sidebar .sidebar-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.settings-content .tab-content').forEach(tc => {
+        if (tc.id === `${tab}-tab`) {
+          tc.hidden = false;
+          tc.classList.add('active');
+        } else {
+          tc.hidden = true;
+          tc.classList.remove('active');
+        }
       });
     });
   });
 
-  // ✅ Save settings to Supabase
-  saveBtn.addEventListener('click', async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert("You must be logged in to save settings.");
-      return;
-    }
+  // Cancel button: reset the page to server values (simple: reload)
+  document.getElementById('cancelBtn').addEventListener('click', () => location.reload());
+</script>
 
-    const settingsData = {
-      user_id: user.id,
-      email_notifications: document.getElementById('emailNotifications').checked,
-      due_date_reminders: document.getElementById('dueDateReminders').checked,
-      show_email: document.getElementById('showEmail').checked,
-      public_profile: document.getElementById('publicProfile').checked,
-      allow_item_sharing: document.getElementById('itemSharing').checked,
-      profile_visibility: document.getElementById('profileVisibility').checked,
-      contact_info: document.getElementById('contactInfo').checked,
-      updated_at: new Date().toISOString(),
-      sms_notifications: document.getElementById('smsNotifications').checked,
-in_app_notifications: document.getElementById('inAppNotifications').checked,
-
-    };
-
-    const { error } = await supabase
-      .from('user_settings')
-      .upsert(settingsData, { onConflict: ['user_id'] });  
-
-    if (error) {
-      console.error("Error saving settings:", error);
-      alert("Failed to save settings.");
-    } else {
-      // Toast message animation
-      const toast = document.getElementById("toast");
-      toast.classList.add("show");
-      setTimeout(() => toast.classList.remove("show"), 2000);
-      saveBtn.disabled = true;
-    }
-  });  
-</script> 
-
-    <script src="{% static 'js/add-item-modal.js' %}"></script>
-    <script src="{% static 'js/confirmation_logout.js' %}"></script>
-</body>
-</html>
+{# base.html already includes add-item modal, notification.js, add-item-modal.js, and confirmation_logout.js — no need to duplicate them here #}
+{% endblock %}

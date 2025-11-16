@@ -1,6 +1,4 @@
-// static/js/borrow_items.js
 document.addEventListener('DOMContentLoaded', function() {
-  // DOM refs
   const requestButtons = Array.from(document.querySelectorAll('.request-btn'));
   const borrowModal = document.getElementById('borrowModal');
   const cancelBorrowBtn = document.getElementById('cancelBorrow');
@@ -10,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const borrowStartEl = document.getElementById('borrowStart');
   const borrowEndEl = document.getElementById('borrowEnd');
 
-  // Modal elements
   const modalImage = document.getElementById('modalImage');
   const modalImagePlaceholder = document.getElementById('modalImagePlaceholder');
   const modalCategory = document.getElementById('modalCategory');
@@ -18,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const modalDescription = document.getElementById('modalDescription');
   const modalItemIdInput = document.getElementById('modalItemId');
 
-  // Two-state modal elements
   const modalDetailsView = document.getElementById('modalDetailsView');
   const modalRequestView = document.getElementById('modalRequestView');
   const showRequestFormBtn = document.getElementById('showRequestForm');
@@ -26,26 +22,40 @@ document.addEventListener('DOMContentLoaded', function() {
   const sendRequestBtn = document.getElementById('sendRequestBtn');
   const modalTitle = document.getElementById('modalTitle');
   const modalSubtitle = document.getElementById('modalSubtitle');
-  
-  // Duplicate fields in request view
+
   const modalItemName2 = document.getElementById('modalItemName2');
   const modalOwnerName2 = document.getElementById('modalOwnerName2');
   const modalCategory2 = document.getElementById('modalCategory2');
   const modalCondition2 = document.getElementById('modalCondition2');
 
-  // config provided by template
-  const REQUEST_BORROW_URL = window.REQUEST_BORROW_URL || '/request-borrow/';
+  const REQUEST_BORROW_URL = window.REQUEST_BORROW_URL || window.REQUEST_BORROW_URL || '/request-borrow/';
 
   let currentItem = null;
-  let cameFromDetailsView = false; // Track if user came from details view
+  let cameFromDetailsView = false;
 
-  // shared popups (fallbacks)
-  const showMessagePopup = window.showMessagePopup || ((t,m,o={}) => alert(m));
-  const showConfirmPopup = window.showConfirmPopup || (async (t,m,yl,nl) => confirm(m));
+  // popup wrappers (use custom popup if present)
+  function showMessagePopupWrapper(title, message, opts = {}) {
+    if (typeof window.showMessagePopup === 'function') {
+      window.showMessagePopup(title, message, opts);
+    } else {
+      alert((title ? title + '\n\n' : '') + (message || ''));
+    }
+  }
+  async function showConfirmPopupWrapper(title, message, yesLabel = 'OK', noLabel = 'Cancel') {
+    if (typeof window.showConfirmPopup === 'function') {
+      return await window.showConfirmPopup(title, message, yesLabel, noLabel);
+    } else {
+      return Promise.resolve(confirm(message));
+    }
+  }
 
-  // -----------------------
-  // Helpers
-  // -----------------------
+  function getCookie(name) {
+    const v = `; ${document.cookie}`;
+    const parts = v.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  }
+
   function openBorrowModal() {
     if (!borrowModal) return;
     borrowModal.style.display = 'flex';
@@ -62,24 +72,8 @@ document.addEventListener('DOMContentLoaded', function() {
     borrowModal.classList.remove('active');
   }
 
-  function closeBorrowModal() {
-    hideBorrowModal();
-    resetBorrowForm();
-    resetModalToDetailsView();
-    currentItem = null;
-    cameFromDetailsView = false;
-  }
-
   function resetBorrowForm() {
-    if (!borrowForm) return;
-    borrowForm.reset();
-  }
-
-  function getCookie(name) {
-    const v = `; ${document.cookie}`;
-    const parts = v.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
+    if (borrowForm) borrowForm.reset();
   }
 
   function resetModalToDetailsView() {
@@ -87,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modalRequestView) modalRequestView.classList.remove('active');
     if (modalTitle) modalTitle.textContent = 'Item Details';
     if (modalSubtitle) modalSubtitle.textContent = 'View item information';
-    
     if (cancelBorrowBtn) cancelBorrowBtn.style.display = 'block';
     if (showRequestFormBtn) showRequestFormBtn.style.display = 'block';
     if (backToDetailsBtn) backToDetailsBtn.style.display = 'none';
@@ -99,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modalRequestView) modalRequestView.classList.add('active');
     if (modalTitle) modalTitle.textContent = 'Request to Borrow';
     if (modalSubtitle) modalSubtitle.textContent = 'Send a borrow request to the item owner';
-    
     if (cancelBorrowBtn) cancelBorrowBtn.style.display = 'none';
     if (showRequestFormBtn) showRequestFormBtn.style.display = 'none';
     if (backToDetailsBtn) {
@@ -107,11 +99,18 @@ document.addEventListener('DOMContentLoaded', function() {
       backToDetailsBtn.textContent = cameFromDetailsView ? 'Back' : 'Cancel';
     }
     if (sendRequestBtn) sendRequestBtn.style.display = 'block';
-    
     if (modalItemName2 && modalItemName) modalItemName2.textContent = modalItemName.textContent;
     if (modalOwnerName2 && modalOwnerName) modalOwnerName2.textContent = modalOwnerName.textContent;
     if (modalCategory2 && modalCategory) modalCategory2.textContent = modalCategory.textContent;
     if (modalCondition2 && modalCondition) modalCondition2.textContent = modalCondition.textContent;
+  }
+
+  function closeBorrowModal() {
+    hideBorrowModal();
+    resetBorrowForm();
+    resetModalToDetailsView();
+    currentItem = null;
+    cameFromDetailsView = false;
   }
 
   function openBorrowModalFromElement(el, skipToRequestForm = false) {
@@ -171,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     openBorrowModal();
-    
+
     if (skipToRequestForm) {
       cameFromDetailsView = false;
       showRequestFormView();
@@ -181,15 +180,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // -----------------------
-  // Wire click handlers
-  // -----------------------
+  // wire opening interactions
   document.querySelectorAll('.item-box').forEach(function(card) {
     card.addEventListener('click', function(ev) {
       const t = ev.target;
-      if (t && (t.tagName === 'BUTTON' || t.closest('button'))) {
-        return;
-      }
+      if (t && (t.tagName === 'BUTTON' || t.closest('button'))) return;
       openBorrowModalFromElement(card, false);
     });
   });
@@ -229,9 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // -----------------------
-  // Submit borrow form -> POST to Django endpoint
-  // -----------------------
+  // form submit
   if (borrowForm) {
     borrowForm.addEventListener('submit', async function(e) {
       e.preventDefault();
@@ -240,31 +233,29 @@ document.addEventListener('DOMContentLoaded', function() {
       const endDate = borrowEndEl ? borrowEndEl.value : null;
 
       if (!startDate || !endDate) {
-        showMessagePopup('Missing Dates', 'Please select both start and return dates.', {autoCloseMs: 3000});
+        showMessagePopupWrapper('Missing Dates', 'Please select both start and return dates.', { autoCloseMs: 3000 });
         return;
       }
 
       const startTs = new Date(startDate);
       const endTs = new Date(endDate);
-
       if (isNaN(startTs.getTime()) || isNaN(endTs.getTime())) {
-        showMessagePopup('Invalid Dates', 'Invalid dates. Please use the date picker.', {autoCloseMs: 3000});
+        showMessagePopupWrapper('Invalid Dates', 'Invalid dates. Please use the date picker.', { autoCloseMs: 3000 });
         return;
       }
-
       if (endTs <= startTs) {
-        showMessagePopup('Date Error', 'Return date must be after the start date.', {autoCloseMs: 3000});
+        showMessagePopupWrapper('Date Error', 'Return date must be after the start date.', { autoCloseMs: 3000 });
         return;
       }
 
       if (!currentItem || !currentItem.item_id) {
-        showMessagePopup('Missing Item', 'Missing item. Try again.', {autoCloseMs: 3000});
+        showMessagePopupWrapper('Missing Item', 'Missing item. Try again.', { autoCloseMs: 3000 });
         return;
       }
 
       const submitBtn = document.getElementById('sendRequestBtn');
       const originalText = submitBtn ? submitBtn.textContent : null;
-      if (submitBtn) { 
+      if (submitBtn) {
         submitBtn.innerHTML = '<span class="spinner"></span> Sending...';
         submitBtn.disabled = true;
         submitBtn.classList.add('btn-spinner');
@@ -277,6 +268,8 @@ document.addEventListener('DOMContentLoaded', function() {
           headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             item_id: currentItem.item_id,
@@ -289,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (res.ok && (data.success === undefined || data.success)) {
           const successMsg = data.message || `Borrow request sent successfully for ${currentItem.name}!`;
-          showMessagePopup('Request Sent', successMsg, { autoCloseMs: 3000 });
+          showMessagePopupWrapper('Request Sent', successMsg, { autoCloseMs: 3000 });
 
           try {
             const btn = currentItem.element.querySelector('.request-btn');
@@ -302,6 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
           } catch (e) {}
 
           closeBorrowModal();
+          // optional partial refresh: you can update UI here instead of reload
+          // setTimeout(()=> window.location.reload(), 900);
         } else {
           let msg = 'Failed to send request. Please try again.';
           if (data && data.errors) {
@@ -314,13 +309,13 @@ document.addEventListener('DOMContentLoaded', function() {
           } else if (data && data.message) {
             msg = data.message;
           }
-          showMessagePopup('Error', msg, { autoCloseMs: 4000 });
+          showMessagePopupWrapper('Error', msg, { autoCloseMs: 4000 });
         }
       } catch (err) {
         console.error(err);
-        showMessagePopup('Network Error', 'Network error. Please try again.', { autoCloseMs: 4000 });
+        showMessagePopupWrapper('Network Error', 'Network error. Please try again.', { autoCloseMs: 4000 });
       } finally {
-        if (submitBtn) { 
+        if (submitBtn) {
           submitBtn.textContent = originalText;
           submitBtn.disabled = false;
           submitBtn.classList.remove('btn-spinner');
@@ -329,9 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // -----------------------
-  // Optional: search filtering
-  // -----------------------
+  // simple search filtering (unchanged)
   const searchInput = document.querySelector('.search-input');
   const itemCards = document.querySelectorAll('.item-box, .item-card');
   if (searchInput && itemCards) {

@@ -1,170 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Return Items - ShareHub</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/design.css' %}">
-  <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
-</head>
-<body class="return-items-page">
+{% extends "base.html" %}
+{% load static %}
 
-  <!-- Popup (same as in home.html) -->
-  <div id="errorOverlay"></div>
-  <div id="errorPopup">
-    <div class="popup-header" id="popupHeader">Error</div>
-    <div class="popup-body" id="popupBody"></div>
-    <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
-  </div>
+{% block title %}Return Items - ShareHub{% endblock %}
 
-  <!-- Top Navigation -->
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="nav-left">
-        <div class="logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
-            <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
+<link rel="stylesheet" href="{% static 'css/return_items.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="dashboard return-items-page">
+  <section class="welcome">
+    <h2>Return Borrowed Items</h2>
+    <p>View all items you've borrowed and manage your returns.</p>
+  </section>
+
+  <section class="content-grid">
+
+    <!-- COLLAPSIBLE BORROWED ITEMS -->
+    <div class="borrowed-card" style="margin-bottom:18px;">
+      <div class="borrowed-header" id="borrowedHeader" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
+        <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
+          Your Borrowed Items
+          <svg id="borrowedToggleIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B1E1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
-          <span>ShareHub - CIT-U</span>
-        </div>
+        </h3>
+        <div class="borrowed-count">{{ borrowed_items|length }}</div>
       </div>
-     
-      <nav class="nav-center">
-        <a href="{% url 'home' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Home
-        </a>
-        <a href="{% url 'profile' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Profile
-        </a>
-        <a href="{% url 'borrow_items' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2"/>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Borrow Items
-        </a>
-        <a href="#" class="nav-link active">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-            <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
-            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
-            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Return Items
-        </a>
-        <a href="{% url 'settings' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Settings
-        </a>
-      </nav>
-     
-      <div class="nav-right">
-        <button class="add-item-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
-            <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Add Item
-        </button>
-        <div style="position: relative;">
-          <button class="notification-btn" aria-expanded="false" aria-controls="notificationPopup">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <span class="notification-badge" id="notificationBadge">{{ unread_count|default:0 }}</span>
-          </button>
-         
-          <!-- Notification Popup -->
-          <div class="notification-popup" id="notificationPopup">
-            <div class="notification-header">
-              <h3>Notifications</h3>
-              <div style="display: flex; align-items: center; gap: 5px;">
-                <button class="mark-read-btn">Mark all as read</button>
-                <button class="close-popup" id="closePopup">×</button>
-              </div>
-            </div>
 
-            <div class="mini-notifs">
-              <ul class="notification-list">
-                {% for n in notifications %}
-                  <li class="notification-item {% if not n.is_read %}unread{% endif %}">
-                    <div class="notification-title">{{ n.message }}</div>
-                    <div class="notification-meta">
-                      <div class="notification-time">{{ n.created_at_human|default:n.created_at }}</div>
-                      {% if not n.is_read %}
-                        <div class="notification-status overdue">New</div>
-                      {% endif %}
-                    </div>
-                  </li>
-                {% empty %}
-                  <li class="notification-item">
-                    <div class="notification-title">No notifications</div>
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        </div>
-        <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" class="logout-btn" id="logoutBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2"/>
-              <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2"/>
-              <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            Logout
-          </button>
-        </form>
-      </div>
-    </div>
-  </header>
-
-    <!-- Main Content -->
-    <main class="dashboard return-items-page">
-    <section class="welcome">
-        <h2>Return Borrowed Items</h2>
-        <p>View all items you've borrowed and manage your returns.</p>
-    </section>
-
-    <section class="content-grid">
-
-      <!-- COLLAPSIBLE BORROWED ITEMS -->
-      <div class="borrowed-card" style="margin-bottom:18px;">
-        <div class="borrowed-header" id="borrowedHeader" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
-          <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
-            Your Borrowed Items
-            <svg id="borrowedToggleIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B1E1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </h3>
-          <div class="borrowed-count">{{ borrowed_items|length }}</div>
-        </div>
-
-        <div id="borrowedItemsList" style="display:none; transition: all 0.3s ease;">
-          {% if borrowed_items %}
-            {% for b in borrowed_items %}
-            <div class="borrowed-item" role="listitem">
+      <div id="borrowedItemsList" style="display:none; transition: all 0.3s ease;">
+        {% if borrowed_items %}
+          {% for b in borrowed_items %}
+            <div class="borrowed-item" role="listitem" data-borrow-id="{{ b.request_id }}">
               {% if b.item_image %}
-              <div class="borrowed-item-thumb">
-                <img src="{{ b.item_image }}" alt="{{ b.item_title|escape }}"
-                  onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';"/>
-              </div>
+                <div class="borrowed-item-thumb">
+                  <img src="{{ b.item_image }}" alt="{{ b.item_title|escape }}"
+                       onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';"/>
+                </div>
               {% else %}
-              <div class="borrowed-item-thumb-placeholder">📦</div>
+                <div class="borrowed-item-thumb-placeholder">📦</div>
               {% endif %}
 
               <div class="borrowed-item-info">
@@ -202,59 +77,59 @@
                 <button class="btn btn-secondary mark-returned-btn" data-borrow-id="{{ b.request_id }}">
                   Mark as Returned
                 </button>
-                <button class="btn btn-outline" data-request-id="{{ b.request_id }}">
+                <button class="btn btn-outline report-issue-btn" data-request-id="{{ b.request_id }}">
                   Report Issue
                 </button>
               </div>
             </div>
-            {% endfor %}
-          {% else %}
-            <div class="no-borrowed-items">
-              <p>You haven't borrowed any items yet.</p>
-            </div>
-          {% endif %}
-        </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-borrowed-items">
+            <p>You haven't borrowed any items yet.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- COLLAPSIBLE RETURNED ITEMS -->
+    <div class="borrowed-card returned-history" style="margin-top:18px;">
+      <div class="borrowed-header" id="returnedHeader" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
+        <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
+          Returned Items
+          <svg id="returnedToggleIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B1E1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </h3>
+        <div class="borrowed-count">{{ returned_items|length }}</div>
       </div>
 
-      <!-- COLLAPSIBLE RETURNED ITEMS -->
-      <div class="borrowed-card returned-history" style="margin-top:18px;">
-        <div class="borrowed-header" id="returnedHeader" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;">
-          <h3 style="display:flex; align-items:center; gap:8px; margin:0;">
-            Returned Items
-            <svg id="returnedToggleIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B1E1E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </h3>
-          <div class="borrowed-count">{{ returned_items|length }}</div>
-        </div>
-
-        <div id="returnedItemsList" style="display:none; transition: all 0.3s ease;">
-          {% if returned_items %}
-            {% for r in returned_items %}
-              <div class="borrowed-item" role="listitem">
-                {% if r.item_image %}
+      <div id="returnedItemsList" style="display:none; transition: all 0.3s ease;">
+        {% if returned_items %}
+          {% for r in returned_items %}
+            <div class="borrowed-item" role="listitem">
+              {% if r.item_image %}
                 <div class="borrowed-item-thumb">
                   <img src="{{ r.item_image }}" alt="{{ r.item_title|escape }}"
-                    onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';"/>
+                       onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';"/>
                 </div>
-                {% else %}
+              {% else %}
                 <div class="borrowed-item-thumb-placeholder">📦</div>
-                {% endif %}
+              {% endif %}
 
-                <div class="borrowed-item-info">
-                  <div class="borrowed-item-title">{{ r.item_title }}</div>
-                  <div class="borrowed-item-meta">
-                    <div class="borrowed-item-date">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                      <span>Borrowed: {{ r.borrow_date_human }}</span>
-                    </div>
+              <div class="borrowed-item-info">
+                <div class="borrowed-item-title">{{ r.item_title }}</div>
+                <div class="borrowed-item-meta">
+                  <div class="borrowed-item-date">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>Borrowed: {{ r.borrow_date_human }}</span>
+                  </div>
 
-                    {% if r.return_date_human %}
+                  {% if r.return_date_human %}
                     <div class="borrowed-item-date">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
@@ -262,121 +137,45 @@
                       </svg>
                       <span>Returned: {{ r.return_date_human }}</span>
                     </div>
-                    {% endif %}
-                  </div>
-                </div>
-
-                <div class="return-item-actions" style="justify-content:center;">
-                  <span style="display:inline-block; padding:8px 16px; border-radius:8px; background:#e8f5e9; color:#2e7d32; font-size:13px; font-weight:600; text-transform:capitalize;">
-                    {{ r.status|capfirst }}
-                  </span>
+                  {% endif %}
                 </div>
               </div>
-            {% endfor %}
-          {% else %}
-            <div class="no-borrowed-items">
-              <p>No returned items yet.</p>
+
+              <div class="return-item-actions" style="justify-content:center;">
+                <span style="display:inline-block; padding:8px 16px; border-radius:8px; background:#e8f5e9; color:#2e7d32; font-size:13px; font-weight:600; text-transform:capitalize;">
+                  {{ r.status|capfirst }}
+                </span>
+              </div>
             </div>
-          {% endif %}
-        </div>
-      </div>
-
-
-    
-    </section>
-    </main>
-
-
-  <div class="modal-overlay" id="addItemModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Add New Item</h2>
-        <p>Share your academic items with fellow students</p>
-      </div>
-      
-      <form id="addItemForm" class="modal-body">
-        {% csrf_token %}
-        <div class="form-group">
-          <label>Item Image</label>
-          <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17,8 12,3 7,8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-            </div>
-            <div class="upload-text">Click to upload image</div>
-            <div class="upload-subtext">PNG, JPG up to 10MB</div>
-            <input type="file" id="itemImage" name="image" accept="image/png, image/jpeg" style="display: none;">
+          {% endfor %}
+        {% else %}
+          <div class="no-borrowed-items">
+            <p>No returned items yet.</p>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label for="itemName">Item Name <span class="required">*</span></label>
-          <input type="text" id="itemName" class="form-control" placeholder="e.g., Scientific Calculator" required>
-        </div>
-
-        <div class="form-group">
-          <label for="itemCategory">Category <span class="required">*</span></label>
-          <select id="itemCategory" class="form-control" required>
-            <option value="">Select Category</option>
-            <option value="textbooks">Textbooks</option>
-            <option value="calculators">Calculators</option>
-            <option value="lab-equipment">Lab Equipment</option>
-            <option value="electronics">Electronics</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="itemCondition">Condition <span class="required">*</span></label>
-          <select id="itemCondition" class="form-control" required>
-            <option value="">Select Condition</option>
-            <option value="new">New</option>
-            <option value="like-new">Like New</option>
-            <option value="good">Good</option>
-            <option value="fair">Fair</option>
-            <option value="poor">Poor</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="itemDescription">Description <span class="required">*</span></label>
-          <textarea id="itemDescription" class="form-control" placeholder="Provide details about the item, including any accessories or special notes..." required></textarea>
-        </div>
-
-      </form>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-cancel" id="cancelAddItem">Cancel</button>
-        <button type="submit" form="addItemForm" class="btn btn-add">Add Item</button>
+        {% endif %}
       </div>
     </div>
-  </div>
 
+  </section>
+</main>
+{% endblock %}
 
+{% block extra_scripts %}
+<script>
+  window.MARK_RETURNED_URL = "{% url 'mark_returned' %}";
+</script>
 
-  <script src="{% static 'js/popup.js' %}"></script>
-  <script src="{% static 'js/confirmation_logout.js' %}"></script>
-  <script src="{% static 'js/add-item-modal.js' %}"></script>
-  <script>
-    window.MARK_RETURNED_URL = "{% url 'mark_returned' %}";
-  </script>
-  <script src="{% static 'js/popup.js' %}"></script>
-  <script src="{% static 'js/mark-returned.js' %}"></script>
-  <script>
-    window.NOTIF_MARK_READ_URL = "{% url 'mark_notifications_read' %}";
-  </script>
-  <script src="{% static 'js/notification.js' %}"></script>
-  
-
+<script src="{% static 'js/popup.js' %}"></script>
+<script src="{% static 'js/confirmation_logout.js' %}"></script>
+<script src="{% static 'js/add-item-modal.js' %}"></script>
+<script src="{% static 'js/mark-returned.js' %}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     const borrowedHeader = document.getElementById("borrowedHeader");
     const borrowedList = document.getElementById("borrowedItemsList");
     const borrowedIcon = document.getElementById("borrowedToggleIcon");
-    const borrowedCount = parseInt(document.querySelector("#borrowedHeader .borrowed-count").innerText || 0);
+    const borrowedCountEl = document.querySelector("#borrowedHeader .borrowed-count");
+    const borrowedCount = borrowedCountEl ? parseInt(borrowedCountEl.innerText || 0) : 0;
 
     borrowedHeader.addEventListener("click", function() {
       const isHidden = borrowedList.style.display === "none" || borrowedList.style.display === "";
@@ -393,7 +192,8 @@
     const returnedHeader = document.getElementById("returnedHeader");
     const returnedList = document.getElementById("returnedItemsList");
     const returnedIcon = document.getElementById("returnedToggleIcon");
-    const returnedCount = parseInt(document.querySelector("#returnedHeader .borrowed-count").innerText || 0);
+    const returnedCountEl = document.querySelector("#returnedHeader .borrowed-count");
+    const returnedCount = returnedCountEl ? parseInt(returnedCountEl.innerText || 0) : 0;
 
     returnedHeader.addEventListener("click", function() {
       const isHidden = returnedList.style.display === "none" || returnedList.style.display === "";
@@ -408,5 +208,6 @@
     }
   });
 </script>
-</body>
-</html>
+
+{# notification.js already included by base.html; no need to add it again #}
+{% endblock %}

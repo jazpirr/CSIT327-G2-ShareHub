@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="page-container">
+
+    <h1>Edit Item</h1>
+    <p>Update your shared item details.</p>
+
+    <form method="POST" class="edit-form">
+        {% csrf_token %}
+
+        <label>Item Name *</label>
+        <input type="text" name="title" value="{{ item.title }}" required>
+
+        <label>Category *</label>
+        <select name="category" required>
+            <option value="textbooks" {% if item.category == "textbooks" %}selected{% endif %}>Textbooks</option>
+            <option value="calculators" {% if item.category == "calculators" %}selected{% endif %}>Calculators</option>
+            <option value="electronics" {% if item.category == "electronics" %}selected{% endif %}>Electronics</option>
+            <option value="other" {% if item.category == "other" %}selected{% endif %}>Other</option>
+        </select>
+
+        <label>Condition *</label>
+        <select name="condition" required>
+            <option value="new" {% if item.condition == "new" %}selected{% endif %}>New</option>
+            <option value="good" {% if item.condition == "good" %}selected{% endif %}>Good</option>
+            <option value="used" {% if item.condition == "used" %}selected{% endif %}>Used</option>
+        </select>
+
+        <label>Description *</label>
+        <textarea name="description" required>{{ item.description }}</textarea>
+
+        <label>
+            <input type="checkbox" name="available" {% if item.available %}checked{% endif %}>
+            Available
+        </label>
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'my_items' %}" class="btn btn-cancel">Cancel</a>
+    </form>
+
+</div>
+{% endblock %}

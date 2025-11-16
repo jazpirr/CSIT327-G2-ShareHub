@@ -1,303 +1,180 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Browse & Borrow Items - ShareHub</title>
-  {% load static %}
-  <link rel="stylesheet" href="{% static 'css/design.css' %}" />
-</head>
+{% extends "base.html" %}
+{% load static %}
 
-<body>
-  <!-- Top Navigation -->
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="nav-left">
-        <div class="logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
-            <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span>ShareHub - CIT-U</span>
-        </div>
-      </div>
-     
-      <nav class="nav-center">
-        <a href="{% url 'home' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Home
-        </a>
-        <a href="{% url 'profile' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-            <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Profile
-        </a>
-        <a href="#" class="nav-link active">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2"/>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Borrow Items
-        </a>
-        <a href="{% url 'return_items' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
-            <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
-            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
-            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Return Items
-        </a>
-        <a href="{% url 'settings' %}" class="nav-link">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Settings
-        </a>
-      </nav>
-     
-      <div class="nav-right">
-        <button class="add-item-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2"/>
-            <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2"/>
-          </svg>
-          Add Item
-        </button>
-        <div style="position: relative;">
-          <button class="notification-btn" aria-expanded="false" aria-controls="notificationPopup">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="2"/>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            <span class="notification-badge" id="notificationBadge">{{ unread_count|default:0 }}</span>
-          </button>
-         
-          <!-- Notification Popup -->
-          <div class="notification-popup" id="notificationPopup">
-            <div class="notification-header">
-              <h3>Notifications</h3>
-              <div style="display: flex; align-items: center; gap: 5px;">
-                <button class="mark-read-btn">Mark all as read</button>
-                <button class="close-popup" id="closePopup">×</button>
-              </div>
-            </div>
+{% block title %}Browse & Borrow Items - ShareHub{% endblock %}
 
-            <div class="mini-notifs">
-              <ul class="notification-list">
-                {% for n in notifications %}
-                  <li class="notification-item {% if not n.is_read %}unread{% endif %}">
-                    <div class="notification-title">{{ n.message }}</div>
-                    <div class="notification-meta">
-                      <div class="notification-time">{{ n.created_at_human|default:n.created_at }}</div>
-                      {% if not n.is_read %}
-                        <div class="notification-status overdue">New</div>
-                      {% endif %}
-                    </div>
-                  </li>
-                {% empty %}
-                  <li class="notification-item">
-                    <div class="notification-title">No notifications</div>
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          </div>
-        </div>
-        <form id="logoutForm" method="post" action="{% url 'logout' %}" style="display:inline;">
-          {% csrf_token %}
-          <button type="submit" class="logout-btn" id="logoutBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="currentColor" stroke-width="2"/>
-              <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="2"/>
-              <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2"/>
-            </svg>
-            Logout
-          </button>
-        </form>
-      </div>
-    </div>
-  </header>
+{% block extra_head %}
+{# page-specific styles (optional) #}
+<link rel="stylesheet" href="{% static 'css/borrow_items.css' %}">
+<link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
+{% endblock %}
 
-  <!-- Main Content -->
-  <main class="borrow-container">
-    <div class="borrow-header">
-      <h1>Browse & Borrow Items</h1>
-      <p>Discover and request academic items from your peers</p>
+{% block content %}
+<main class="borrow-container">
+  <div class="borrow-header">
+    <h1>Browse & Borrow Items</h1>
+    <p>Discover and request academic items from your peers</p>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="search-container">
+    <div class="search-wrapper">
+      <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input type="text" class="search-input" placeholder="Search for items, categories, or users..." id="searchInput">
+      <button class="search-clear" id="searchClear" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
 
-      <!-- Search Bar -->
-      <div class="search-container">
-        <div class="search-wrapper">
-          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-            <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <input type="text" class="search-input" placeholder="Search for items, categories, or users..." id="searchInput">
-          <button class="search-clear" id="searchClear" style="display: none;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </button>
+    <div class="filter-btn-wrapper">
+      <button class="search-filter-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Filters
+      </button>
+
+      <!-- Filter Popup -->
+      <div class="filter-popup" id="filterPopup">
+        <div class="filter-header">
+          <h3>Filters</h3>
+          <button class="filter-close" id="filterClose">×</button>
         </div>
-        <div class="filter-btn-wrapper">
-          <button class="search-filter-btn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Filters
-          </button>
-          
-          <!-- Filter Popup -->
-          <div class="filter-popup" id="filterPopup">
-            <div class="filter-header">
-              <h3>Filters</h3>
-              <button class="filter-close" id="filterClose">×</button>
-            </div>
 
-            <div class="filter-body">
-
-              <!-- ✅ Sort by section -->
-              <div class="filter-section">
-                <div class="filter-section-title">Sort By</div>
-                <div class="filter-option">
-                  <select id="sortSelect" class="form-control" style="width:100%;padding:8px 10px;border-radius:6px;">
-                    <option value="recent" selected>Most Recent</option>
-                    <option value="oldest">Oldest</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="filter-section">
-                <div class="filter-section-title">Category</div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cat-textbooks" value="textbooks">
-                  <label for="cat-textbooks">Textbooks</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cat-calculators" value="calculators">
-                  <label for="cat-calculators">Calculators</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cat-lab" value="lab-equipment">
-                  <label for="cat-lab">Lab Equipment</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cat-electronics" value="electronics">
-                  <label for="cat-electronics">Electronics</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cat-other" value="other">
-                  <label for="cat-other">Other</label>
-                </div>
-              </div>
-
-              <div class="filter-section">
-                <div class="filter-section-title">Condition</div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cond-new" value="new">
-                  <label for="cond-new">New</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cond-like-new" value="like-new">
-                  <label for="cond-like-new">Like New</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cond-good" value="good">
-                  <label for="cond-good">Good</label>
-                </div>
-                <div class="filter-option">
-                  <input type="checkbox" id="cond-fair" value="fair">
-                  <label for="cond-fair">Fair</label>
-                </div>
-              </div>
-
-              
-
-              <!-- (keep your availability + condition sections as they were) -->
-
-            </div>
-
-            <div class="filter-footer">
-              <button class="filter-clear-btn" id="filterClearBtn">Clear All</button>
-              <button class="filter-apply-btn" id="filterApplyBtn">Apply Filters</button>
+        <div class="filter-body">
+          <div class="filter-section">
+            <div class="filter-section-title">Sort By</div>
+            <div class="filter-option">
+              <select id="sortSelect" class="form-control" style="width:100%;padding:8px 10px;border-radius:6px;">
+                <option value="recent" selected>Most Recent</option>
+                <option value="oldest">Oldest</option>
+              </select>
             </div>
           </div>
 
+          <div class="filter-section">
+            <div class="filter-section-title">Category</div>
+            <div class="filter-option">
+              <input type="checkbox" id="cat-textbooks" value="textbooks">
+              <label for="cat-textbooks">Textbooks</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cat-calculators" value="calculators">
+              <label for="cat-calculators">Calculators</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cat-lab" value="lab-equipment">
+              <label for="cat-lab">Lab Equipment</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cat-electronics" value="electronics">
+              <label for="cat-electronics">Electronics</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cat-other" value="other">
+              <label for="cat-other">Other</label>
+            </div>
+          </div>
+
+          <div class="filter-section">
+            <div class="filter-section-title">Condition</div>
+            <div class="filter-option">
+              <input type="checkbox" id="cond-new" value="new">
+              <label for="cond-new">New</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cond-like-new" value="like-new">
+              <label for="cond-like-new">Like New</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cond-good" value="good">
+              <label for="cond-good">Good</label>
+            </div>
+            <div class="filter-option">
+              <input type="checkbox" id="cond-fair" value="fair">
+              <label for="cond-fair">Fair</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-footer">
+          <button class="filter-clear-btn" id="filterClearBtn">Clear All</button>
+          <button class="filter-apply-btn" id="filterApplyBtn">Apply Filters</button>
         </div>
       </div>
+    </div>
+  </div>
 
-    <div class="content-layout">
-      <!-- Left Column -->
-      <div class="items-column">
-        <div class="section-header">
-          <h2>Available Items ({{ available_items|length }})</h2>
-        </div>
+  <div class="content-layout">
+    <!-- Left Column -->
+    <div class="items-column">
+      <div class="section-header">
+        <h2>Available Items ({{ available_items|length }})</h2>
+      </div>
 
-      <!-- grid wrapper required by design.css -->
       <div class="available-items borrow-grid">
         {% if available_items %}
           {% for item in available_items %}
-          <div
-            class="item-box"
-            data-item-id="{{ item.item_id }}"
-            data-title="{{ item.title|escape }}"
-            data-image="{{ item.image_url|default:''|escape }}"
-            data-owner-name="{{ item.owner_display|escape }}"
-            data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
-            data-category="{{ item.category|default:''|escape }}"
-            data-condition="{{ item.condition|default:''|escape }}"
-            data-description="{{ item.description|default:''|escape }}"
-            data-created-at="{{ item.created_at_iso|default:item.created_at|default:'' }}"
-          >
-            <div class="item-thumb">
-              {% if item.image_url %}
-                <img src="{{ item.image_url }}" alt="{{ item.title|escape }}">
-              {% else %}
-                <div style="height:180px;display:flex;align-items:center;justify-content:center;color:#999;">
-                  No image
-                </div>
-              {% endif %}
-            </div>
+            <div
+              class="item-box"
+              data-item-id="{{ item.item_id }}"
+              data-title="{{ item.title|escape }}"
+              data-image="{{ item.image_url|default:''|escape }}"
+              data-owner-name="{{ item.owner_display|escape }}"
+              data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
+              data-category="{{ item.category|default:''|escape }}"
+              data-condition="{{ item.condition|default:''|escape }}"
+              data-description="{{ item.description|default:''|escape }}"
+              data-created-at="{{ item.created_at_iso|default:item.created_at|default:'' }}"
+            >
+              <div class="item-thumb">
+                {% if item.image_url %}
+                  <img src="{{ item.image_url }}" alt="{{ item.title|escape }}">
+                {% else %}
+                  <div style="height:180px;display:flex;align-items:center;justify-content:center;color:#999;">
+                    No image
+                  </div>
+                {% endif %}
+              </div>
 
-            <div class="item-meta" style="margin-top:8px;">
-              <div class="item-title" style="font-weight:700;">{{ item.title }}</div>
-              <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category }}</div>
-            </div>
+              <div class="item-meta" style="margin-top:8px;">
+                <div class="item-title" style="font-weight:700;">{{ item.title }}</div>
+                <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category }}</div>
+              </div>
 
-            <button
-              class="request-btn"
-              type="button"
-              data-item="{{ item.title|escape }}"
-              data-owner="{{ item.owner_display|escape }}"
-            >Request to Borrow</button>
-          </div>
-        {% endfor %}
+              <button
+                class="request-btn"
+                type="button"
+                data-item="{{ item.title|escape }}"
+                data-owner="{{ item.owner_display|escape }}"
+              >Request to Borrow</button>
+            </div>
+          {% endfor %}
         {% else %}
           <p>No available items right now.</p>
         {% endif %}
       </div>
-      </div>
+    </div>
 
-      <!-- Right Column -->
-      <div class="requests-column">
-        <div class="section-header">
-          <h2>My Requests</h2>
-        </div>
-        <div id="requestList">
-          <p>No requests yet.</p>
-        </div>
+    <!-- Right Column -->
+    <div class="requests-column">
+      <div class="section-header">
+        <h2>My Requests</h2>
+      </div>
+      <div id="requestList">
+        <p>No requests yet.</p>
       </div>
     </div>
-  </main>
+  </div>
+</main>
 
-<!-- Borrow Request Modal -->
+<!-- Borrow Request Modal (page-specific) -->
 <div class="modal-overlay" id="borrowModal" style="display:none;">
   <div class="modal-content">
     <div class="modal-header">
@@ -309,19 +186,16 @@
       <form id="borrowForm">
         <input type="hidden" id="modalItemId" name="item_id">
 
-        <!-- Image (always visible) -->
         <div id="modalThumb">
           <img id="modalImage" src="" alt="Item image" style="display:none;">
           <div id="modalImagePlaceholder">No image available</div>
         </div>
 
-        <!-- Description (always visible, right below image) -->
         <div class="modal-description-section">
           <label>Description</label>
           <div id="modalDescription">No description provided</div>
         </div>
 
-        <!-- DETAILS VIEW -->
         <div id="modalDetailsView">
           <div class="modal-info-grid">
             <div class="form-group">
@@ -346,7 +220,6 @@
           </div>
         </div>
 
-        <!-- REQUEST FORM VIEW -->
         <div id="modalRequestView">
           <div class="modal-info-grid">
             <div class="form-group">
@@ -388,26 +261,18 @@
       </form>
     </div>
 
-    <!-- Modal Footer - All buttons here, controlled by JavaScript -->
     <div class="modal-footer">
-      <!-- Details View Buttons -->
       <button type="button" class="btn btn-cancel" id="cancelBorrow">Close</button>
       <button type="button" class="btn btn-request" id="showRequestForm">Request to Borrow</button>
-      
-      <!-- Request Form View Buttons (hidden initially) -->
       <button type="button" class="btn btn-back" id="backToDetails" style="display:none;">Back</button>
       <button type="submit" form="borrowForm" class="btn btn-request" id="sendRequestBtn" style="display:none;">Send Request</button>
     </div>
   </div>
 </div>
+{% endblock %}
 
-
-
-  <script src="{% static 'js/borrow_items.js' %}"></script>
-  <script src="{% static 'js/home-search.js' %}"></script>
-  <script>
-    window.NOTIF_MARK_READ_URL = "{% url 'mark_notifications_read' %}";
-  </script>
-  <script src="{% static 'js/notification.js' %}"></script>
-</body>
-</html>
+{% block extra_scripts %}
+<script src="{% static 'js/popup.js' %}"></script>
+<script src="{% static 'js/borrow_items.js' %}"></script>
+<script src="{% static 'js/home-search.js' %}"></script>
+{% endblock %}
