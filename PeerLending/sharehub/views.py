@@ -1802,13 +1802,13 @@ def my_items(request):
     })
 
 
-
-@supabase_login_required
 @require_http_methods(["GET", "POST"])
+@supabase_login_required
 def edit_item(request, item_id):
     user_id = request.session.get("supabase_user_id")
     if not user_id:
         return redirect("login")
+
     # fetch item
     try:
         resp = supabase.table("item").select("*").eq("item_id", item_id).single().execute()
@@ -1828,27 +1828,27 @@ def edit_item(request, item_id):
         description = (request.POST.get("description") or "").strip()
         category = (request.POST.get("category") or "").strip()
         condition = (request.POST.get("condition") or "").strip()
-        availability = (request.POST.get("available") or "true").lower() in ("true","1","on","yes","available")
+        availability = (request.POST.get("available") or "true").lower() in ("true", "1", "on", "yes", "available")
 
-        # handle image if uploaded (use service role client)
+        # handle uploaded image (optional)
         file = request.FILES.get("image")
         image_url = item.get("image_url")
-        if file:
-            from supabase import create_client as create_supabase_client
-            admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-            ext = os.path.splitext(file.name)[1] or ".bin"
-            filename = f"{user_id}/{uuid.uuid4()}{ext}"
+        if file and SUPABASE_SERVICE_ROLE_KEY:
             try:
+                admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+                ext = os.path.splitext(file.name)[1] or ".bin"
+                filename = f"{user_id}/{uuid.uuid4()}{ext}"
                 upload_res = admin_client.storage.from_("item-images").upload(filename, file.read())
                 if getattr(upload_res, "error", None):
                     messages.error(request, "Failed to upload image.")
                 else:
                     public = admin_client.storage.from_("item-images").get_public_url(filename)
+                    # public might be dict or object; try safe retrieval
                     image_url = (public.get("publicUrl") if isinstance(public, dict) and public.get("publicUrl")
                                  else getattr(public, "public_url", None) or getattr(public, "publicUrl", None) or public)
-            except Exception:
+            except Exception as e:
                 messages.error(request, "Image upload failed.")
-
+        # update the item record
         try:
             update_resp = supabase.table("item").update({
                 "title": title,
@@ -1869,4 +1869,60 @@ def edit_item(request, item_id):
 
     # Prepare item for template
     item['image_url'] = item.get('image_url')
-    return render(request, "my_items/edit_item.html", {"item": item})
+    return render(request, "edit_item.html", {"item": item})
+
+
+@require_POST
+@supabase_login_required
+def delete_item(request, item_id):
+    user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return JsonResponse({"error": "Not authenticated"}, status=401)
+
+    # fetch item
+    try:
+        r = supabase.table('item').select('item_id,user_id,available').eq('item_id', item_id).maybe_single().execute()
+        if getattr(r, 'error', None) or not r.data:
+            return JsonResponse({"error": "Item not found"}, status=404)
+        item = r.data
+    except Exception as e:
+        return JsonResponse({"error": "Failed to fetch item"}, status=500)
+
+    if item.get('user_id') != user_id:
+        return HttpResponseForbidden("Permission denied")
+
+    # Use service role (admin) client to delete item + related requests/storage if desired
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        return JsonResponse({"error": "Server misconfigured"}, status=500)
+
+    admin = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    try:
+        # Optionally delete requests for this item (cleanup)
+        try:
+            admin.table('request').delete().eq('item_id', item_id).execute()
+        except Exception:
+            pass
+
+        # Delete item row
+        del_resp = admin.table('item').delete().eq('item_id', item_id).execute()
+        if getattr(del_resp, 'error', None):
+            return JsonResponse({"error": "Failed to delete item"}, status=500)
+
+        # If you want to delete the stored image object from storage, you can do it here
+        # image_url = item.get('image_url') or ''
+        # parse and remove file path from your storage bucket (skip if not needed)
+
+        # Tell client whether counts should change
+        dec_available = bool(item.get('available'))
+        # pending: compute quickly whether there were pending requests previously (optional)
+        # We'll return decrement flags; JS will update counters
+        pending_count_resp = supabase.table('request').select('request_id').eq('item_id', item_id).eq('status','pending').execute()
+        pending_num = len(pending_count_resp.data or []) if getattr(pending_count_resp, 'data', None) else 0
+
+        return JsonResponse({
+            "success": True,
+            "decrement_available": 1 if dec_available else 0,
+            "decrement_pending": pending_num
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

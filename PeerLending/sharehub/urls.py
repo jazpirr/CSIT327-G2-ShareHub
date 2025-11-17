@@ -27,6 +27,7 @@ urlpatterns = [
     path("notifications/mark-read/", views.mark_notifications_read, name="mark_notifications_read"),
     path("mark-returned/", views.mark_returned, name="mark_returned"),
     path('my-items/', views.my_items, name='my_items'),
-    path("edit-item/<str:item_id>/", views.edit_item, name="edit_item"),
+    path('my-items/<str:item_id>/delete/', views.delete_item, name='delete_item'),
+    path('item/<str:item_id>/edit/', views.edit_item, name='edit_item'),
 ]
  
