@@ -131,6 +131,42 @@
     });
   </script>
 
-  {% block extra_scripts %}{% endblock %}
+{% block extra_scripts %}
+<script>
+(function() {
+  const overlaySelectors = [
+    '.profile-overlay',
+    '.shared-popup-overlay',
+    '#addItemOverlay',
+    '#errorOverlay',
+    '.modal-overlay',
+    '#actionOverlay',
+    '#notificationOverlay'
+  ];
+
+  function adjustOverlays() {
+    const header = document.querySelector('header') || document.querySelector('.navbar') || document.querySelector('.site-header');
+    const headerH = header ? header.getBoundingClientRect().height : 0;
+
+    overlaySelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(overlay => {
+        overlay.style.top = headerH + 'px';
+        overlay.style.height = `calc(100% - ${headerH}px)`;
+        overlay.style.inset = `${headerH}px 0 0 0`;
+      });
+    });
+  }
+
+  window.addEventListener('load', adjustOverlays);
+  window.addEventListener('resize', adjustOverlays);
+  window.addEventListener('orientationchange', adjustOverlays);
+
+  window.adjustShareHubOverlays = adjustOverlays;
+})();
+</script>
+
+{{ block.super }}
+{% endblock %}
+
 </body>
 </html>

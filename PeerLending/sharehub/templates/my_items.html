@@ -117,21 +117,25 @@
         <p class="item-description-enhanced">{{ it.description|truncatechars:120 }}</p>
 
         <!-- Action Buttons -->
-        <div class="item-actions-row">
-          <a href="{% url 'edit_item' it.item_id %}" class="action-btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Edit Item
-          </a>
-          <button class="action-btn-secondary" onclick="viewItemDetails('{{ it.item_id }}')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-          </button>
-        </div>
+      <div class="item-actions-row">
+        <a href="{% url 'edit_item' it.item_id %}" class="action-btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          Edit Item
+        </a>
+
+        <!-- Delete button (trash) -->
+        <button class="action-btn-secondary btn-delete-item" data-item-id="{{ it.item_id }}" title="Delete item" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="18" height="18" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
+
 
         <!-- Pending Requests Section (shows only pending_requests) -->
         {% if it.pending_requests %}
@@ -376,13 +380,22 @@
         }
       } else {
         const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
-        alert('Failed: ' + msg);
+        // use custom popup instead of alert
+        if (typeof showMessagePopup === 'function') {
+          showMessagePopup('Action failed', msg, { type: 'error', autoCloseMs: 5000 });
+        } else {
+          alert('Failed: ' + msg);
+        }
         elButton.disabled = false;
         elButton.innerHTML = originalHTML;
       }
     } catch (err) {
       console.error(err);
-      alert('Network error');
+      if (typeof showMessagePopup === 'function') {
+        showMessagePopup('Network error', 'Network error while processing action.', { type: 'error', autoCloseMs: 5000 });
+      } else {
+        alert('Network error');
+      }
       elButton.disabled = false;
       elButton.innerHTML = action === 'approve' ? 'Approve' : 'Deny';
     }
@@ -423,5 +436,94 @@
       console.error('Error normalizing pending stat', e);
     }
   });
+
+  // Confirm + AJAX delete using shared popup helpers
+  async function deleteItem(itemId, btnEl) {
+    // If popup.js is available, use it. Otherwise fall back to native confirm.
+    let confirmed = false;
+    if (typeof showConfirmPopup === 'function') {
+      try {
+        confirmed = await showConfirmPopup('Delete this item?', 'This action cannot be undone.', 'Delete', 'Cancel');
+      } catch (e) {
+        confirmed = false;
+      }
+    } else {
+      confirmed = confirm('Delete this item? This action cannot be undone.');
+    }
+    if (!confirmed) return;
+
+    try {
+      btnEl.disabled = true;
+      const original = btnEl.innerHTML;
+      btnEl.innerHTML = "Deleting...";
+
+      // use the same pattern you had: template url with placeholder replaced
+      const urlTemplate = "{% url 'delete_item' 'ITEM_ID_PLACEHOLDER' %}";
+      const deleteUrl = urlTemplate.replace('ITEM_ID_PLACEHOLDER', itemId);
+
+      const resp = await fetch(deleteUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({})
+      });
+
+      const data = await resp.json().catch(() => ({}));
+      if (resp.ok && data.success) {
+        // Remove card from DOM + update stats
+        const card = document.querySelector(`.item-card-enhanced[data-item-id="${itemId}"]`);
+        if (card) {
+          card.style.transition = 'all 0.25s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(8px)';
+          setTimeout(() => card.remove(), 260);
+        } else {
+          // fallback - reload
+          window.location.reload();
+        }
+
+        // update counters if present
+        updateStatCount('totalItems', -1);
+        if (data.decrement_available) updateStatCount('availableCount', -1);
+        if (data.decrement_pending) updateStatCount('pendingCount', -data.decrement_pending);
+
+        if (typeof showMessagePopup === 'function') {
+          showMessagePopup('Deleted', 'Item deleted successfully.', { type: 'success', autoCloseMs: 2400 });
+        }
+      } else {
+        const msg = (data && (data.message || data.error)) ? (data.message || data.error) : 'Delete failed';
+        if (typeof showMessagePopup === 'function') {
+          showMessagePopup('Delete failed', msg, { type: 'error', autoCloseMs: 5000 });
+        } else {
+          alert('Delete failed: ' + msg);
+        }
+        btnEl.disabled = false;
+        btnEl.innerHTML = original;
+      }
+    } catch (err) {
+      console.error(err);
+      if (typeof showMessagePopup === 'function') {
+        showMessagePopup('Network error', 'Network error while deleting item', { type: 'error', autoCloseMs: 5000 });
+      } else {
+        alert('Network error while deleting item');
+      }
+      btnEl.disabled = false;
+      btnEl.innerHTML = original;
+    }
+  }
+
+  // delegate clicks to delete buttons
+  document.addEventListener('click', function(e) {
+    const delBtn = e.target.closest('.btn-delete-item');
+    if (!delBtn) return;
+    const itemId = delBtn.dataset.itemId;
+    deleteItem(itemId, delBtn);
+  });
+
 </script>
+
 {% endblock %}
