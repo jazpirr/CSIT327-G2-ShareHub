@@ -111,6 +111,83 @@
     </div>
   </div>
 
+
+  <div id="chatOverlay" class="notification-overlay" aria-hidden="true" style="display:none;"></div>
+
+  <div id="chatPopup" class="chat-popup" aria-hidden="true" style="display:none;">
+    <div class="chat-header">
+      <div class="title">Chats</div>
+      <button id="closeChat" type="button">✕</button>
+    </div>
+
+    <div class="chat-body">
+      <div class="chat-list" id="chatList"></div>
+      <div class="chat-window" id="chatWindow" style="display:none;">
+        <div class="messages" id="messages"></div>
+
+        <form id="chatForm">
+          <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    window.SUPABASE_URL = "{{ SUPABASE_URL }}";
+    window.SUPABASE_ANON_KEY = "{{ SUPABASE_ANON_KEY }}";
+    window.SUPABASE_USER_ID = "{{ request.session.supabase_user_id|default:'' }}";
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="{% static 'js/chat.js' %}"></script>
+
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const chatBadge = document.getElementById("chatBadge");
+
+        async function loadUnreadChatCount() {
+            try {
+                const res = await fetch("/api/chat/unread-count/");
+                const data = await res.json();
+
+                const count = data.unread || 0;
+
+                if (count > 0) {
+                    chatBadge.textContent = count;
+                    chatBadge.style.display = "flex";
+                } else {
+                    chatBadge.style.display = "none";
+                }
+            } catch (e) {
+                console.error("Error loading chat unread count:", e);
+            }
+        }
+
+        loadUnreadChatCount();
+
+        // 2. Real-time unread updates via Supabase
+        if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+            const sb = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+            sb.channel("chat-unread")
+                .on(
+                    "postgres_changes",
+                    { event: "INSERT", schema: "public", table: "messages" },
+                    async (payload) => {
+                        // refresh unread count on new message
+                        loadUnreadChatCount();
+                    }
+                )
+                .subscribe();
+        }
+    });
+    </script>
+
+  <link rel="stylesheet" href="{% static 'css/chat.css' %}">
+
   <!-- Shared scripts -->
   <script src="{% static 'js/confirmation_logout.js' %}"></script>
   <script src="{% static 'js/popup.js' %}"></script>
@@ -130,6 +207,7 @@
         document.body.style.overflow = "auto";   // SAFETY RESET
     });
   </script>
+  
 
   {% block extra_scripts %}{% endblock %}
 </body>

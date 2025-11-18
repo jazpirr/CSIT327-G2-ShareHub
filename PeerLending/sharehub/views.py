@@ -10,6 +10,7 @@ from supabase import create_client
 from supabase import create_client, Client
 from django.views.decorators.http import require_http_methods
 from supabase_auth._sync.gotrue_client import AuthApiError
+from django.views.decorators.http import require_GET
  
 from .forms import CustomUserCreationForm
 from .utils import supabase_login_required
@@ -36,6 +37,8 @@ SUPABASE_ANON_KEY = getattr(settings, "SUPABASE_ANON_KEY", None)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) 
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
+
+server_client = create_supabase_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 @login_required
 def settings_view(request):
@@ -1799,6 +1802,10 @@ def my_items(request):
         "unread_count": unread_count,
         "available_count": total_available,
         "pending_count": total_pending,
+        "SUPABASE_URL": SUPABASE_URL,
+        "SUPABASE_ANON_KEY": SUPABASE_ANON_KEY,
+        # optional: expose user id if chat.js needs it
+        "SUPABASE_USER_ID": request.session.get("supabase_user_id", ""),
     })
 
 
@@ -1870,3 +1877,134 @@ def edit_item(request, item_id):
     # Prepare item for template
     item['image_url'] = item.get('image_url')
     return render(request, "my_items/edit_item.html", {"item": item})
+
+
+@require_POST
+@supabase_login_required
+def post_message(request, conversation_id):
+    """
+    POST /api/chat/<conversation_id>/post/
+    Expects JSON: { "content": "..." }
+    Returns: { "success": True, "message": { id, sender_id, content, created_at } }
+    """
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        payload = {}
+
+    content = (payload.get("content") or "").strip()
+    if not content:
+        return JsonResponse({"success": False, "error": "empty content"}, status=400)
+
+    sender_id = request.session.get("supabase_user_id")
+    if not sender_id:
+        return JsonResponse({"success": False, "error": "not authenticated"}, status=401)
+
+    # verify the sender is participant in conversation (optional but recommended)
+    try:
+        check = server_client.from_("conversation_participants") \
+            .select("*") \
+            .eq("conversation_id", conversation_id) \
+            .eq("user_id", sender_id) \
+            .maybe_single() \
+            .execute()
+        if getattr(check, "error", None) or not getattr(check, "data", None):
+            return HttpResponseForbidden("No access to this conversation")
+    except Exception:
+        # if your schema doesn't have conversation_participants, skip this check
+        pass
+
+    try:
+        # insert the message and request the created row back with select("*")
+        insert_resp = server_client.table("messages").insert({
+            "conversation_id": conversation_id,
+            "sender_id": sender_id,
+            "content": content,
+            # optionally set created_at here if you want server timestamp
+            # "created_at": datetime.utcnow().isoformat()
+        }).select("*").execute()
+
+        if getattr(insert_resp, "error", None):
+            # Insert failed
+            err = insert_resp.error
+            msg = getattr(err, "message", str(err))
+            return JsonResponse({"success": False, "error": msg}, status=500)
+
+        created = None
+        try:
+            created = insert_resp.data[0] if isinstance(insert_resp.data, list) and insert_resp.data else insert_resp.data
+        except Exception:
+            created = insert_resp.data
+
+        # normalize created row: ensure id and created_at are serializable strings
+        if created and isinstance(created, dict):
+            # if created['created_at'] is datetime-like, convert to ISO
+            ca = created.get("created_at")
+            try:
+                if hasattr(ca, "isoformat"):
+                    created["created_at"] = ca.isoformat()
+            except Exception:
+                pass
+
+        return JsonResponse({"success": True, "message": created})
+    except Exception as e:
+        logging.getLogger(__name__).exception("post_message exception")
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
+        
+
+@supabase_login_required
+def get_messages(request, conversation_id):
+    """
+    GET /api/chat/<conversation_id>/messages/
+    Returns ordered messages for the conversation. Marks other users' unread messages as read (best-effort).
+    """
+    user_id = request.session.get("supabase_user_id")
+
+    # verify participant
+    try:
+        check = server_client.from_("conversation_participants") \
+            .select("*") \
+            .eq("conversation_id", conversation_id) \
+            .eq("user_id", user_id) \
+            .maybe_single() \
+            .execute()
+    except Exception:
+        return HttpResponseForbidden("No access")
+
+    if getattr(check, "error", None) or not getattr(check, "data", None):
+        return HttpResponseForbidden("No access")
+
+    # Fetch messages (ascending by created_at). Use desc=False (supported); fallback to .order("created_at")
+    try:
+        msgs_resp = server_client.from_("messages") \
+            .select("*") \
+            .eq("conversation_id", conversation_id) \
+            .order("created_at", desc=False) \
+            .execute()
+    except TypeError:
+        msgs_resp = server_client.from_("messages") \
+            .select("*") \
+            .eq("conversation_id", conversation_id) \
+            .order("created_at") \
+            .execute()
+    except Exception:
+        # Generic fallback: try without ordering
+        msgs_resp = server_client.from_("messages") \
+            .select("*") \
+            .eq("conversation_id", conversation_id) \
+            .execute()
+
+    msgs = msgs_resp.data if getattr(msgs_resp, "data", None) else []
+
+    # Best-effort: mark as read all messages in this convo not sent by current user
+    try:
+        server_client.from_("messages") \
+            .update({"is_read": True}) \
+            .eq("conversation_id", conversation_id) \
+            .eq("is_read", False) \
+            .neq("sender_id", user_id) \
+            .execute()
+    except Exception:
+        pass
+
+    return JsonResponse({"results": msgs})

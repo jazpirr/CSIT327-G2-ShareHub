@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from django.shortcuts import redirect
 from . import views
 
@@ -28,5 +28,8 @@ urlpatterns = [
     path("mark-returned/", views.mark_returned, name="mark_returned"),
     path('my-items/', views.my_items, name='my_items'),
     path("edit-item/<str:item_id>/", views.edit_item, name="edit_item"),
+    path('', include('chat.urls')),
+    path('<str:conversation_id>/post/', views.post_message, name='chat_post_message'),
+
 ]
  

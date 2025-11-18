@@ -4,7 +4,6 @@
 {% block title %}Browse & Borrow Items - ShareHub{% endblock %}
 
 {% block extra_head %}
-{# page-specific styles (optional) #}
 <link rel="stylesheet" href="{% static 'css/borrow_items.css' %}">
 <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
 {% endblock %}
@@ -154,23 +153,19 @@
                 data-item="{{ item.title|escape }}"
                 data-owner="{{ item.owner_display|escape }}"
               >Request to Borrow</button>
+              <button
+                type="button"
+                class="message-owner-btn"
+                onclick="startChat('{{ item.item_id }}')"
+              >Message Owner</button>
             </div>
           {% endfor %}
         {% else %}
-          <p>No available items right now.</p>
+          <p id="noResultsTemplate">No available items right now.</p>
         {% endif %}
       </div>
     </div>
 
-    <!-- Right Column -->
-    <div class="requests-column">
-      <div class="section-header">
-        <h2>My Requests</h2>
-      </div>
-      <div id="requestList">
-        <p>No requests yet.</p>
-      </div>
-    </div>
   </div>
 </main>
 
