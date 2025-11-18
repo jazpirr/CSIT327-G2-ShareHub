@@ -36,3 +36,7 @@ tzdata==2025.2
 websockets==15.0.1
 whitenoise==6.11.0
 gunicorn==21.2.0
+channels==4.1.0
+daphne==4.1.0
+channels-redis==4.2.0
+redis==5.0.1
