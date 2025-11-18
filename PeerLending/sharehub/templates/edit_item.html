@@ -1,44 +1,438 @@
 {% extends "base.html" %}
 {% load static %}
+{% block title %}Edit Item - {{ item.title|default:"Item" }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/edit-item.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="page-container">
+<div class="edit-item-container">
+  <!-- Breadcrumb Navigation -->
+  <div class="breadcrumb">
+    <a href="{% url 'home' %}">Home</a>
+    <span class="breadcrumb-separator">›</span>
+    <a href="{% url 'my_items' %}">My Items</a>
+    <span class="breadcrumb-separator">›</span>
+    <span>Edit Item</span>
+  </div>
 
+  <!-- Page Header -->
+  <div class="page-header">
     <h1>Edit Item</h1>
-    <p>Update your shared item details.</p>
+    <p class="page-subtitle">Update details for <strong>{{ item.title }}</strong></p>
+  </div>
 
-    <form method="POST" class="edit-form">
-        {% csrf_token %}
+  <!-- Main Card -->
+  <div class="edit-card">
+    <!-- Info Alert -->
+    <div class="info-alert">
+      <svg class="info-alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+      <div class="info-alert-content">
+        <div class="info-alert-title">Editing Item</div>
+        <p class="info-alert-text">Make your changes below and click "Save Changes" to update the item. All fields marked with <span style="color: #dc3545;">*</span> are required.</p>
+      </div>
+    </div>
 
-        <label>Item Name *</label>
-        <input type="text" name="title" value="{{ item.title }}" required>
+    <!-- Edit Form -->
+    <form id="editItemForm" method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      
+      <div class="form-container">
+        <!-- Left Column - Form Fields -->
+        <div class="form-fields">
+          <!-- Item Name -->
+          <div class="form-group">
+            <label for="title">
+              Item Name
+              <span class="required-mark">*</span>
+            </label>
+            <input 
+              id="title" 
+              name="title" 
+              type="text" 
+              value="{{ item.title }}" 
+              placeholder="Enter item name"
+              required
+            >
+            <span class="validation-message">Please enter an item name</span>
+          </div>
 
-        <label>Category *</label>
-        <select name="category" required>
-            <option value="textbooks" {% if item.category == "textbooks" %}selected{% endif %}>Textbooks</option>
-            <option value="calculators" {% if item.category == "calculators" %}selected{% endif %}>Calculators</option>
-            <option value="electronics" {% if item.category == "electronics" %}selected{% endif %}>Electronics</option>
-            <option value="other" {% if item.category == "other" %}selected{% endif %}>Other</option>
-        </select>
+          <!-- Category -->
+          <div class="form-group">
+            <label for="category">
+              Category
+              <span class="required-mark">*</span>
+            </label>
+            <select id="category" name="category" required>
+              <option value="">Select a category</option>
+              <option value="textbooks" {% if item.category == 'textbooks' %}selected{% endif %}>Textbooks</option>
+              <option value="calculators" {% if item.category == 'calculators' %}selected{% endif %}>Calculators</option>
+              <option value="lab-equipment" {% if item.category == 'lab-equipment' %}selected{% endif %}>Lab Equipment</option>
+              <option value="electronics" {% if item.category == 'electronics' %}selected{% endif %}>Electronics</option>
+              <option value="other" {% if item.category == 'other' %}selected{% endif %}>Other</option>
+            </select>
+            <span class="validation-message">Please select a category</span>
+          </div>
 
-        <label>Condition *</label>
-        <select name="condition" required>
-            <option value="new" {% if item.condition == "new" %}selected{% endif %}>New</option>
-            <option value="good" {% if item.condition == "good" %}selected{% endif %}>Good</option>
-            <option value="used" {% if item.condition == "used" %}selected{% endif %}>Used</option>
-        </select>
+          <!-- Condition -->
+          <div class="form-group">
+            <label for="condition">
+              Condition
+              <span class="required-mark">*</span>
+            </label>
+            <select id="condition" name="condition" required>
+              <option value="">Select condition</option>
+              <option value="new" {% if item.condition == 'new' %}selected{% endif %}>New</option>
+              <option value="like-new" {% if item.condition == 'like-new' %}selected{% endif %}>Like New</option>
+              <option value="good" {% if item.condition == 'good' %}selected{% endif %}>Good</option>
+              <option value="fair" {% if item.condition == 'fair' %}selected{% endif %}>Fair</option>
+              <option value="poor" {% if item.condition == 'poor' %}selected{% endif %}>Poor</option>
+            </select>
+            <span class="validation-message">Please select a condition</span>
+          </div>
 
-        <label>Description *</label>
-        <textarea name="description" required>{{ item.description }}</textarea>
+          <!-- Availability -->
+          <div class="form-group">
+            <label for="available">Availability</label>
+            <select id="available" name="available">
+              <option value="available" {% if item.available %}selected{% endif %}>Available for borrowing</option>
+              <option value="unavailable" {% if not item.available %}selected{% endif %}>Not available</option>
+            </select>
+          </div>
 
-        <label>
-            <input type="checkbox" name="available" {% if item.available %}checked{% endif %}>
-            Available
-        </label>
+          <!-- Description -->
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea 
+              id="description" 
+              name="description" 
+              rows="6"
+              placeholder="Describe your item in detail..."
+              maxlength="500"
+            >{{ item.description }}</textarea>
+            <div class="char-counter">
+              <span id="charCount">{{ item.description|length|default:0 }}</span> / 500 characters
+            </div>
+          </div>
+        </div>
 
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-        <a href="{% url 'my_items' %}" class="btn btn-cancel">Cancel</a>
+        <!-- Right Column - Image Upload -->
+        <div class="image-upload-section">
+          <label>Item Image</label>
+
+          <div class="image-preview-box" id="imagePreviewBox">
+            {% if item.image_url %}
+              <img id="previewImg" src="{{ item.image_url }}" alt="{{ item.title }}">
+              <div class="image-badge">Current Image</div>
+            {% else %}
+              <div class="image-placeholder">
+                📦
+                <div class="image-placeholder-text">No image</div>
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="file-input-wrapper">
+            <label for="imageInput" class="file-input-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Choose New Image
+            </label>
+            <input 
+              id="imageInput" 
+              type="file" 
+              name="image" 
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+            >
+          </div>
+
+          <div class="file-input-note">
+            📷 PNG, JPG, or WEBP up to 10MB<br>
+            Uploading a new image will replace the current one
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <a href="{% url 'my_items' %}" class="btn btn-cancel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Cancel
+        </a>
+
+        <button id="deleteFromEdit" type="button" class="btn btn-delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+          Delete
+        </button>
+
+        <button id="saveEdit" type="submit" class="btn btn-save">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          Save Changes
+        </button>
+      </div>
     </form>
-
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Character counter for description
+  const descriptionTextarea = document.getElementById('description');
+  const charCount = document.getElementById('charCount');
+  
+  if (descriptionTextarea && charCount) {
+    descriptionTextarea.addEventListener('input', function() {
+      charCount.textContent = this.value.length;
+    });
+  }
+
+  // Image preview with validation
+  const imageInput = document.getElementById('imageInput');
+  const imagePreviewBox = document.getElementById('imagePreviewBox');
+  
+  if (imageInput && imagePreviewBox) {
+    imageInput.addEventListener('change', function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      
+      // Validate file size (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        if (typeof showErrorPopup === 'function') {
+          showErrorPopup('File Too Large', 'File size must be less than 10MB');
+        } else {
+          alert('File size must be less than 10MB');
+        }
+        this.value = '';
+        return;
+      }
+      
+      // Validate file type
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        if (typeof showErrorPopup === 'function') {
+          showErrorPopup('Invalid File Type', 'Please select a valid image file (PNG, JPG, or WEBP)');
+        } else {
+          alert('Please select a valid image file (PNG, JPG, or WEBP)');
+        }
+        this.value = '';
+        return;
+      }
+      
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        imagePreviewBox.innerHTML = `
+          <img id="previewImg" src="${ev.target.result}" alt="Preview">
+          <div class="image-badge new-image">New Image</div>
+        `;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Delete button handler with confirmation
+  document.getElementById('deleteFromEdit').addEventListener('click', async function(e) {
+    const itemId = "{{ item.item_id }}";
+    const itemTitle = "{{ item.title|escapejs }}";
+    
+    let confirmed = false;
+    
+    // Use custom popup if available
+    if (typeof showConfirmPopup === 'function') {
+      confirmed = await showConfirmPopup(
+        'Delete this item?',
+        `Are you sure you want to delete "<strong>${itemTitle}</strong>"? This action cannot be undone.`,
+        'Delete',
+        'Cancel'
+      );
+    } else {
+      confirmed = confirm(`Delete "${itemTitle}"? This action cannot be undone.`);
+    }
+    
+    if (!confirmed) return;
+
+    const btn = e.currentTarget;
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+    btn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+      Deleting...
+    `;
+
+    try {
+      const urlTemplate = "{% url 'delete_item' 'ITEM_ID_PLACEHOLDER' %}";
+      const deleteUrl = urlTemplate.replace('ITEM_ID_PLACEHOLDER', itemId);
+      
+      const resp = await fetch(deleteUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({})
+      });
+      
+      const data = await resp.json().catch(() => ({}));
+      
+      if (resp.ok && data.success) {
+        // Show success message
+        if (typeof showSuccessPopup === 'function') {
+          showSuccessPopup('Success!', 'Item deleted successfully');
+          setTimeout(() => { 
+            window.location.href = "{% url 'my_items' %}"; 
+          }, 1500);
+        } else if (typeof showMessagePopup === 'function') {
+          showMessagePopup('Deleted Successfully', 'Item has been deleted', { 
+            type: 'success', 
+            autoCloseMs: 1800 
+          });
+          setTimeout(() => { 
+            window.location.href = "{% url 'my_items' %}"; 
+          }, 900);
+        } else {
+          alert('Item deleted successfully');
+          window.location.href = "{% url 'my_items' %}";
+        }
+      } else {
+        const msg = (data && (data.message || data.error)) ? (data.message || data.error) : 'Delete failed';
+        
+        if (typeof showErrorPopup === 'function') {
+          showErrorPopup('Delete Failed', msg);
+        } else if (typeof showMessagePopup === 'function') {
+          showMessagePopup('Delete Failed', msg, { type: 'error', autoCloseMs: 5000 });
+        } else {
+          alert('Delete failed: ' + msg);
+        }
+        
+        btn.disabled = false;
+        btn.classList.remove('btn-loading');
+        btn.innerHTML = originalHTML;
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      
+      if (typeof showErrorPopup === 'function') {
+        showErrorPopup('Network Error', 'Unable to delete item. Please try again.');
+      } else if (typeof showMessagePopup === 'function') {
+        showMessagePopup('Network Error', 'Unable to delete item. Please try again.', { 
+          type: 'error', 
+          autoCloseMs: 5000 
+        });
+      } else {
+        alert('Network error while deleting item');
+      }
+      
+      btn.disabled = false;
+      btn.classList.remove('btn-loading');
+      btn.innerHTML = originalHTML;
+    }
+  });
+
+  // Form validation on submit
+  const editForm = document.getElementById('editItemForm');
+  if (editForm) {
+    editForm.addEventListener('submit', function(e) {
+      const title = document.getElementById('title');
+      const category = document.getElementById('category');
+      const condition = document.getElementById('condition');
+      
+      let isValid = true;
+      let focusElement = null;
+      
+      if (!title.value.trim()) {
+        isValid = false;
+        focusElement = title;
+      } else if (!category.value) {
+        isValid = false;
+        focusElement = category;
+      } else if (!condition.value) {
+        isValid = false;
+        focusElement = condition;
+      }
+      
+      if (!isValid) {
+        e.preventDefault();
+        
+        if (focusElement) focusElement.focus();
+        
+        if (typeof showErrorPopup === 'function') {
+          showErrorPopup('Validation Error', 'Please fill in all required fields marked with *');
+        } else {
+          alert('Please fill in all required fields');
+        }
+        return false;
+      }
+      
+      // Show loading state on save button
+      const saveBtn = document.getElementById('saveEdit');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.classList.add('btn-loading');
+        saveBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+          </svg>
+          Saving...
+        `;
+      }
+    });
+  }
+
+  // Prevent accidental navigation with unsaved changes
+  let formChanged = false;
+  const formInputs = editForm ? editForm.querySelectorAll('input, select, textarea') : [];
+  
+  formInputs.forEach(input => {
+    input.addEventListener('change', () => {
+      formChanged = true;
+    });
+    input.addEventListener('input', () => {
+      formChanged = true;
+    });
+  });
+
+  window.addEventListener('beforeunload', function(e) {
+    if (formChanged && editForm && !editForm.classList.contains('submitting')) {
+      e.preventDefault();
+      e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+      return e.returnValue;
+    }
+  });
+
+  // Mark form as submitting to prevent warning
+  if (editForm) {
+    editForm.addEventListener('submit', function() {
+      editForm.classList.add('submitting');
+      formChanged = false;
+    });
+  }
+</script>
+
+{{ block.super }}
 {% endblock %}

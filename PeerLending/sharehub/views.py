@@ -1809,13 +1809,13 @@ def my_items(request):
     })
 
 
-
-@supabase_login_required
 @require_http_methods(["GET", "POST"])
+@supabase_login_required
 def edit_item(request, item_id):
     user_id = request.session.get("supabase_user_id")
     if not user_id:
         return redirect("login")
+
     # fetch item
     try:
         resp = supabase.table("item").select("*").eq("item_id", item_id).single().execute()
@@ -1835,27 +1835,27 @@ def edit_item(request, item_id):
         description = (request.POST.get("description") or "").strip()
         category = (request.POST.get("category") or "").strip()
         condition = (request.POST.get("condition") or "").strip()
-        availability = (request.POST.get("available") or "true").lower() in ("true","1","on","yes","available")
+        availability = (request.POST.get("available") or "true").lower() in ("true", "1", "on", "yes", "available")
 
-        # handle image if uploaded (use service role client)
+        # handle uploaded image (optional)
         file = request.FILES.get("image")
         image_url = item.get("image_url")
-        if file:
-            from supabase import create_client as create_supabase_client
-            admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-            ext = os.path.splitext(file.name)[1] or ".bin"
-            filename = f"{user_id}/{uuid.uuid4()}{ext}"
+        if file and SUPABASE_SERVICE_ROLE_KEY:
             try:
+                admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+                ext = os.path.splitext(file.name)[1] or ".bin"
+                filename = f"{user_id}/{uuid.uuid4()}{ext}"
                 upload_res = admin_client.storage.from_("item-images").upload(filename, file.read())
                 if getattr(upload_res, "error", None):
                     messages.error(request, "Failed to upload image.")
                 else:
                     public = admin_client.storage.from_("item-images").get_public_url(filename)
+                    # public might be dict or object; try safe retrieval
                     image_url = (public.get("publicUrl") if isinstance(public, dict) and public.get("publicUrl")
                                  else getattr(public, "public_url", None) or getattr(public, "publicUrl", None) or public)
-            except Exception:
+            except Exception as e:
                 messages.error(request, "Image upload failed.")
-
+        # update the item record
         try:
             update_resp = supabase.table("item").update({
                 "title": title,
@@ -1876,135 +1876,60 @@ def edit_item(request, item_id):
 
     # Prepare item for template
     item['image_url'] = item.get('image_url')
-    return render(request, "my_items/edit_item.html", {"item": item})
+    return render(request, "edit_item.html", {"item": item})
 
 
 @require_POST
 @supabase_login_required
-def post_message(request, conversation_id):
-    """
-    POST /api/chat/<conversation_id>/post/
-    Expects JSON: { "content": "..." }
-    Returns: { "success": True, "message": { id, sender_id, content, created_at } }
-    """
-    try:
-        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
-    except Exception:
-        payload = {}
-
-    content = (payload.get("content") or "").strip()
-    if not content:
-        return JsonResponse({"success": False, "error": "empty content"}, status=400)
-
-    sender_id = request.session.get("supabase_user_id")
-    if not sender_id:
-        return JsonResponse({"success": False, "error": "not authenticated"}, status=401)
-
-    # verify the sender is participant in conversation (optional but recommended)
-    try:
-        check = server_client.from_("conversation_participants") \
-            .select("*") \
-            .eq("conversation_id", conversation_id) \
-            .eq("user_id", sender_id) \
-            .maybe_single() \
-            .execute()
-        if getattr(check, "error", None) or not getattr(check, "data", None):
-            return HttpResponseForbidden("No access to this conversation")
-    except Exception:
-        # if your schema doesn't have conversation_participants, skip this check
-        pass
-
-    try:
-        # insert the message and request the created row back with select("*")
-        insert_resp = server_client.table("messages").insert({
-            "conversation_id": conversation_id,
-            "sender_id": sender_id,
-            "content": content,
-            # optionally set created_at here if you want server timestamp
-            # "created_at": datetime.utcnow().isoformat()
-        }).select("*").execute()
-
-        if getattr(insert_resp, "error", None):
-            # Insert failed
-            err = insert_resp.error
-            msg = getattr(err, "message", str(err))
-            return JsonResponse({"success": False, "error": msg}, status=500)
-
-        created = None
-        try:
-            created = insert_resp.data[0] if isinstance(insert_resp.data, list) and insert_resp.data else insert_resp.data
-        except Exception:
-            created = insert_resp.data
-
-        # normalize created row: ensure id and created_at are serializable strings
-        if created and isinstance(created, dict):
-            # if created['created_at'] is datetime-like, convert to ISO
-            ca = created.get("created_at")
-            try:
-                if hasattr(ca, "isoformat"):
-                    created["created_at"] = ca.isoformat()
-            except Exception:
-                pass
-
-        return JsonResponse({"success": True, "message": created})
-    except Exception as e:
-        logging.getLogger(__name__).exception("post_message exception")
-        return JsonResponse({"success": False, "error": str(e)}, status=500)
-        
-
-@supabase_login_required
-def get_messages(request, conversation_id):
-    """
-    GET /api/chat/<conversation_id>/messages/
-    Returns ordered messages for the conversation. Marks other users' unread messages as read (best-effort).
-    """
+def delete_item(request, item_id):
     user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return JsonResponse({"error": "Not authenticated"}, status=401)
 
-    # verify participant
+    # fetch item
     try:
-        check = server_client.from_("conversation_participants") \
-            .select("*") \
-            .eq("conversation_id", conversation_id) \
-            .eq("user_id", user_id) \
-            .maybe_single() \
-            .execute()
-    except Exception:
-        return HttpResponseForbidden("No access")
+        r = supabase.table('item').select('item_id,user_id,available').eq('item_id', item_id).maybe_single().execute()
+        if getattr(r, 'error', None) or not r.data:
+            return JsonResponse({"error": "Item not found"}, status=404)
+        item = r.data
+    except Exception as e:
+        return JsonResponse({"error": "Failed to fetch item"}, status=500)
 
-    if getattr(check, "error", None) or not getattr(check, "data", None):
-        return HttpResponseForbidden("No access")
+    if item.get('user_id') != user_id:
+        return HttpResponseForbidden("Permission denied")
 
-    # Fetch messages (ascending by created_at). Use desc=False (supported); fallback to .order("created_at")
+    # Use service role (admin) client to delete item + related requests/storage if desired
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        return JsonResponse({"error": "Server misconfigured"}, status=500)
+
+    admin = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     try:
-        msgs_resp = server_client.from_("messages") \
-            .select("*") \
-            .eq("conversation_id", conversation_id) \
-            .order("created_at", desc=False) \
-            .execute()
-    except TypeError:
-        msgs_resp = server_client.from_("messages") \
-            .select("*") \
-            .eq("conversation_id", conversation_id) \
-            .order("created_at") \
-            .execute()
-    except Exception:
-        # Generic fallback: try without ordering
-        msgs_resp = server_client.from_("messages") \
-            .select("*") \
-            .eq("conversation_id", conversation_id) \
-            .execute()
+        # Optionally delete requests for this item (cleanup)
+        try:
+            admin.table('request').delete().eq('item_id', item_id).execute()
+        except Exception:
+            pass
 
-    msgs = msgs_resp.data if getattr(msgs_resp, "data", None) else []
+        # Delete item row
+        del_resp = admin.table('item').delete().eq('item_id', item_id).execute()
+        if getattr(del_resp, 'error', None):
+            return JsonResponse({"error": "Failed to delete item"}, status=500)
 
-    # Best-effort: mark as read all messages in this convo not sent by current user
-    try:
-        server_client.from_("messages") \
-            .update({"is_read": True}) \
-            .eq("conversation_id", conversation_id) \
-            .eq("is_read", False) \
-            .neq("sender_id", user_id) \
-            .execute()
-    except Exception:
-        pass
+        # If you want to delete the stored image object from storage, you can do it here
+        # image_url = item.get('image_url') or ''
+        # parse and remove file path from your storage bucket (skip if not needed)
 
-    return JsonResponse({"results": msgs})
+        # Tell client whether counts should change
+        dec_available = bool(item.get('available'))
+        # pending: compute quickly whether there were pending requests previously (optional)
+        # We'll return decrement flags; JS will update counters
+        pending_count_resp = supabase.table('request').select('request_id').eq('item_id', item_id).eq('status','pending').execute()
+        pending_num = len(pending_count_resp.data or []) if getattr(pending_count_resp, 'data', None) else 0
+
+        return JsonResponse({
+            "success": True,
+            "decrement_available": 1 if dec_available else 0,
+            "decrement_pending": pending_num
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)

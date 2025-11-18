@@ -1,0 +1,487 @@
+/* ============================================
+   EDIT ITEM PAGE STYLES
+   ============================================ */
+
+/* Page Container */
+.edit-item-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+/* Breadcrumb Navigation */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 24px;
+}
+
+.breadcrumb a {
+  color: #7B1E1E;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.breadcrumb a:hover {
+  color: #5a1515;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #ccc;
+  user-select: none;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #7B1E1E;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 15px;
+  color: #666;
+  margin: 0;
+}
+
+.page-subtitle strong {
+  color: #7B1E1E;
+  font-weight: 600;
+}
+
+/* Main Card */
+.edit-card {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e5e5e5;
+}
+
+/* Info Alert Box */
+.info-alert {
+  background: #e3f2fd;
+  border-left: 4px solid #2196F3;
+  padding: 16px 20px;
+  border-radius: 6px;
+  margin-bottom: 32px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.info-alert-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #2196F3;
+}
+
+.info-alert-content {
+  flex: 1;
+}
+
+.info-alert-title {
+  font-weight: 600;
+  color: #1976D2;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.info-alert-text {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Form Layout */
+.form-container {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 40px;
+}
+
+/* Form Fields Column */
+.form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.required-mark {
+  color: #dc3545;
+  margin-left: 4px;
+}
+
+/* Input Styles */
+input[type="text"],
+select,
+textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+input[type="text"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #7B1E1E;
+  box-shadow: 0 0 0 3px rgba(123, 30, 30, 0.1);
+}
+
+input[type="text"]:hover,
+select:hover,
+textarea:hover {
+  border-color: #999;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.6;
+}
+
+/* Select Dropdown */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 44px;
+  cursor: pointer;
+}
+
+/* Character Counter */
+.char-counter {
+  font-size: 12px;
+  color: #999;
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* Image Upload Section */
+.image-upload-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.image-upload-section > label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+.image-preview-box {
+  position: relative;
+  background: #f5f5f5;
+  border: 2px dashed #ddd;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.image-preview-box:hover {
+  border-color: #7B1E1E;
+  background: #fafafa;
+}
+
+.image-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 48px;
+  text-align: center;
+  padding: 20px;
+}
+
+.image-placeholder-text {
+  font-size: 14px;
+  margin-top: 12px;
+  color: #666;
+}
+
+/* Image Status Badge */
+.image-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+
+.image-badge.new-image {
+  background: rgba(40, 167, 69, 0.9);
+}
+
+/* File Input Button */
+.file-input-wrapper {
+  position: relative;
+}
+
+.file-input-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: white;
+  border: 2px solid #7B1E1E;
+  color: #7B1E1E;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.file-input-btn:hover {
+  background: #7B1E1E;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(123, 30, 30, 0.2);
+}
+
+.file-input-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+input[type="file"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.file-input-note {
+  font-size: 13px;
+  color: #666;
+  margin-top: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.btn-cancel {
+  background: white;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+.btn-delete {
+  background: #b00020;
+  color: white;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background: #8b0019;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(176, 0, 32, 0.3);
+}
+
+.btn-save {
+  background: #7B1E1E;
+  color: white;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: #5a1515;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(123, 30, 30, 0.3);
+}
+
+.btn-save:active,
+.btn-delete:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+.btn-loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Validation States */
+input:invalid:not(:placeholder-shown),
+select:invalid:not(:placeholder-shown),
+textarea:invalid:not(:placeholder-shown) {
+  border-color: #dc3545;
+}
+
+.validation-message {
+  font-size: 12px;
+  color: #dc3545;
+  margin-top: 6px;
+  display: none;
+}
+
+input:invalid:not(:placeholder-shown) ~ .validation-message,
+select:invalid:not(:placeholder-shown) ~ .validation-message,
+textarea:invalid:not(:placeholder-shown) ~ .validation-message {
+  display: block;
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .form-container {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .image-upload-section {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .edit-item-container {
+    padding: 20px 16px;
+  }
+
+  .edit-card {
+    padding: 24px 20px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .form-fields {
+    gap: 20px;
+  }
+}
+
+/* Page Load Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.edit-card {
+  animation: fadeInUp 0.4s ease-out;
+}
