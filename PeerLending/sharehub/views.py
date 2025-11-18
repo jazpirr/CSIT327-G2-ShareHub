@@ -10,6 +10,7 @@ from supabase import create_client
 from supabase import create_client, Client
 from django.views.decorators.http import require_http_methods
 from supabase_auth._sync.gotrue_client import AuthApiError
+from django.views.decorators.http import require_GET
  
 from .forms import CustomUserCreationForm
 from .utils import supabase_login_required
@@ -36,6 +37,8 @@ SUPABASE_ANON_KEY = getattr(settings, "SUPABASE_ANON_KEY", None)
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) 
 
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
+
+server_client = create_supabase_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 @login_required
 def settings_view(request):
@@ -1799,6 +1802,10 @@ def my_items(request):
         "unread_count": unread_count,
         "available_count": total_available,
         "pending_count": total_pending,
+        "SUPABASE_URL": SUPABASE_URL,
+        "SUPABASE_ANON_KEY": SUPABASE_ANON_KEY,
+        # optional: expose user id if chat.js needs it
+        "SUPABASE_USER_ID": request.session.get("supabase_user_id", ""),
     })
 
 

@@ -1,146 +1,577 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
- 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
-}
- 
-:root {
-    --maroon: #7a0019;
-    --gold: #ffcc00;
-    --bg: #f5f5f5;
-    --card: #ffffff;
-    --text: #333;
-    --text-muted: #555;
-    --text-light: #999;
-    --border: #ddd;
-    --border-light: #e0e0e0;
-    --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 4px 10px rgba(0, 0, 0, 0.15);
-    --radius: 10px;
-    --radius-small: 5px;
-    --success: #2e7d32;
-    --warning: #ed6c02;
-    --error: #d32f2f;
-}
- 
-body {
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
+/* sharehub/static/css/borrow_items.css - Full updated file (patched) */
+
+/* ---------- Root variables ---------- */
+:root{
+  --maroon: #7a0019;
+  --gold: #ffcc00;
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --text: #333;
+  --text-muted: #666;
+  --text-light: #999;
+  --border: #e6e6e6;
+  --border-light: #f1f1f1;
+  --radius: 12px;
+  --radius-small: 8px;
+  --shadow: 0 6px 18px rgba(0,0,0,0.06);
+  --filter-w: 380px; /* width of the right-side filter popup */
+  --reserve-gap: 32px; /* space between cards area and popup */
+  --container-max: 1400px;
 }
 
-.navbar {
-    background: white;
-    padding: 15px 40px;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+/* ---------- Base layout ---------- */
+* { box-sizing: border-box; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+html,body { height:100%; }
+body {
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
 }
- 
-.nav-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 1400px;
-    margin: 0 auto;
+
+/* ---------- Borrow container: reserve right-side space for filter popup ---------- */
+/* The padding-right reserves the horizontal space so cards/search align with popup edge */
+.borrow-container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 32px 40px;
+  padding-right: calc(var(--filter-w) + var(--reserve-gap)); /* reserve area for popup */
+  min-height: calc(100vh - 140px);
 }
- 
-.nav-left {
-    flex-shrink: 0;
+
+/* if your header uses a different max width, adjust --container-max above */
+
+/* ---------- Header ---------- */
+.borrow-header {
+  margin-bottom: 28px;
 }
- 
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    color: var(--maroon);
-    font-size: 1.2em;
+.borrow-header h1 {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--maroon);
+  margin-bottom: 8px;
 }
- 
-.nav-center {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    flex: 1;
-    justify-content: center;
-    margin: 0 20px;
+.borrow-header p {
+  color: var(--text-muted);
+  margin: 0 0 14px 0;
+  font-size: 15px;
 }
- 
-.nav-link {
-    text-decoration: none;
-    color: var(--maroon);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 15px;
-    border-radius: 5px;
-    transition: all 0.2s ease;
+
+
+/* ===== SEARCH BAR STYLES ===== */
+.search-container {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  position: relative;
 }
- 
-.nav-link:hover,
-.nav-link.active {
-    background: rgba(122, 0, 25, 0.1);
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
- 
-.nav-right {
-    display: flex;
-    align-items: center;
-    gap: 15px;
+
+.search-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
 }
- 
-.add-item-btn {
-    background: var(--gold);
-    color: var(--text);
-    border: none;
-    padding: 10px 16px;
-    border-radius: var(--radius-small);
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+
+.search-input {
+  width: 100%;
+  padding: 12px 50px 12px 48px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  font-size: 14px;
+  color: var(--text);
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
- 
-.notification-btn {
-    background: none;
-    border: none;
-    color: var(--maroon);
-    cursor: pointer;
-    padding: 8px;
-    position: relative;
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--maroon);
+  box-shadow: 0 0 0 3px rgba(122, 0, 25, 0.05);
 }
- 
-.notification-badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: var(--error);
-    color: white;
-    font-size: 10px;
-    padding: 2px 5px;
-    border-radius: 10px;
+
+.search-input::placeholder {
+  color: var(--text-light);
 }
- 
-.logout-btn {
-    background: none;
-    border: none;
-    color: var(--maroon);
-    font-weight: 500;
-    cursor: pointer;
-    padding: 8px 15px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    border-radius: 5px;
-    transition: all 0.2s ease;
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
 }
- 
-.logout-btn:hover {
-    background: rgba(122, 0, 25, 0.05);
+
+.search-clear:hover {
+  background: rgba(122, 0, 25, 0.05);
+  color: var(--maroon);
 }
+
+.filter-btn-wrapper {
+  position: relative;
+}
+
+.search-filter-btn {
+  background: white;
+  color: var(--maroon);
+  border: 1.5px solid var(--border);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.search-filter-btn:hover {
+  border-color: var(--maroon);
+  background: rgba(122, 0, 25, 0.02);
+}
+
+.search-filter-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ===== FILTER POPUP STYLES ===== */
+.filter-popup {
+  display: none;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.filter-popup.active {
+  display: block;
+  animation: slideDown 0.3s ease;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.filter-header h3 {
+  margin: 0;
+  color: var(--bg);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.filter-close {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-body {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.filter-section {
+  margin-bottom: 24px;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+.filter-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.filter-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  margin-right: 10px;
+  accent-color: var(--maroon);
+}
+
+.filter-option label {
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex: 1;
+}
+
+.filter-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  gap: 10px;
+}
+
+.filter-clear-btn,
+.filter-apply-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.filter-clear-btn {
+  background: #f5f5f5;
+  color: var(--text-muted);
+}
+
+.filter-clear-btn:hover {
+  background: #e8e8e8;
+}
+
+.filter-apply-btn {
+  background: var(--maroon);
+  color: white;
+}
+
+.filter-apply-btn:hover {
+  background: #6a0016;
+}
+/* ---------- Section header ---------- */
+.section-header { margin-bottom: 18px; }
+.section-header h2 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--maroon);
+  margin: 0 0 12px 0;
+}
+
+/* ---------- Items grid: 5 cards per row on wide screens ---------- */
+.borrow-grid {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: repeat(5, minmax(220px, 1fr)); /* 5 columns wide */
+  align-items: start;
+  width: 100%;
+}
+
+/* fallback for auto-fit for variable widths */
+.borrow-grid.auto-fit {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+/* make cards a bit larger */
+.item-box {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  transition: transform .22s cubic-bezier(.2,.9,.2,1), box-shadow .22s ease;
+  min-height: 420px; /* larger card */
+}
+
+/* restore top accent line and hover animation */
+.item-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px; /* visible accent */
+  background: linear-gradient(90deg, var(--maroon) 0%, #a00000 100%);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .28s cubic-bezier(.2,.9,.2,1);
+  border-top-left-radius: var(--radius);
+  border-top-right-radius: var(--radius);
+  pointer-events: none;
+}
+.item-box:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.09);
+}
+.item-box:hover::before { transform: scaleX(1); }
+
+/* image area */
+.item-thumb {
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #fafafa;
+  height: 240px; /* increased image canvas */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.item-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .3s ease;
+}
+.item-box:hover .item-thumb img { transform: scale(1.05); }
+
+/* meta & title */
+.item-meta { flex: 1; margin-bottom: 12px; min-height: 100px; }
+.item-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #6b1416;
+  margin-bottom: 6px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.item-cat {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* action buttons */
+.request-btn,
+.message-owner-btn {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  margin-bottom: 10px;
+}
+.request-btn {
+  background: linear-gradient(135deg, var(--maroon) 0%, #a00000 100%);
+  color: white;
+  box-shadow: 0 6px 16px rgba(122,0,25,0.18);
+}
+.request-btn:hover { transform: translateY(-2px); }
+.message-owner-btn {
+  background: var(--card);
+  border: 2px solid var(--border);
+  color: var(--maroon);
+}
+.message-owner-btn:hover {
+  background: rgba(122,0,25,0.03);
+  border-color: rgba(122,0,25,0.06);
+}
+
+/* ---------- No results fallback ---------- */
+#noResultsTemplate {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 36px 20px;
+  color: var(--text-light);
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- Filter Popup (right-side) ---------- */
+/* fixed popup that sits in the reserved area to the right of content */
+.filter-popup {
+  position: fixed;
+  width: var(--filter-w);
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 80px);
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  overflow: hidden;
+  z-index: 14000;
+  display: flex;
+  flex-direction: column;
+  right: 24px; /* default near right edge */
+  top: 120px;  /* a good default */
+  transform-origin: top right;
+}
+
+/* header with maroon background */
+.filter-header {
+  background: linear-gradient(180deg, var(--maroon), #8f0016);
+  color: #fff;
+  padding: 18px 18px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Align the X close square so visually it lines up with the Filter button */
+/* We position the close button to the left inside the popup, while the Filter
+   button typically appears to the left of the popup area — this visually "aligns" them. */
+.filter-close {
+  position: absolute;
+  left: 12px;      /* aligns to the popup's left edge; JS positions left/top of popup */
+  top: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255,255,255,0.12);
+  color: white;
+  cursor: pointer;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.filter-close:hover { transform: rotate(10deg); background: rgba(255,255,255,0.18); }
+
+/* header title central text */
+.filter-header h3 {
+  margin: 0;
+  font-weight: 800;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+/* body */
+.filter-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* footer (clear/apply) pinned at bottom */
+.filter-footer {
+  display:flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-light);
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+}
+.filter-footer .filter-clear-btn,
+.filter-footer .filter-apply-btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  border: none;
+}
+.filter-clear-btn { background: #fff; border: 2px solid var(--border-light); color: var(--text-muted); }
+.filter-apply-btn { background: linear-gradient(135deg,var(--maroon),#a00000); color: #fff; box-shadow: 0 6px 18px rgba(122,0,25,0.16); }
+
+/* small scroll thumb styling for popup body */
+.filter-body::-webkit-scrollbar { width: 8px; }
+.filter-body::-webkit-scrollbar-thumb { background: #e3e3e3; border-radius: 8px; }
+
+/* ---------- Visual & spacing adjustments ---------- */
+.borrow-container .section-header { margin-top: 8px; margin-bottom: 18px; }
+
+/* ---------- RESPONSIVE rules ---------- */
+@media (max-width: 1500px) {
+  /* when screen narrows, reduce reserved area so content fits */
+  :root { --filter-w: 360px; --reserve-gap: 24px; }
+  .borrow-container { padding-right: calc(var(--filter-w) + var(--reserve-gap)); }
+}
+
+@media (max-width: 1300px) {
+  /* drop to 4 columns */
+  .borrow-grid { grid-template-columns: repeat(4, minmax(220px, 1fr)); gap:20px; }
+  .borrow-container { padding-right: calc(var(--filter-w) + 20px); }
+}
+
+@media (max-width: 1100px) {
+  /* drop to 3 columns and remove large right reserve so popup becomes overlay */
+  .borrow-grid { grid-template-columns: repeat(3, minmax(220px, 1fr)); gap:18px; }
+  .borrow-container { padding-right: 40px; } /* small right spacing only */
+  .filter-popup { right: 20px; top: 110px; width: 340px; }
+}
+
+@media (max-width: 900px) {
+  .borrow-grid { grid-template-columns: repeat(2, minmax(180px, 1fr)); gap:16px; }
+  .borrow-container { padding: 24px 24px 40px 24px; }
+  .filter-popup {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 12px;
+    width: auto;
+    max-height: 70vh;
+    border-radius: 12px;
+  }
+  .filter-close { left: 12px; top: 12px; } /* keep close in left */
+  .item-thumb { height: 200px; }
+}
+
+/* small mobile */
+@media (max-width: 480px) {
+  .borrow-grid { grid-template-columns: 1fr; gap:12px; }
+  .item-box { min-height: 360px; }
+  .item-thumb { height: 180px; }
+  .search-container { flex-direction: column; gap: 12px; }
+  .search-wrapper, .filter-btn-wrapper { width: 100%; }
+  .borrow-container { padding: 20px 16px; }
+  .filter-popup { left: 10px; right: 10px; bottom: 10px; top: auto; width: auto; }
+}
+
+/* ---------- Accessibility: focus states ---------- */
+.search-input:focus { outline: none; box-shadow: 0 4px 16px rgba(122,0,25,0.06); border-radius: 10px; }
+.request-btn:focus, .message-owner-btn:focus, .search-filter-btn:focus, .filter-close:focus {
+  outline: 3px solid rgba(122,0,25,0.12); outline-offset: 2px;
+}
+
+/* ---------- small polish ---------- */
+.item-title a { color: inherit; text-decoration: none; }
+.item-cat { opacity: .9; }
+
+/* ---------- End of file ---------- */

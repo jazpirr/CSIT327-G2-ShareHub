@@ -1,0 +1,160 @@
+# PeerLending/chat/views.py
+import json
+from functools import wraps
+
+from django.conf import settings
+from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.http import require_POST
+from supabase import create_client as create_supabase_client
+
+SUPABASE_URL = settings.SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None)
+
+# server client uses service role key (must be kept server-side)
+server_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) if SUPABASE_SERVICE_ROLE_KEY else None
+
+
+def supabase_login_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if request.session.get("supabase_user_id"):
+            return view_func(request, *args, **kwargs)
+        return HttpResponseForbidden("Not authenticated")
+    return _wrapped
+
+
+@supabase_login_required
+def chat_heads(request):
+    """
+    GET /api/chat/heads/ -> returns list of conversation heads (conversation id, item title, last message, unread_count, other_id)
+    """
+    user_id = request.session.get("supabase_user_id")
+    try:
+        parts = server_client.from_("conversation_participants").select("conversation_id").eq("user_id", user_id).execute()
+        conv_ids = [p["conversation_id"] for p in (parts.data or [])]
+        if not conv_ids:
+            return JsonResponse({"results": []})
+
+        convs = server_client.from_("conversations").select("*").in_("id", conv_ids).execute()
+        results = []
+        for c in (convs.data or []):
+            last_resp = server_client.from_("messages").select("*").eq("conversation_id", c["id"]).order("created_at", desc=True).limit(1).execute()
+            last = (last_resp.data or [None])[0]
+
+            unread_resp = server_client.from_("messages").select("id").eq("conversation_id", c["id"]).eq("is_read", False).neq("sender_id", user_id).execute()
+            unread_count = len(unread_resp.data or [])
+
+            parts_resp = server_client.from_("conversation_participants").select("user_id").eq("conversation_id", c["id"]).execute()
+            participants = [p["user_id"] for p in (parts_resp.data or [])]
+            other = next((p for p in participants if p != user_id), None)
+
+            results.append({
+                "conversation_id": c["id"],
+                "item_id": c.get("item_id"),
+                "item_title": c.get("item_title"),
+                "other_id": other,
+                "last_message": last.get("content") if last else None,
+                "last_at": last.get("created_at") if last else None,
+                "unread_count": unread_count,
+            })
+        return JsonResponse({"results": results})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+@supabase_login_required
+def get_messages(request, conversation_id):
+    """
+    GET /api/chat/<conversation_id>/messages/ -> returns ordered messages and marks unread messages as read
+    """
+    user_id = request.session.get("supabase_user_id")
+    check = server_client.from_("conversation_participants").select("*").eq("conversation_id", conversation_id).eq("user_id", user_id).maybe_single().execute()
+    if getattr(check, "error", None) or not check.data:
+        return HttpResponseForbidden("No access")
+
+    msgs_resp = server_client.from_("messages").select("*").eq("conversation_id", conversation_id).order("created_at", desc=False).execute()
+    msgs = msgs_resp.data or []
+
+    # best-effort mark as read (only messages not sent by current user)
+    try:
+        server_client.from_("messages").update({"is_read": True}).eq("conversation_id", conversation_id).eq("is_read", False).neq("sender_id", user_id).execute()
+    except Exception:
+        pass
+
+    return JsonResponse({"results": msgs})
+
+
+@require_POST
+@supabase_login_required
+def start_conversation(request, item_id):
+    """
+    POST /api/chat/start/<item_id>/ -> creates (or returns existing) conversation between current user and item owner
+    """
+    user_id = request.session.get("supabase_user_id")
+
+    # fetch item to find owner and title
+    it = server_client.from_("item").select("item_id,title,user_id").eq("item_id", item_id).maybe_single().execute()
+    if getattr(it, "error", None) or not it.data:
+        return JsonResponse({"error": "Item not found"}, status=404)
+    item = it.data
+    owner_id = item.get("user_id")
+    if owner_id == user_id:
+        return JsonResponse({"error": "Cannot start conversation with yourself"}, status=400)
+
+    # search for an existing conversation for same item where both participants exist
+    existing = server_client.from_("conversations").select("*").eq("item_id", item_id).execute()
+    for c in (existing.data or []):
+        parts = server_client.from_("conversation_participants").select("user_id").eq("conversation_id", c["id"]).execute()
+        pids = [p["user_id"] for p in (parts.data or [])]
+        if user_id in pids and owner_id in pids:
+            return JsonResponse({"conversation_id": c["id"]})
+
+    # create conversation
+    conv = server_client.from_("conversations").insert({
+        "item_id": item_id,
+        "item_title": item.get("title"),
+        "item_owner_id": owner_id
+    }).execute()
+    if getattr(conv, "error", None):
+        return JsonResponse({"error": "Failed to create conversation"}, status=500)
+    conv_id = conv.data[0]["id"]
+
+    # add participants
+    server_client.from_("conversation_participants").insert([
+        {"conversation_id": conv_id, "user_id": owner_id},
+        {"conversation_id": conv_id, "user_id": user_id}
+    ]).execute()
+
+    return JsonResponse({"conversation_id": conv_id})
+
+
+@require_POST
+@supabase_login_required
+def post_message(request, conversation_id):
+    """
+    POST /api/chat/<conversation_id>/post/ -> server inserts a message row (trusted service role)
+    """
+    user_id = request.session.get("supabase_user_id")
+    try:
+        payload = json.loads(request.body.decode("utf-8")) if request.body else {}
+    except Exception:
+        payload = {}
+
+    content = payload.get("content") or request.POST.get("content")
+    if not content:
+        return JsonResponse({"error": "Empty message"}, status=400)
+
+    check = server_client.from_("conversation_participants").select("*").eq("conversation_id", conversation_id).eq("user_id", user_id).maybe_single().execute()
+    if getattr(check, "error", None) or not check.data:
+        return HttpResponseForbidden("No access")
+
+    ins = server_client.from_("messages").insert({
+        "conversation_id": conversation_id,
+        "sender_id": user_id,
+        "content": content
+    }).execute()
+    if getattr(ins, "error", None):
+        return JsonResponse({"error": "Insert failed"}, status=500)
+
+    return JsonResponse({"success": True, "message": ins.data[0]})
+

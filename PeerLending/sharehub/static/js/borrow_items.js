@@ -1,5 +1,6 @@
-document.addEventListener('DOMContentLoaded', function() {
-  const requestButtons = Array.from(document.querySelectorAll('.request-btn'));
+// static/js/borrow_items.js - Updated with popup positioned below button
+document.addEventListener('DOMContentLoaded', function () {
+  // ---------- Basic element refs ----------
   const borrowModal = document.getElementById('borrowModal');
   const cancelBorrowBtn = document.getElementById('cancelBorrow');
   const borrowForm = document.getElementById('borrowForm');
@@ -28,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const modalCategory2 = document.getElementById('modalCategory2');
   const modalCondition2 = document.getElementById('modalCondition2');
 
-  const REQUEST_BORROW_URL = window.REQUEST_BORROW_URL || window.REQUEST_BORROW_URL || '/request-borrow/';
+  const REQUEST_BORROW_URL = window.REQUEST_BORROW_URL || '/request-borrow/';
 
   let currentItem = null;
   let cameFromDetailsView = false;
@@ -56,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return null;
   }
 
+  // ---------- Borrow modal helpers ----------
   function openBorrowModal() {
     if (!borrowModal) return;
     borrowModal.style.display = 'flex';
@@ -181,23 +183,24 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // wire opening interactions
-  document.querySelectorAll('.item-box').forEach(function(card) {
-    card.addEventListener('click', function(ev) {
+  document.querySelectorAll('.item-box').forEach(function (card) {
+    card.addEventListener('click', function (ev) {
       const t = ev.target;
       if (t && (t.tagName === 'BUTTON' || t.closest('button'))) return;
       openBorrowModalFromElement(card, false);
     });
   });
 
+  const requestButtons = Array.from(document.querySelectorAll('.request-btn'));
   requestButtons.forEach(button => {
-    button.addEventListener('click', function(ev) {
+    button.addEventListener('click', function (ev) {
       ev.stopPropagation();
       openBorrowModalFromElement(this, true);
     });
   });
 
   if (showRequestFormBtn) {
-    showRequestFormBtn.addEventListener('click', function(e) {
+    showRequestFormBtn.addEventListener('click', function (e) {
       e.preventDefault();
       cameFromDetailsView = true;
       showRequestFormView();
@@ -205,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (backToDetailsBtn) {
-    backToDetailsBtn.addEventListener('click', function(e) {
+    backToDetailsBtn.addEventListener('click', function (e) {
       e.preventDefault();
       if (cameFromDetailsView) resetModalToDetailsView();
       else closeBorrowModal();
@@ -214,19 +217,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (cancelBorrowBtn) cancelBorrowBtn.addEventListener('click', closeBorrowModal);
   if (borrowModal) {
-    borrowModal.addEventListener('click', function(e) {
+    borrowModal.addEventListener('click', function (e) {
       if (e.target === borrowModal) closeBorrowModal();
     });
   }
-  document.addEventListener('keydown', function(e) {
+  document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && borrowModal && borrowModal.classList.contains('active')) {
       closeBorrowModal();
     }
   });
 
-  // form submit
+  // form submit (request)
   if (borrowForm) {
-    borrowForm.addEventListener('submit', async function(e) {
+    borrowForm.addEventListener('submit', async function (e) {
       e.preventDefault();
 
       const startDate = borrowStartEl ? borrowStartEl.value : null;
@@ -295,8 +298,6 @@ document.addEventListener('DOMContentLoaded', function() {
           } catch (e) {}
 
           closeBorrowModal();
-          // optional partial refresh: you can update UI here instead of reload
-          // setTimeout(()=> window.location.reload(), 900);
         } else {
           let msg = 'Failed to send request. Please try again.';
           if (data && data.errors) {
@@ -324,11 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // simple search filtering (unchanged)
+  // ---------- Simple search filtering ----------
   const searchInput = document.querySelector('.search-input');
-  const itemCards = document.querySelectorAll('.item-box, .item-card');
-  if (searchInput && itemCards) {
-    searchInput.addEventListener('input', function() {
+  const itemCards = Array.from(document.querySelectorAll('.item-box, .item-card'));
+  if (searchInput && itemCards.length) {
+    searchInput.addEventListener('input', function () {
       const searchTerm = this.value.toLowerCase().trim();
       itemCards.forEach(card => {
         const itemName = (card.querySelector('.item-title')?.textContent || card.querySelector('h3')?.textContent || '').toLowerCase();
@@ -337,6 +338,218 @@ document.addEventListener('DOMContentLoaded', function() {
         const matches = itemName.includes(searchTerm) || ownerName.includes(searchTerm) || description.includes(searchTerm);
         card.style.display = matches ? '' : 'none';
       });
+      const found = itemCards.some(c => c.style.display !== 'none');
+      window.hideTemplateNoResults && window.hideTemplateNoResults(!found);
+      maybeShowJSNoResults(!found);
     });
   }
+
+  // ---------- FILTER POPUP + FILTERING LOGIC (POPUP BELOW BUTTON) ----------
+(function setupFilterPopupAndLogic() {
+  const filterBtn = document.querySelector('.search-filter-btn');
+  const filterPopup = document.getElementById('filterPopup');
+  const filterClose = document.getElementById('filterClose');
+  const filterApplyBtn = document.getElementById('filterApplyBtn');
+  const filterClearBtn = document.getElementById('filterClearBtn');
+  const noResultsTemplate = document.getElementById('noResultsTemplate');
+
+  // if filterPopup is missing bail out gracefully
+  if (!filterPopup) return;
+
+  // Ensure popup is CLOSED on load (defensive)
+  filterPopup.classList.remove('active');
+  filterPopup.style.display = 'none';
+  filterPopup.setAttribute('aria-hidden', 'true');
+  filterPopup.style.left = 'auto';
+  filterPopup.style.top = 'auto';
+  filterPopup.style.right = '24px';
+  filterPopup.style.bottom = 'auto';
+
+  const categoryCheckboxes = Array.from(filterPopup.querySelectorAll('[id^="cat-"]'));
+  const conditionCheckboxes = Array.from(filterPopup.querySelectorAll('[id^="cond-"]'));
+  const sortSelect = document.getElementById('sortSelect');
+
+  let jsNoResultsEl = null;
+  function ensureJsNoResults() {
+    if (!jsNoResultsEl) {
+      jsNoResultsEl = document.createElement('p');
+      jsNoResultsEl.id = 'noResultsJS';
+      jsNoResultsEl.textContent = 'No items match your filters.';
+      jsNoResultsEl.style.fontStyle = 'italic';
+      jsNoResultsEl.style.color = '#666';
+      const container = document.querySelector('.available-items') || document.querySelector('.borrow-grid');
+      if (container) container.appendChild(jsNoResultsEl);
+      jsNoResultsEl.style.display = 'none';
+    }
+    return jsNoResultsEl;
+  }
+
+  function hideTemplateNoResults(shouldHide) {
+    if (!noResultsTemplate) return;
+    noResultsTemplate.style.display = shouldHide ? 'none' : '';
+  }
+  window.hideTemplateNoResults = hideTemplateNoResults;
+
+  function maybeShowJSNoResults(show) {
+    const el = ensureJsNoResults();
+    el.style.display = show ? '' : 'none';
+    if (show) hideTemplateNoResults(true);
+    else hideTemplateNoResults(false);
+  }
+
+  function applyFilters() {
+    const selectedCats = categoryCheckboxes.filter(ch => ch.checked).map(ch => ch.value);
+    const selectedConds = conditionCheckboxes.filter(ch => ch.checked).map(ch => ch.value);
+    const sortVal = sortSelect ? sortSelect.value : 'recent';
+
+    let anyVisible = false;
+    const cards = itemCards.length ? itemCards : Array.from(document.querySelectorAll('.item-box, .item-card'));
+    cards.forEach(card => {
+      const cardCat = (card.getAttribute('data-category') || '').toLowerCase();
+      const cardCond = (card.getAttribute('data-condition') || '').toLowerCase();
+
+      let catOk = true;
+      if (selectedCats.length) {
+        catOk = selectedCats.includes(cardCat);
+      }
+      let condOk = true;
+      if (selectedConds.length) {
+        condOk = selectedConds.includes(cardCond);
+      }
+
+      let searchOk = true;
+      if (searchInput && searchInput.value.trim()) {
+        const term = searchInput.value.toLowerCase().trim();
+        const itemName = (card.querySelector('.item-title')?.textContent || card.querySelector('h3')?.textContent || '').toLowerCase();
+        const ownerName = (card.getAttribute('data-owner-name') || card.querySelector('.item-owner')?.textContent || '').toLowerCase();
+        const description = (card.getAttribute('data-description') || card.querySelector('.item-description')?.textContent || '').toLowerCase();
+        searchOk = itemName.includes(term) || ownerName.includes(term) || description.includes(term);
+      }
+
+      const visible = catOk && condOk && searchOk;
+      card.style.display = visible ? '' : 'none';
+      if (visible) anyVisible = true;
+    });
+
+    if (sortVal && (sortVal === 'recent' || sortVal === 'oldest')) {
+      const grid = document.querySelector('.available-items.borrow-grid') || document.querySelector('.available-items') || document.querySelector('.borrow-grid');
+      if (grid) {
+        const visibleCards = Array.from(grid.querySelectorAll('.item-box, .item-card')).filter(n => n.style.display !== 'none');
+        visibleCards.sort((a, b) => {
+          const aDate = (a.getAttribute('data-created-at') || '').toString();
+          const bDate = (b.getAttribute('data-created-at') || '').toString();
+          if (!aDate && !bDate) return 0;
+          if (!aDate) return sortVal === 'recent' ? 1 : -1;
+          if (!bDate) return sortVal === 'recent' ? -1 : 1;
+          const da = Date.parse(aDate) || 0;
+          const db = Date.parse(bDate) || 0;
+          return sortVal === 'recent' ? (db - da) : (da - db);
+        });
+        visibleCards.forEach(n => grid.appendChild(n));
+      }
+    }
+
+    maybeShowJSNoResults(!anyVisible);
+    hideTemplateNoResults(!anyVisible);
+  }
+
+  // Position popup BELOW the button (keeps your original logic but defensive)
+  function openFilterPopup() {
+    if (!filterBtn || !filterPopup) return;
+    filterPopup.classList.add('active');
+    filterPopup.style.display = 'flex';
+    filterPopup.style.position = 'fixed';
+
+    const rect = filterBtn.getBoundingClientRect();
+    const margin = 8;
+
+    // Position below the button
+    const desiredTop = rect.bottom + margin;
+    const desiredLeft = rect.left;
+
+    // Measure popup dimensions (use min to avoid overflow)
+    const popupW = Math.min(filterPopup.offsetWidth || 360, window.innerWidth - 40);
+    const popupH = Math.min(filterPopup.offsetHeight || 600, window.innerHeight - desiredTop - 20);
+
+    // Align with button's left edge
+    let left = desiredLeft;
+
+    // If popup would overflow right edge, align to right edge of button
+    if (left + popupW > window.innerWidth - 20) {
+      left = rect.right - popupW;
+    }
+
+    // Ensure it doesn't go off left edge
+    left = Math.max(20, left);
+
+    // Top position (below button), fallback above if not enough space
+    let top = desiredTop;
+    if (top + popupH > window.innerHeight - 20) {
+      top = rect.top - popupH - margin;
+      if (top < 20) top = 20;
+    }
+
+    filterPopup.style.left = `${Math.round(left)}px`;
+    filterPopup.style.top = `${Math.round(top)}px`;
+    filterPopup.style.right = 'auto';
+    filterPopup.style.bottom = 'auto';
+    filterPopup.setAttribute('aria-hidden', 'false');
+  }
+
+  function closeFilterPopup() {
+    if (!filterPopup) return;
+    filterPopup.classList.remove('active');
+    filterPopup.style.display = 'none';
+    filterPopup.setAttribute('aria-hidden', 'true');
+  }
+
+  // wire events
+  if (filterBtn) {
+    filterBtn.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      if (!filterPopup) return;
+      const isOpen = filterPopup.classList.contains('active');
+      if (isOpen) closeFilterPopup();
+      else openFilterPopup();
+    });
+  }
+  if (filterClose) filterClose.addEventListener('click', function (e) { e.preventDefault(); closeFilterPopup(); });
+
+  if (filterApplyBtn) {
+    filterApplyBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      applyFilters();
+      closeFilterPopup();
+    });
+  }
+
+  if (filterClearBtn) {
+    filterClearBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      categoryCheckboxes.forEach(ch => ch.checked = false);
+      conditionCheckboxes.forEach(ch => ch.checked = false);
+      if (sortSelect) sortSelect.value = 'recent';
+      itemCards.forEach(c => c.style.display = '');
+      maybeShowJSNoResults(false);
+      hideTemplateNoResults(false);
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    if (!filterPopup) return;
+    if (filterPopup.contains(e.target) || (filterBtn && filterBtn.contains(e.target))) return;
+    closeFilterPopup();
+  });
+
+  // recalc position when layout changes, but only if popup is open
+  window.addEventListener('resize', function () {
+    if (filterPopup.classList.contains('active')) openFilterPopup();
+  });
+  window.addEventListener('scroll', function () {
+    if (filterPopup.classList.contains('active')) openFilterPopup();
+  }, { passive: true });
+
+  ensureJsNoResults();
+  hideTemplateNoResults(false);
+})();
 });

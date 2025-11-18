@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sharehub',
+    'channels',
+    'chat',
+
 ]
 
 MIDDLEWARE = [ 
@@ -77,8 +80,11 @@ TEMPLATES = [
     },
 ]
 
+# WSGI for classic requests
 WSGI_APPLICATION = 'PeerLending.wsgi.application'
 
+# ASGI for Channels (WebSockets)
+ASGI_APPLICATION = 'PeerLending.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -88,6 +94,20 @@ DATABASES = {
         conn_max_age=600, 
         ssl_require=True    # Enforce SSL for secure connection
     )
+}
+
+# Channels / Channel layer
+# We'll use Redis in production (recommended). For local dev you may use InMemoryChannelLayer by
+# setting CHANNEL_LAYERS to the in-memory backend (not recommended for multiple processes).
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    },
 }
 
 
