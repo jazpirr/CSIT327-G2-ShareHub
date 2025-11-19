@@ -29,5 +29,7 @@ urlpatterns = [
     path('my-items/', views.my_items, name='my_items'),
     path('my-items/<str:item_id>/delete/', views.delete_item, name='delete_item'),
     path('item/<str:item_id>/edit/', views.edit_item, name='edit_item'),
+    path('', include('chat.urls')),
+    
 ]
  
