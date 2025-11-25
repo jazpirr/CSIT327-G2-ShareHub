@@ -30,6 +30,16 @@ urlpatterns = [
     path('my-items/<str:item_id>/delete/', views.delete_item, name='delete_item'),
     path('item/<str:item_id>/edit/', views.edit_item, name='edit_item'),
     path('', include('chat.urls')),
+    path('approve-requests/', views.approve_requests_view, name='approve_requests'),
+    path('manage-users/', views.manage_users_view, name='manage_users'),
+     path('reports/', views.admin_reports_view, name='admin_reports'),
+    path('api/report-issue/', views.report_issue_api, name='report_issue_api'),
+    path('reports/update-status/', views.admin_update_report_status, name='admin_update_report_status'),
+    path('toggle-user-admin/', views.toggle_user_admin, name='toggle_user_admin'),
+    path('toggle-block/', views.toggle_block_user, name='toggle_user_block'),
     
 ]
+ 
+    
+
  

@@ -77,7 +77,7 @@
                 <button class="btn btn-secondary mark-returned-btn" data-borrow-id="{{ b.request_id }}">
                   Mark as Returned
                 </button>
-                <button class="btn btn-outline report-issue-btn" data-request-id="{{ b.request_id }}">
+                <button class="btn btn-outline report-issue-btn" data-request-id="{{ b.request_id }}" data-item-id="{{ b.item_id|default:'' }}">
                   Report Issue
                 </button>
               </div>
@@ -157,6 +157,9 @@
     </div>
 
   </section>
+
+
+
 </main>
 {% endblock %}
 
@@ -165,6 +168,7 @@
   window.MARK_RETURNED_URL = "{% url 'mark_returned' %}";
 </script>
 
+<script src="{% static 'js/report_issue.js' %}"></script>
 <script src="{% static 'js/popup.js' %}"></script>
 <script src="{% static 'js/confirmation_logout.js' %}"></script>
 <script src="{% static 'js/add-item-modal.js' %}"></script>

@@ -1,0 +1,68 @@
+{% extends "admin/admin_base.html" %}
+{% block content %}
+  <h2>Reported Issues</h2>
+
+  {% if reports %}
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="text-align:left; border-bottom:1px solid #e6e6e6;">
+          <th>When</th><th>Item / Request</th><th>Title</th><th>Description</th><th>Reporter</th><th>Status</th><th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+          <tr data-report-id="{{ r.report_id }}" style="border-bottom:1px solid #f2f2f2;">
+            <td style="padding:10px 8px;">{{ r.created_at }}</td>
+            <td style="padding:10px 8px;">{% if r.item_id %}Item: {{ r.item_id }}{% elif r.request_id %}Req: {{ r.request_id }}{% else %}-{% endif %}</td>
+            <td style="padding:10px 8px;">{{ r.title }}</td>
+            <td style="padding:10px 8px;">{{ r.description }}</td>
+            <td style="padding:10px 8px;">{{ r.reported_by_email|default:r.reported_by }}</td>
+            <td class="status-cell" style="padding:10px 8px;">{{ r.status }}</td>
+            <td style="padding:10px 8px;">
+              <button class="btn mark-inprogress" data-action="in_progress">In progress</button>
+              <button class="btn mark-resolved" data-action="resolved">Resolve</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No reported issues.</p>
+  {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // buttons to change status using Supabase via an API on server
+  async function updateReportStatus(reportId, status) {
+    const csrf = getCookie('csrftoken');
+    try {
+      const r = await fetch("{% url 'admin_update_report_status' %}", {
+        method: "POST",
+        headers: {"Content-Type":"application/json", "X-CSRFToken": csrf},
+        body: JSON.stringify({ report_id: reportId, status: status })
+      });
+      const data = await r.json();
+      if (data.success) window.location.reload();
+      else alert('Failed: ' + (data.message || 'unknown'));
+    } catch(e) {
+      console.error(e);
+      alert('Network error');
+    }
+  }
+
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  document.querySelectorAll('.mark-inprogress, .mark-resolved').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const tr = e.target.closest('tr');
+      const rid = tr.getAttribute('data-report-id');
+      updateReportStatus(rid, e.target.dataset.action);
+    });
+  });
+</script>
+{% endblock %}

@@ -14,8 +14,10 @@ from django.views.decorators.http import require_GET
  
 from .forms import CustomUserCreationForm
 from .utils import supabase_login_required
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
+from django.utils import timezone
 import logging
+from .utils import sync_user_to_orm
  
 import os
 import uuid
@@ -39,6 +41,16 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
 server_client = create_supabase_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+
+def ajax_require_auth(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        user_id = request.session.get("supabase_user_id") or getattr(request.user, "id", None)
+        if not user_id:
+            return JsonResponse({"success": False, "message": "Authentication required"}, status=401)
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
 
 @login_required
 def settings_view(request):
@@ -175,33 +187,47 @@ def login_view(request):
                 "errors": {"email_not_confirmed": [{"message": error_msg}]}
             })
 
-
         if not getattr(response, "user", None):
             return render(request, "login-register/login.html", {
                 "errors": {"invalid": [{"message": "Invalid credentials"}]}
             })
 
- 
         user_id = response.user.id
+
+        # --- NEW: check is_block in your Supabase user row ---
+        try:
+            uresp = supabase.table("user").select("is_block").eq("id", user_id).maybe_single().execute()
+            if getattr(uresp, "data", None) and uresp.data.get("is_block"):
+                # immediately sign out the session, prevent login
+                try:
+                    supabase.auth.sign_out()
+                except Exception:
+                    pass
+                # render with error
+                return render(request, "login-register/login.html", {
+                    "errors": {"blocked": [{"message": "Your account has been blocked. Contact an administrator."}]}
+                })
+        except Exception:
+            # if anything goes wrong checking block status, fall through but you may prefer to block fail-safe
+            pass
+        # -----------------------------------------------
+
+        # normal session setup
         request.session["supabase_user_id"] = user_id
         request.session["user_email"] = email
 
-  
         is_admin = False
         try:
             uresp = supabase.table("user").select("is_admin").eq("id", user_id).maybe_single().execute()
             if getattr(uresp, "data", None):
                 is_admin = bool(uresp.data.get("is_admin"))
         except Exception:
-        
             is_admin = False
 
         request.session["is_admin"] = bool(is_admin)
 
-
         if raw_next and url_has_allowed_host_and_scheme(raw_next, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
             return redirect(raw_next)
-
 
         if is_admin:
             messages.success(request, "Welcome, admin!")
@@ -215,6 +241,56 @@ def login_view(request):
     resp["Pragma"] = "no-cache"
     resp["Expires"] = "0"
     return resp
+
+
+@require_POST
+@supabase_login_required   # ensure only logged-in admin using your decorator
+def toggle_block_user(request):
+    import json
+    data = json.loads(request.body.decode('utf-8') if request.body else '{}')
+    user_id = data.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "Missing user_id"}, status=400)
+
+    # protect: admin can't block themselves
+    current_user = request.session.get("supabase_user_id")
+    if user_id == current_user:
+        return JsonResponse({"success": False, "error": "You cannot block yourself."}, status=400)
+
+    # update Supabase using service role
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        return JsonResponse({"success": False, "error": "Server misconfigured"}, status=500)
+
+    try:
+        admin_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        # get current value
+        resp = admin_client.table('user').select('is_block').eq('id', user_id).maybe_single().execute()
+        current_block = False
+        if getattr(resp, "data", None):
+            current_block = bool(resp.data.get('is_block', False))
+
+        new_block = not current_block
+        upd = admin_client.table('user').update({'is_block': new_block}).eq('id', user_id).execute()
+        if getattr(upd, "error", None):
+            return JsonResponse({"success": False, "error": "Failed to update user"}, status=500)
+
+        # optionally keep Django ORM in sync (if you have local CustomUser rows)
+        try:
+            user = CustomUser.objects.filter(id=user_id).first()
+            if user:
+                user.is_block = new_block
+                user.save(update_fields=["is_block"])
+        except Exception:
+            pass
+
+        return JsonResponse({"success": True, "is_block": new_block})
+    except Exception as e:
+        logging.getLogger(__name__).exception("toggle_block_user error: %s", e)
+        return JsonResponse({"success": False, "error": "Exception updating user"}, status=500)
+
+
+
+
 
 
 # ---------- Logout ----------
@@ -969,9 +1045,391 @@ def update_password(request):
 
 @never_cache
 @supabase_login_required
-@admin_required
-def admin_dashboard (request):
-  return render(request, "admindashboard.html")
+def admin_dashboard(request):
+    """
+    Fetch summaries from Supabase and render the admin dashboard.
+    Provides:
+      - total_users, total_items, available_items
+      - active_requests, pending_requests
+      - issues_count (derived), overdue_count
+      - borrowing_chart and return_chart (JSON serializable dicts)
+      - borrowed_items list (for table) and borrowed_items_json
+    """
+    now = datetime.utcnow()
+    # safe supabase client (already configured at module top)
+    ctx = {}
+    try:
+        # Total users
+        users_resp = supabase.table("user").select("id").execute()
+        total_users = len(getattr(users_resp, "data", []) or [])
+    except Exception:
+        total_users = 0
+
+    try:
+        # Total items and available items
+        items_resp = supabase.table("item").select("item_id,available").execute()
+        items_data = getattr(items_resp, "data", []) or []
+        total_items = len(items_data)
+        available_items_count = sum(1 for it in items_data if bool(it.get("available")))
+    except Exception:
+        total_items = 0
+        available_items_count = 0
+
+    try:
+        # Requests: active / pending / approved
+        req_resp = supabase.table("request").select(
+            "request_id,item_id,user_id,request_date,return_date,status,return"
+        ).execute()
+        reqs = getattr(req_resp, "data", []) or []
+        active_requests = len([r for r in reqs if (r.get("status") or "").lower() in ("pending","approved")])
+        pending_requests = len([r for r in reqs if (r.get("status") or "").lower() == "pending"])
+    except Exception:
+        reqs = []
+        active_requests = 0
+        pending_requests = 0
+
+    # Issues & overdue heuristic: requests approved and past return_date
+    overdue_count = 0
+    try:
+        for r in reqs:
+            status = (r.get("status") or "").lower()
+            if status == "approved":
+                rd = r.get("return_date")
+                if rd:
+                    try:
+                        parsed = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
+                        parsed_utc = parsed if parsed.tzinfo else parsed.replace(tzinfo=None)
+                        if parsed_utc < now:
+                            overdue_count += 1
+                    except Exception:
+                        pass
+    except Exception:
+        overdue_count = 0
+
+    # Borrowing chart data
+    try:
+        total_lent = len([r for r in reqs if (r.get("status") or "").lower() == "approved" or (r.get("status") or "").lower() == "returned"])
+        currently_borrowed = len([r for r in reqs if (r.get("status") or "").lower() == "approved" and not bool(r.get("return") in (True, "True", "true", 1, "1"))])
+        borrowing_chart = {
+            "labels": ["Total Lent", "Currently Borrowed"],
+            "values": [total_lent, currently_borrowed]
+        }
+    except Exception:
+        borrowing_chart = {"labels": ["Total Lent", "Currently Borrowed"], "values": [0,0]}
+
+    # Return performance pie (on-time, late, missing/lost heuristic)
+    try:
+        on_time = late = missing = 0
+        for r in reqs:
+            status = (r.get("status") or "").lower()
+            if status in ("approved", "returned"):
+                if r.get("return") in (True, "True", "true", 1, "1"):
+                    # returned: check return_date vs due
+                    rd = r.get("return_date") or r.get("request_date")
+                    due = r.get("return_date")  # we only have return_date; treat lacking as on-time for simplicity
+                    # best-effort: if return_date exists and is past the request_date => on-time/late detection is limited
+                    try:
+                        if r.get("return"):
+                            # treat these as on_time for now (unless return_date beyond expected logic)
+                            on_time += 1
+                        else:
+                            # not returned yet but approved -> count as late if past due
+                            rd_due = r.get("return_date")
+                            if rd_due:
+                                parsed = datetime.fromisoformat(rd_due) if isinstance(rd_due, str) else rd_due
+                                if parsed < now:
+                                    late += 1
+                                else:
+                                    on_time += 1
+                            else:
+                                on_time += 1
+                    except Exception:
+                        on_time += 1
+        return_chart = {"labels": ["On Time", "Late", "Missing/Lost"], "values": [on_time, late, missing]}
+    except Exception:
+        return_chart = {"labels": ["On Time", "Late", "Missing/Lost"], "values": [0,0,0]}
+
+    # Build borrowed_items rows for the table: approved and not returned
+    borrowed_items = []
+    try:
+        active_borrowed_resp = supabase.table("request").select(
+            "request_id,item_id,user_id,request_date,return_date,status,return"
+        ).eq("status", "approved").neq("return", True).order("request_date", desc=True).execute()
+        active_borrowed = getattr(active_borrowed_resp, "data", []) or []
+        # fetch items and users for mapping
+        item_ids = [r.get("item_id") for r in active_borrowed if r.get("item_id")]
+        user_ids = [r.get("user_id") for r in active_borrowed if r.get("user_id")]
+        items_map = {}
+        users_map = {}
+        if item_ids:
+            its = supabase.table("item").select("item_id,title,user_id").in_("item_id", list(set(item_ids))).execute()
+            for it in getattr(its, "data", []) or []:
+                items_map[it.get("item_id")] = it
+        if user_ids:
+            us = supabase.table("user").select("id,first_name,last_name,email").in_("id", list(set(user_ids))).execute()
+            for u in getattr(us, "data", []) or []:
+                display = ((u.get("first_name") or "") + " " + (u.get("last_name") or "")).strip() or u.get("email") or u.get("id")
+                users_map[u.get("id")] = display
+
+        for r in active_borrowed:
+            it = items_map.get(r.get("item_id"), {})
+            item_name = it.get("title") or r.get("item_id")
+            owner_id = it.get("user_id") or None
+            owner_display = None
+            if owner_id:
+                # try fetch owner display
+                try:
+                    oresp = supabase.table("user").select("id,first_name,last_name,email").eq("id", owner_id).maybe_single().execute()
+                    od = getattr(oresp, "data", None) or {}
+                    owner_display = ((od.get("first_name") or "") + " " + (od.get("last_name") or "")).strip() or od.get("email") or owner_id
+                except Exception:
+                    owner_display = str(owner_id)
+            borrower = users_map.get(r.get("user_id")) or r.get("user_id")
+            due_raw = r.get("return_date") or ""
+            due_text = ""
+            overdue_text = ""
+            remaining_text = ""
+            if due_raw:
+                try:
+                    parsed = datetime.fromisoformat(due_raw) if isinstance(due_raw, str) else due_raw
+                    parsed_naive = parsed if parsed.tzinfo else parsed
+                    due_text = parsed_naive.strftime("%b %d, %Y")
+                    if parsed_naive < now:
+                        # overdue days
+                        delta = now - parsed_naive
+                        overdue_text = f"{delta.days} days overdue" if delta.days > 0 else "Overdue"
+                    else:
+                        delta = parsed_naive - now
+                        remaining_text = f"{delta.days} days remaining" if delta.days > 0 else ""
+                except Exception:
+                    due_text = str(due_raw)
+            status_label = r.get("status") or ""
+            status_class = "on-time"
+            sl = status_label.lower()
+            if sl == "approved":
+                # if overdue -> late
+                status_class = "late" if overdue_text else "on-time"
+                label = "Borrowed" if not overdue_text else "Late"
+            else:
+                label = status_label.title()
+
+            borrowed_items.append({
+                "request_id": r.get("request_id"),
+                "item_name": item_name,
+                "item_owner": owner_display or "",
+                "borrower": borrower,
+                "due_date": due_text,
+                "overdue_text": overdue_text,
+                "remaining_text": remaining_text,
+                "status_label": label,
+                "status_class": status_class,
+            })
+    except Exception:
+        borrowed_items = []
+
+    # context assembly
+    ctx.update({
+        "total_users": total_users,
+        "total_items": total_items,
+        "available_items": f"{available_items_count} available",
+        "active_requests": active_requests,
+        "pending_requests": f"{pending_requests} pending",
+        "issues_count": 0,
+        "overdue": f"{overdue_count} overdue",
+        "borrowing_chart": json.dumps(borrowing_chart),
+        "return_chart": json.dumps(return_chart),
+        "borrowed_items": borrowed_items,
+        "borrowed_items_json": json.dumps(borrowed_items),
+        "current_borrowed_count": f"{len(borrowed_items)} Items",
+    })
+
+    return render(request, "admin/admindashboard.html", ctx)
+
+# --- Approve Requests Page (lists pending requests) ---
+@never_cache
+@supabase_login_required
+def approve_requests_view(request):
+    user_id = request.session.get("supabase_user_id")
+    notifications, unread_count = fetch_notifications_for(user_id)
+
+    pending_requests = []
+    try:
+        r = supabase.table('request') \
+            .select('request_id,item_id,user_id,request_date,status,return_date') \
+            .eq('status', 'pending') \
+            .order('request_date', desc=True) \
+            .execute()
+        pending_requests = r.data or []
+        # fetch item titles + requester display names
+        item_ids = [p.get('item_id') for p in pending_requests if p.get('item_id')]
+        users = list({p.get('user_id') for p in pending_requests if p.get('user_id')})
+        items_map = {}
+        users_map = {}
+
+        if item_ids:
+            items_resp = supabase.table('item').select('item_id,title').in_('item_id', item_ids).execute()
+            for it in (items_resp.data or []):
+                items_map[it.get('item_id')] = it.get('title')
+
+        if users:
+            uresp = supabase.table('user').select('id,first_name,last_name,email').in_('id', list(users)).execute()
+            for u in (uresp.data or []):
+                display = ((u.get('first_name') or '') + ' ' + (u.get('last_name') or '')).strip() or u.get('email') or u.get('id')
+                users_map[u.get('id')] = display
+
+        # attach metadata used by template
+        for p in pending_requests:
+            p['item_title'] = items_map.get(p.get('item_id')) or p.get('item_id')
+            p['requester_name'] = users_map.get(p.get('user_id')) or p.get('user_id')
+    except Exception:
+        pending_requests = []
+
+    return render(request, "admin/approve_requests.html", {
+        "pending_requests": pending_requests,
+        "notifications": notifications,
+        "unread_count": unread_count,
+    })
+
+
+# --- Manage Users Page (list users and toggle admin) ---
+@never_cache
+@supabase_login_required
+def manage_users_view(request):
+    user_id = request.session.get("supabase_user_id")
+    notifications, unread_count = fetch_notifications_for(user_id)
+
+    users = []
+    try:
+        resp = supabase.table('user').select('id,first_name,last_name,email,is_admin,created_at').order('created_at', desc=True).execute()
+        users = resp.data or []
+        for u in users:
+            u['display_name'] = ((u.get('first_name') or '') + ' ' + (u.get('last_name') or '')).strip() or u.get('email') or u.get('id')
+    except Exception:
+        users = []
+
+    return render(request, "admin/manage_users.html", {
+        "users": users,
+        "notifications": notifications,
+        "unread_count": unread_count,
+    })
+
+
+# Toggle user admin status - used via AJAX POST
+@require_POST
+@supabase_login_required
+def toggle_user_admin(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+    target_id = payload.get('user_id')
+    make_admin = payload.get('make_admin') in (True, 'true', 'True', 1, '1')
+
+    if not target_id:
+        return JsonResponse({'error': 'user_id required'}, status=400)
+
+    if not settings.SUPABASE_SERVICE_ROLE_KEY:
+        return JsonResponse({'error': 'Server misconfigured'}, status=500)
+
+    admin_client = create_supabase_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+    try:
+        upd = admin_client.table('user').update({'is_admin': make_admin}).eq('id', target_id).execute()
+        if getattr(upd, 'error', None):
+            return JsonResponse({'error': 'Failed to update'}, status=500)
+        return JsonResponse({'success': True, 'is_admin': make_admin})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+@require_POST
+@ajax_require_auth
+def report_issue_api(request):
+    logger = logging.getLogger(__name__)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        logger.exception("Invalid JSON in report_issue_api")
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+    user_id = request.session.get("supabase_user_id") or getattr(request.user, "id", None)
+    # ajax_require_auth already checked, but keep defensive check
+    if not user_id:
+        return JsonResponse({"success": False, "message": "Authentication required"}, status=401)
+
+    title = (data.get("title") or "").strip()
+    description = (data.get("description") or "").strip()
+    request_id = data.get("request_id")
+    item_id = data.get("item_id")
+    issue_type = (data.get("issue_type") or "other").strip()
+
+    if not (title or description):
+        return JsonResponse({"success": False, "message": "Please provide a short title or description"}, status=400)
+
+    reporter_email = request.session.get("user_email")
+
+    payload = {
+        "request_id": request_id,
+        "item_id": item_id,
+        "reported_by": user_id,
+        "reported_by_email": reporter_email,
+        "issue_type": issue_type,
+        "title": title,
+        "description": description,
+        "status": "open",
+        "created_at": timezone.now().isoformat()
+    }
+
+    try:
+        resp = supabase.table("reports").insert(payload).execute()
+        if getattr(resp, "error", None):
+            logger.error("Supabase insert error: %s", resp.error)
+            return JsonResponse({"success": False, "message": str(resp.error)}, status=500)
+
+        inserted = resp.data[0] if getattr(resp, "data", None) and len(resp.data) > 0 else payload
+        return JsonResponse({"success": True, "report": inserted})
+    except Exception:
+        logger.exception("Exception while inserting report into Supabase")
+        return JsonResponse({"success": False, "message": "Internal server error"}, status=500)
+
+# Admin view to list reports for admin panel
+@supabase_login_required
+@require_GET
+def admin_reports_view(request):
+    # ensure admin guard – adapt to your session flag
+    is_admin = request.session.get("is_admin", False)
+    if not is_admin:
+        return HttpResponseForbidden("Forbidden")
+
+    try:
+        resp = supabase.table("reports").select("*").order("created_at", desc=True).execute()
+        reports = resp.data if getattr(resp, "data", None) else []
+    except Exception:
+        reports = []
+
+    # pass to template; the template will show the list
+    return render(request, "admin/reports.html", {"reports": reports})
+
+@login_required
+@require_POST
+def admin_update_report_status(request):
+    if not request.session.get("is_admin"):
+        return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
+    data = json.loads(request.body.decode("utf-8"))
+    report_id = data.get("report_id")
+    status = data.get("status")
+    if not report_id or status not in ("open", "in_progress", "resolved"):
+        return JsonResponse({"success": False, "message": "Bad request"}, status=400)
+    try:
+        resp = supabase.table("reports").update({"status": status}).eq("report_id", report_id).execute()
+        if getattr(resp, "error", None):
+            return JsonResponse({"success": False, "message": str(resp.error)}, status=500)
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=500)
+
+
 
 @require_POST
 def forgot_password(request):
@@ -1021,7 +1479,6 @@ def reset_password_page(request):
 @require_POST
 @supabase_login_required
 def add_item(request):
-    import logging
     logger = logging.getLogger(__name__)
 
     logger.info("🟢 [add_item] hit")

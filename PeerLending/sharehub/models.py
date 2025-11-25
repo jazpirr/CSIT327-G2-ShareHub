@@ -1,51 +1,63 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, PermissionsMixin
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.conf import settings
 
+class CustomUserManager(BaseUserManager):
+    use_in_migrations = True
 
-class CustomUser(AbstractUser):
-    username = None
+    def create_user(self, id, email=None, password=None, **extra_fields):
+        if not id:
+            raise ValueError("Supabase user id required")
+        email = self.normalize_email(email)
+        user = self.model(id=id, email=email, **extra_fields)
+        user.set_unusable_password()  # Supabase handles authentication
+        user.save(using=self._db)
+        return user
 
+    def create_superuser(self, id, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        return self.create_user(id, email=email, password=password, **extra_fields)
+
+
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True)
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
-    birthday = models.DateField(blank=True, null=True)
 
-    COLLEGE_DEPARTMENTS = [
-        ("CCS", "College of Computer Studies"),
-        ("CNAHS", "College of Nursing & Allied Health Sciences"),
-        ("CEA", "College of Engineering and Architecture"),
-        ("CASE", "College of Arts, Sciences and Education"),
-        ("CMBA", "College of Management, Business and Accountancy"),
-        ("CCJ", "College of Criminal Justice"),
-    ]
+    first_name = models.CharField(max_length=200, null=True, blank=True)
+    last_name = models.CharField(max_length=200, null=True, blank=True)
+    birthday = models.DateField(null=True, blank=True)
+    phone_number = models.CharField(max_length=20, null=True, blank=True)
+    college_dept = models.CharField(max_length=200, null=True, blank=True)
+    course = models.CharField(max_length=200, null=True, blank=True)
+    year_level = models.IntegerField(null=True, blank=True)
 
-    DEPARTMENT_COURSES = {
-        "CCS": ["BSIT", "BSCS"],
-        "CNAHS": ["BSN", "BSP", "BSMT"],
-        "CEA": ["BSCE", "BSArch", "BSChE", "BSCpE", "BSEE", "BSECE", "BSIE", "BSME with Computational Science", "BSME with Mechatronics", "BSMinE"],
-        "CASE": ["AB Comm", "AB Eng", "BEED", "BSED", "BMA", "BS Bio", "BS Math", "BS Psych"],
-        "CMBA": ["BSA", "BSBA", "BSAIS", "BSMA", "BSHM", "BSTM", "BSOA", "AOA", "BPA"],
-        "CCJ": ["BS Crim"],
-    }
-
-    YEAR_LEVELS = [
-        ("1", "1"),
-        ("2", "2"),
-        ("3", "3"),
-        ("4", "4"),
-        ("5", "5"),
-    ]
-
-    college_dept = models.CharField(max_length=50, choices=COLLEGE_DEPARTMENTS, blank=True, null=True)
-    course = models.CharField(max_length=100, blank=True, null=True)
-    year_level = models.CharField(max_length=1, choices=YEAR_LEVELS, blank=True, null=True)
+    is_admin = models.BooleanField(default=False)
+    is_block = models.BooleanField(default=False)
 
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["first_name", "last_name"]
+
+    class Meta:
+        db_table = "user"     # <- maps to your existing Supabase 'user' table
 
     def __str__(self):
-        return self.email
+        return self.email or self.id
 
+class Item(models.Model):
+    item_id = models.UUIDField(primary_key=True)
+    title = models.TextField()
+    description = models.TextField()
+    category = models.TextField()
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    image_url = models.TextField(blank=True, null=True)
+    available = models.BooleanField(default=True)
+    condition = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "item"
+        managed = False
 
 # ✅ UserSettings model
 class UserSettings(models.Model):
