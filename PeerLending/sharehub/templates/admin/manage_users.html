@@ -1,0 +1,164 @@
+{% extends "admin/admin_base.html" %}
+{% block content %}
+<div class="admin-page">
+  <h2>Manage Users</h2>
+
+  <div id="user-messages" aria-live="polite" style="margin-bottom:12px"></div>
+
+  <div class="table-container">
+    <table class="borrowed-items-table" role="table" style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr role="row">
+          <th role="columnheader">Name</th>
+          <th role="columnheader">Email</th>
+          <th role="columnheader">Is Admin</th>
+          <th role="columnheader">Blocked</th>
+          <th role="columnheader">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr data-user-id="{{ u.id }}">
+          <td>{{ u.display_name|default:u.email|escape }}</td>
+          <td>{{ u.email|default:""|escape }}</td>
+          <td class="is-admin">{{ u.is_admin|yesno:"True,False" }}</td>
+          <td class="is-block">{{ u.is_block|yesno:"True,False" }}</td>
+          <td>
+            <button class="toggle-admin-btn" data-user-id="{{ u.id }}">
+              {{ u.is_admin|yesno:"Demote,Promote" }}
+            </button>
+
+            <button class="toggle-block-btn" data-user-id="{{ u.id }}">
+              {{ u.is_block|yesno:"Unblock,Block" }}
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No users</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+/*
+  manage_users.html JS
+  - Expects two server endpoints (names used below):
+      {% url 'toggle_user_admin' %}    -> toggles admin flag; returns JSON { success, is_admin }
+      {% url 'toggle_user_block' %}    -> toggles block flag; returns JSON { success, is_block }
+  - Uses CSRF token injected by Django template.
+*/
+
+const CSRF_TOKEN = '{{ csrf_token }}';
+const TOGGLE_ADMIN_URL = "{% url 'toggle_user_admin' %}";
+const TOGGLE_BLOCK_URL = "{% url 'toggle_user_block' %}";
+
+function showMessage(msg, kind='info') {
+  const box = document.getElementById('user-messages');
+  box.innerHTML = `<div class="user-msg user-msg-${kind}" style="padding:8px; border-radius:6px; margin-bottom:6px;">${msg}</div>`;
+  // auto-hide after 4s
+  setTimeout(() => {
+    box.innerHTML = '';
+  }, 4000);
+}
+
+async function postJson(url, bodyObj) {
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": CSRF_TOKEN
+      },
+      body: JSON.stringify(bodyObj),
+      credentials: 'same-origin'
+    });
+    const data = await resp.json();
+    return { ok: resp.ok, data };
+  } catch (e) {
+    console.error('Network error', e);
+    return { ok: false, data: null, error: e };
+  }
+}
+
+async function toggleAdmin(userId) {
+  const resp = await postJson(TOGGLE_ADMIN_URL, { user_id: userId });
+  if (!resp.ok || !resp.data) {
+    showMessage('Network or server error while updating admin status', 'error');
+    return;
+  }
+  if (resp.data.success) {
+    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+    if (row) {
+      const isAdmin = !!resp.data.is_admin;
+      row.querySelector('.is-admin').textContent = isAdmin ? 'True' : 'False';
+      const btn = row.querySelector('.toggle-admin-btn');
+      if (btn) btn.textContent = isAdmin ? 'Demote' : 'Promote';
+      showMessage(`User ${isAdmin ? 'promoted to admin' : 'demoted from admin'}.`, 'info');
+    }
+  } else {
+    showMessage('Failed to change admin status: ' + (resp.data.error || resp.data.message || 'unknown'), 'error');
+  }
+}
+
+async function toggleBlock(userId) {
+  // confirm block (do not ask for unblock)
+  const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+  const currentlyBlocked = row ? row.querySelector('.is-block').textContent.trim().toLowerCase() === 'true' : false;
+  if (!currentlyBlocked) {
+    const sure = confirm('Are you sure you want to block this user? Blocking will prevent them from logging in.');
+    if (!sure) return;
+  }
+
+  const resp = await postJson(TOGGLE_BLOCK_URL, { user_id: userId });
+  if (!resp.ok || !resp.data) {
+    showMessage('Network or server error while updating block status', 'error');
+    return;
+  }
+  if (resp.data.success) {
+    const newBlocked = !!resp.data.is_block;
+    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+    if (row) {
+      row.querySelector('.is-block').textContent = newBlocked ? 'True' : 'False';
+      const btn = row.querySelector('.toggle-block-btn');
+      if (btn) btn.textContent = newBlocked ? 'Unblock' : 'Block';
+      showMessage(`User has been ${newBlocked ? 'blocked' : 'unblocked'}.`, 'info');
+    }
+  } else {
+    showMessage('Failed to change block status: ' + (resp.data.error || resp.data.message || 'unknown'), 'error');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.toggle-admin-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      const userId = this.dataset.userId || this.getAttribute('data-user-id');
+      if (!userId) return;
+      this.disabled = true;
+      toggleAdmin(userId).finally(() => { this.disabled = false; });
+    });
+  });
+
+  document.querySelectorAll('.toggle-block-btn').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      const userId = this.dataset.userId || this.getAttribute('data-user-id');
+      if (!userId) return;
+      this.disabled = true;
+      toggleBlock(userId).finally(() => { this.disabled = false; });
+    });
+  });
+});
+</script>
+
+<style>
+/* tiny inline styles to make the table readable in admin area */
+.table-container { overflow-x:auto; }
+.borrowed-items-table th { text-align:left; padding:10px; color:var(--color-slate-500); font-weight:700; border-bottom:1px solid rgba(0,0,0,0.06); font-size:13px; }
+.borrowed-items-table td { padding:10px; border-bottom:1px solid rgba(0,0,0,0.04); }
+.toggle-admin-btn, .toggle-block-btn { margin-right:8px; padding:6px 10px; border-radius:6px; cursor:pointer; }
+.user-msg-info { background: rgba(39,174,96,0.08); border:1px solid rgba(39,174,96,0.12); color: #1f6f3f; }
+.user-msg-error { background: rgba(255,84,89,0.06); border:1px solid rgba(255,84,89,0.12); color: #7a2224; }
+</style>
+
+{% endblock %}

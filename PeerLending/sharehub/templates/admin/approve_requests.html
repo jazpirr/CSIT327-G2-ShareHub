@@ -1,0 +1,59 @@
+{# templates/admin/approve_requests.html #}
+{% extends "admin/admin_base.html" %}
+{% block title %}Approve Requests · Admin{% endblock %}
+{% block content %}
+  <h2>Approve Requests</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Requester</th><th>Requested At</th><th>Action</th></tr></thead>
+    <tbody>
+      {% for r in pending_requests %}
+        <tr data-request-id="{{ r.request_id }}">
+          <td>{{ r.item_title }}</td>
+          <td>{{ r.requester_name }}</td>
+          <td>{{ r.request_date }}</td>
+          <td>
+            <button class="approve-btn" data-action="approve">Approve</button>
+            <button class="deny-btn" data-action="deny">Deny</button>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="4">No pending requests</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function postRespond(request_id, action) {
+    try {
+      const resp = await fetch("{% url 'api_respond_request' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': window.APP.CSRF_TOKEN || ''
+        },
+        body: JSON.stringify({request_id: request_id, action: action})
+      });
+      const data = await resp.json();
+      if (data.success) {
+        const tr = document.querySelector(`tr[data-request-id="${request_id}"]`);
+        if (tr) tr.remove();
+      } else {
+        alert('Failed: ' + (data.message || JSON.stringify(data)));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Network error');
+    }
+  }
+
+  document.querySelectorAll('.approve-btn, .deny-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const tr = e.target.closest('tr');
+      const rid = tr.getAttribute('data-request-id');
+      postRespond(rid, e.target.dataset.action);
+    });
+  });
+</script>
+{% endblock %}

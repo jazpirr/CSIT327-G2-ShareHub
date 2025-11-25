@@ -133,6 +133,62 @@
     </div>
   </div>
 
+  <!-- REPORT ISSUE MODAL -->
+<div id="reportIssueModal" class="modal" style="display:none; position:fixed; inset:0; z-index:2000; align-items:center; justify-content:center;">
+  <div class="modal-backdrop" style="position:absolute; inset:0; background:rgba(0,0,0,0.45);"></div>
+
+  <div class="modal-panel" style="position:relative; width:550px; max-width:95%; background:#fff; border-radius:12px; padding:18px; z-index:2;">
+    <header style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0;">Report an Issue</h3>
+      <button id="reportModalClose" style="background:none; border:0; font-size:20px; cursor:pointer;">✕</button>
+    </header>
+
+    <form id="reportIssueForm" style="margin-top:15px;">
+      <input type="hidden" id="report_request_id" name="request_id">
+      <input type="hidden" id="report_item_id" name="item_id">
+
+      <div>
+        <label>Title</label>
+        <input type="text" id="report_title" name="title" placeholder="Short title (e.g. 'Damage found')" 
+               style="width:100%; padding:10px; margin-top:5px; border:1px solid #ccc; border-radius:8px;">
+      </div>
+
+      <div style="margin-top:12px;">
+        <label>Issue Type</label>
+          <select id="report_issue_type" name="issue_type" required style="
+            width:100%;
+            padding:10px;
+            border:1px solid #ccc;
+            border-radius:8px;
+            background-color:#fff;
+            color:#333;
+          ">
+            <option value="" disabled selected hidden>Select issue type</option>
+            <option value="broken_item">Broken Item</option>
+            <option value="missing_parts">Missing Parts</option>
+            <option value="wrong_item">Wrong Item</option>
+            <option value="lost_item">Lost Item</option>
+            <option value="other">Other</option>
+          </select>
+
+      </div>
+
+      <div style="margin-top:12px;">
+        <label>Description</label>
+        <textarea id="report_desc" name="description" rows="5" placeholder="Describe the issue..."
+                  style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></textarea>
+      </div>
+
+      <div style="margin-top:15px; display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" id="reportCancelBtn" class="btn btn-outline">Cancel</button>
+        <button type="submit" id="reportSubmitBtn" class="btn btn-primary">Submit Report</button>
+      </div>
+
+      <div id="reportStatus" style="margin-top:12px; font-size:14px; display:none;"></div>
+    </form>
+  </div>
+</div>
+
 
   <script>
     window.SUPABASE_URL = "{{ SUPABASE_URL }}";

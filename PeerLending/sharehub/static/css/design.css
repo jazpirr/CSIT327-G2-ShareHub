@@ -4180,3 +4180,29 @@ textarea.form-control {
 #actionPopup .popup-header.success {
   background: linear-gradient(180deg, var(--maroon) 0%, #6a0016 100%) !important;
 }
+
+#report_issue_type {
+  background-color: #fff !important;
+  color: #333 !important;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  cursor: pointer;
+}
+
+/* Placeholder color for "Select issue type" */
+#report_issue_type:invalid {
+  color: #888 !important;
+}
+
+/* Optional: add custom dropdown arrow to match input style */
+#report_issue_type {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='16' height='16' fill='gray' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+}
