@@ -1,164 +1,223 @@
+{# templates/admin/manage_users.html #}
 {% extends "admin/admin_base.html" %}
+{% load static %}
+{% block title %}Manage Users · Admin{% endblock %}
+
 {% block content %}
-<div class="admin-page">
-  <h2>Manage Users</h2>
 
-  <div id="user-messages" aria-live="polite" style="margin-bottom:12px"></div>
+<div class="page-header">
+  <h1>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Manage Users
+  </h1>
+  <p>Control user permissions and access</p>
+</div>
 
+<div id="user-messages" aria-live="polite" class="messages-container"></div>
+
+<div class="users-summary">
+  <div class="summary-stat">
+    <span class="summary-label">Total Users</span>
+    <span class="summary-value" id="total-users-count">0</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-label">Admins</span>
+    <span class="summary-value admin-count" id="admin-users-count">0</span>
+  </div>
+  <div class="summary-stat">
+    <span class="summary-label">Blocked</span>
+    <span class="summary-value blocked-count" id="blocked-users-count">0</span>
+  </div>
+</div>
+
+<div class="table-section">
   <div class="table-container">
-    <table class="borrowed-items-table" role="table" style="width:100%; border-collapse:collapse;">
+    <table class="borrowed-items-table users-table" role="table">
       <thead>
         <tr role="row">
-          <th role="columnheader">Name</th>
+          <th role="columnheader">User</th>
           <th role="columnheader">Email</th>
-          <th role="columnheader">Is Admin</th>
-          <th role="columnheader">Blocked</th>
-          <th role="columnheader">Action</th>
+          <th role="columnheader" style="text-align: center;">Admin Status</th>
+          <th role="columnheader" style="text-align: center;">Account Status</th>
+          <th role="columnheader" style="text-align: center;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
-        <tr data-user-id="{{ u.id }}">
-          <td>{{ u.display_name|default:u.email|escape }}</td>
-          <td>{{ u.email|default:""|escape }}</td>
-          <td class="is-admin">{{ u.is_admin|yesno:"True,False" }}</td>
-          <td class="is-block">{{ u.is_block|yesno:"True,False" }}</td>
+        <tr data-user-id="{{ u.id }}" class="user-row">
           <td>
-            <button class="toggle-admin-btn" data-user-id="{{ u.id }}">
-              {{ u.is_admin|yesno:"Demote,Promote" }}
-            </button>
+            <div class="user-cell">
+              <div class="user-avatar">
+                {% if u.profile_picture %}
+                  <img src="{{ u.profile_picture }}" alt="{{ u.display_name }}" loading="lazy">
+                {% else %}
+                  {{ u.display_name|default:u.email|slice:":1"|upper }}
+                {% endif %}
+              </div>
+              <span class="user-display-name">{{ u.display_name|default:u.email|escape }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="user-email">{{ u.email|default:""|escape }}</span>
+          </td>
+          <td style="text-align: center;">
+            <span class="is-admin status-indicator {% if u.is_admin %}status-active{% else %}status-inactive{% endif %}">
+              {% if u.is_admin %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Admin
+              {% else %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                User
+              {% endif %}
+            </span>
+          </td>
+          <td style="text-align: center;">
+            <span class="is-block status-indicator {% if u.is_block %}status-blocked{% else %}status-active-account{% endif %}">
+              {% if u.is_block %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                Blocked
+              {% else %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Active
+              {% endif %}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons-row">
+              <button class="action-btn-small toggle-admin-btn" data-user-id="{{ u.id }}" title="{% if u.is_admin %}Demote from admin{% else %}Promote to admin{% endif %}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 2l7 3v5c0 5-3.58 9.74-7 11-3.42-1.26-7-6-7-11V5l7-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                </svg>
+                {{ u.is_admin|yesno:"Demote,Promote" }}
+              </button>
 
-            <button class="toggle-block-btn" data-user-id="{{ u.id }}">
-              {{ u.is_block|yesno:"Unblock,Block" }}
-            </button>
+              <button class="action-btn-small toggle-block-btn {% if u.is_block %}unblock-style{% else %}block-style{% endif %}" data-user-id="{{ u.id }}" title="{% if u.is_block %}Unblock user{% else %}Block user{% endif %}">
+                {% if u.is_block %}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                {% else %}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                {% endif %}
+                {{ u.is_block|yesno:"Unblock,Block" }}
+              </button>
+
+              {# Details button (opens modal with owned/borrowed items) #}
+              <button class="action-btn-small details-btn" data-user-id="{{ u.id }}" title="View details">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 12a3 3 0 100-6 3 3 0 000 6zM12 14c-4 0-7 2-7 4v2h14v-2c0-2-3-4-7-4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Details
+              </button>
+            </div>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="5">No users</td></tr>
+        <tr>
+          <td colspan="5" class="empty-state">
+            <div class="empty-state-content">
+              <p>No users found</p>
+            </div>
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
 
+<!-- User Details Modal -->
+<div id="user-details-modal" class="modal hidden" role="dialog" aria-hidden="true">
+  <div class="modal-backdrop"></div>
+  <div class="modal-panel" role="document" aria-labelledby="user-details-title">
+    <header class="modal-header">
+      <h3 id="user-details-title">User Details</h3>
+      <button id="close-user-details" class="modal-close" aria-label="Close">&times;</button>
+    </header>
+
+    <div class="modal-body">
+      <div class="user-summary-row" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="user-avatar" id="ud-avatar" style="width:48px;height:48px;">
+            <!-- avatar/image will be injected -->
+          </div>
+          <div>
+            <div id="ud-name" style="font-weight:700;"></div>
+            <div id="ud-email" style="font-size:13px;color:var(--color-slate-500);"></div>
+          </div>
+        </div>
+        <div class="user-stats" style="font-size:13px;color:var(--color-slate-700);">
+          <span id="ud-total-owned">Owned: 0</span> • <span id="ud-total-borrowed">Borrowed: 0</span>
+        </div>
+      </div>
+
+      <section style="margin-top:16px;">
+        <h4>Items owned</h4>
+        <div id="ud-items-owned" class="items-grid">Loading…</div>
+      </section>
+
+      <section style="margin-top:18px;">
+        <h4>Items borrowed / requests</h4>
+        <div id="ud-items-borrowed" class="items-grid">Loading…</div>
+      </section>
+    </div>
+
+    <footer class="modal-footer" style="margin-top:14px; text-align:right;">
+      <button id="close-user-details-2" class="btn">Close</button>
+    </footer>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+{# safe JSON for JS to consume #}
+{{ users_json|json_script:"users-data" }}
+
 <script>
-/*
-  manage_users.html JS
-  - Expects two server endpoints (names used below):
-      {% url 'toggle_user_admin' %}    -> toggles admin flag; returns JSON { success, is_admin }
-      {% url 'toggle_user_block' %}    -> toggles block flag; returns JSON { success, is_block }
-  - Uses CSRF token injected by Django template.
-*/
-
-const CSRF_TOKEN = '{{ csrf_token }}';
-const TOGGLE_ADMIN_URL = "{% url 'toggle_user_admin' %}";
-const TOGGLE_BLOCK_URL = "{% url 'toggle_user_block' %}";
-
-function showMessage(msg, kind='info') {
-  const box = document.getElementById('user-messages');
-  box.innerHTML = `<div class="user-msg user-msg-${kind}" style="padding:8px; border-radius:6px; margin-bottom:6px;">${msg}</div>`;
-  // auto-hide after 4s
-  setTimeout(() => {
-    box.innerHTML = '';
-  }, 4000);
-}
-
-async function postJson(url, bodyObj) {
-  try {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRFToken": CSRF_TOKEN
-      },
-      body: JSON.stringify(bodyObj),
-      credentials: 'same-origin'
-    });
-    const data = await resp.json();
-    return { ok: resp.ok, data };
-  } catch (e) {
-    console.error('Network error', e);
-    return { ok: false, data: null, error: e };
-  }
-}
-
-async function toggleAdmin(userId) {
-  const resp = await postJson(TOGGLE_ADMIN_URL, { user_id: userId });
-  if (!resp.ok || !resp.data) {
-    showMessage('Network or server error while updating admin status', 'error');
-    return;
-  }
-  if (resp.data.success) {
-    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
-    if (row) {
-      const isAdmin = !!resp.data.is_admin;
-      row.querySelector('.is-admin').textContent = isAdmin ? 'True' : 'False';
-      const btn = row.querySelector('.toggle-admin-btn');
-      if (btn) btn.textContent = isAdmin ? 'Demote' : 'Promote';
-      showMessage(`User ${isAdmin ? 'promoted to admin' : 'demoted from admin'}.`, 'info');
-    }
-  } else {
-    showMessage('Failed to change admin status: ' + (resp.data.error || resp.data.message || 'unknown'), 'error');
-  }
-}
-
-async function toggleBlock(userId) {
-  // confirm block (do not ask for unblock)
-  const row = document.querySelector(`tr[data-user-id="${userId}"]`);
-  const currentlyBlocked = row ? row.querySelector('.is-block').textContent.trim().toLowerCase() === 'true' : false;
-  if (!currentlyBlocked) {
-    const sure = confirm('Are you sure you want to block this user? Blocking will prevent them from logging in.');
-    if (!sure) return;
-  }
-
-  const resp = await postJson(TOGGLE_BLOCK_URL, { user_id: userId });
-  if (!resp.ok || !resp.data) {
-    showMessage('Network or server error while updating block status', 'error');
-    return;
-  }
-  if (resp.data.success) {
-    const newBlocked = !!resp.data.is_block;
-    const row = document.querySelector(`tr[data-user-id="${userId}"]`);
-    if (row) {
-      row.querySelector('.is-block').textContent = newBlocked ? 'True' : 'False';
-      const btn = row.querySelector('.toggle-block-btn');
-      if (btn) btn.textContent = newBlocked ? 'Unblock' : 'Block';
-      showMessage(`User has been ${newBlocked ? 'blocked' : 'unblocked'}.`, 'info');
-    }
-  } else {
-    showMessage('Failed to change block status: ' + (resp.data.error || resp.data.message || 'unknown'), 'error');
-  }
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.toggle-admin-btn').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      const userId = this.dataset.userId || this.getAttribute('data-user-id');
-      if (!userId) return;
-      this.disabled = true;
-      toggleAdmin(userId).finally(() => { this.disabled = false; });
-    });
-  });
-
-  document.querySelectorAll('.toggle-block-btn').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      const userId = this.dataset.userId || this.getAttribute('data-user-id');
-      if (!userId) return;
-      this.disabled = true;
-      toggleBlock(userId).finally(() => { this.disabled = false; });
-    });
-  });
-});
+  // set globals *before* external script loads
+  window.CSRF_TOKEN = "{{ csrf_token }}";
+  window.TOGGLE_ADMIN_URL = "{% url 'toggle_user_admin' %}";
+  window.TOGGLE_BLOCK_URL = "{% url 'toggle_user_block' %}";
+  window.ADMIN_USER_DETAILS_URL = "{% url 'admin_user_details_api' %}";
 </script>
 
+{# load the external script with defer so it runs after parsing the page #}
+<script defer src="{% static 'js/manage_users.js' %}"></script>
+
+{# Minimal CSS rules for modal and items grid (you can move these to your CSS file) #}
 <style>
-/* tiny inline styles to make the table readable in admin area */
-.table-container { overflow-x:auto; }
-.borrowed-items-table th { text-align:left; padding:10px; color:var(--color-slate-500); font-weight:700; border-bottom:1px solid rgba(0,0,0,0.06); font-size:13px; }
-.borrowed-items-table td { padding:10px; border-bottom:1px solid rgba(0,0,0,0.04); }
-.toggle-admin-btn, .toggle-block-btn { margin-right:8px; padding:6px 10px; border-radius:6px; cursor:pointer; }
-.user-msg-info { background: rgba(39,174,96,0.08); border:1px solid rgba(39,174,96,0.12); color: #1f6f3f; }
-.user-msg-error { background: rgba(255,84,89,0.06); border:1px solid rgba(255,84,89,0.12); color: #7a2224; }
+/* small modal + grid styles (move to your css file if you wish) */
+.modal.hidden { display: none; }
+.modal { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; }
+.modal-backdrop { position:absolute; inset:0; background: rgba(0,0,0,0.4); }
+.modal-panel { position: relative; background: var(--color-surface); border-radius: 12px; width: min(980px, 96%); max-height: 85vh; overflow: auto; padding: 18px; z-index: 2; box-shadow: var(--shadow-sm); }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.modal-body { padding-bottom: 12px; }
+.modal-close { background: none; border: none; font-size: 22px; cursor: pointer; }
+.items-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); margin-top:8px; }
+.item-card { border-radius: 8px; border: 1px solid var(--color-card-border); padding: 10px; display:flex; gap:10px; align-items:flex-start; background: white; }
+.item-thumb { width:56px; height:56px; border-radius:8px; object-fit:cover; flex-shrink:0; }
+.user-avatar img { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+.action-buttons-row { display:flex; gap:8px; align-items:center; }
+.action-btn-small { padding:6px 10px; border-radius:6px; border:1px solid rgba(0,0,0,0.06); background: var(--color-surface); cursor:pointer; }
+.block-style { background: var(--color-error); color:white; }
+.unblock-style { background: var(--color-info); color:white; }
+.toggle-admin-btn { background: var(--color-primary); color:white; }
+.toggle-admin-btn.demote { background: #6b2d2d; }
 </style>
 
 {% endblock %}

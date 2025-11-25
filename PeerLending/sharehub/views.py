@@ -1291,7 +1291,6 @@ def approve_requests_view(request):
     })
 
 
-# --- Manage Users Page (list users and toggle admin) ---
 @never_cache
 @supabase_login_required
 def manage_users_view(request):
@@ -1300,18 +1299,205 @@ def manage_users_view(request):
 
     users = []
     try:
-        resp = supabase.table('user').select('id,first_name,last_name,email,is_admin,created_at').order('created_at', desc=True).execute()
+        resp = (
+            supabase.table('user')
+            .select('id,first_name,last_name,email,profile_picture,is_admin,is_block,created_at')
+            .order('created_at', desc=True)
+            .execute()
+        )
+
         users = resp.data or []
+
         for u in users:
-            u['display_name'] = ((u.get('first_name') or '') + ' ' + (u.get('last_name') or '')).strip() or u.get('email') or u.get('id')
+            u['display_name'] = (
+                ((u.get('first_name') or '') + ' ' + (u.get('last_name') or '')).strip()
+                or u.get('email')
+                or u.get('id')
+            )
+            # ensure booleans
+            u['is_admin'] = bool(u.get('is_admin'))
+            u['is_block'] = bool(u.get('is_block'))
+
     except Exception:
         users = []
 
     return render(request, "admin/manage_users.html", {
         "users": users,
+        "users_json": users,
         "notifications": notifications,
         "unread_count": unread_count,
     })
+
+STORAGE_BUCKET = getattr(settings, "SUPABASE_STORAGE_BUCKET", "item-images")
+
+def _get_public_or_signed_url(path):
+    if not path:
+        return ""
+    # if DB already stores a full URL, return as-is
+    if isinstance(path, str) and (path.startswith("http://") or path.startswith("https://") or path.startswith("data:")):
+        return path
+
+    # normalize
+    path = path.lstrip("/")
+
+    try:
+        public = supabase.storage.from_(SUPABASE_STORAGE_BUCKET).get_public_url(path)
+        # try common response shapes
+        if isinstance(public, dict):
+            url = public.get("publicURL") or public.get("publicUrl") or public.get("publicurl")
+            if url:
+                return url
+        # sometimes .get_public_url returns { "data": {"publicURL": "..." } }
+        if getattr(public, "get", None) and isinstance(public.get("data"), dict):
+            url = public.get("data").get("publicURL") or public.get("data").get("publicUrl")
+            if url:
+                return url
+    except Exception as e:
+        # ignore and try signed url
+        print("DEBUG: get_public_url error:", e)
+
+    # fallback: create signed url (1 hour)
+    try:
+        signed = supabase.storage.from_(SUPABASE_STORAGE_BUCKET).create_signed_url(path, 3600)
+        if isinstance(signed, dict):
+            signed_url = signed.get("signedURL") or signed.get("signedUrl") or (signed.get("data") or {}).get("signedURL")
+            if signed_url:
+                return signed_url
+        if getattr(signed, "get", None) and signed.get("data") and signed["data"].get("signedURL"):
+            return signed["data"]["signedURL"]
+    except Exception as e:
+        print("DEBUG: create_signed_url error:", e)
+
+    return ""
+
+
+@require_POST
+@supabase_login_required
+def admin_user_details_api(request):
+    """
+    POST JSON: { "user_id": "<uuid>" }
+    Returns:
+        {
+          success: True,
+          items_owned: [...],
+          items_borrowed: [...],
+          counts: { total_owned, total_borrowed }
+        }
+    """
+    try:
+        # parse JSON
+        try:
+            payload = json.loads(request.body.decode("utf-8"))
+        except Exception:
+            return HttpResponseBadRequest(
+                json.dumps({"success": False, "error": "invalid json"}),
+                content_type="application/json"
+            )
+
+        user_id = payload.get("user_id")
+        if not user_id:
+            return JsonResponse({"success": False, "error": "missing user_id"}, status=400)
+
+        # ------------------------
+        # 1) ITEMS OWNED
+        # ------------------------
+        items_owned = []
+        try:
+            # your item table uses columns: item_id (pk), user_id (owner FK), image_url (path)
+            owned_resp = supabase.table("item").select("*").eq("user_id", user_id).execute()
+            items_owned = owned_resp.data or []
+        except Exception as e:
+            print("Supabase OWNED error:", e)
+            items_owned = []
+
+        # normalize and attach thumbnail_url
+        for it in items_owned:
+            # prefer whatever column holds the storage path
+            raw_path = it.get("image_url") or it.get("image") or it.get("image_path") or ""
+            thumbnail_url = _get_public_or_signed_url(raw_path) if raw_path else ""
+            # fallback to test placeholder if you want quick visual testing
+            if not thumbnail_url:
+                # comment out next line in production; it's just a dev/testing convenience
+                thumbnail_url = TEST_PLACEHOLDER_IMAGE
+            it["thumbnail_url"] = thumbnail_url
+            # convenience fields for front-end
+            it["_thumbnail"] = thumbnail_url
+            it["_title"] = it.get("title") or it.get("item_title") or ""
+
+        if items_owned:
+            # debug one example to server logs
+            sample = items_owned[0]
+            print("DEBUG owned sample:", {
+                "item_id": sample.get("item_id"),
+                "raw_image": sample.get("image_url"),
+                "thumbnail_url": sample.get("thumbnail_url")[:200] if sample.get("thumbnail_url") else None
+            })
+
+        # ------------------------
+        # 2) ITEMS BORROWED / REQUESTS (requests created by this user)
+        # ------------------------
+        items_borrowed = []
+        borrowed_raw = []
+        try:
+            borrowed_resp = supabase.table("request").select("*").eq("user_id", user_id).execute()
+            borrowed_raw = borrowed_resp.data or []
+        except Exception as e:
+            print("Supabase BORROWED error:", e)
+            borrowed_raw = []
+
+        # ------------------------
+        # 3) Enrich borrowed with item details
+        # ------------------------
+        if borrowed_raw:
+            # gather item ids from requests (column name in your schema is item_id)
+            ids = [r.get("item_id") for r in borrowed_raw if r.get("item_id")]
+            items_map = {}
+            if ids:
+                try:
+                    # select item rows where item_id in ids
+                    items_resp = supabase.table("item").select("*").in_("item_id", ids).execute()
+                    for itm in items_resp.data or []:
+                        items_map[str(itm.get("item_id"))] = itm
+                except Exception as e:
+                    print("Supabase BORROWED lookup error:", e)
+
+            for req in borrowed_raw:
+                req_copy = dict(req)
+                item_id = req.get("item_id")
+                itm = items_map.get(str(item_id))
+                if itm:
+                    raw_path = itm.get("image_url") or itm.get("image") or itm.get("image_path") or ""
+                    thumbnail = _get_public_or_signed_url(raw_path) if raw_path else ""
+                    if not thumbnail:
+                        # optional dev fallback - remove in production
+                        thumbnail = TEST_PLACEHOLDER_IMAGE
+                    req_copy["_item"] = {
+                        "raw": itm,
+                        "thumbnail_url": thumbnail,
+                        "title": itm.get("title") or itm.get("item_title") or ""
+                    }
+                else:
+                    req_copy["_item"] = None
+                items_borrowed.append(req_copy)
+
+        # ------------------------
+        # 4) COUNTS
+        # ------------------------
+        counts = {
+            "total_owned": len(items_owned),
+            "total_borrowed": len(items_borrowed),
+        }
+
+        return JsonResponse({
+            "success": True,
+            "items_owned": items_owned,
+            "items_borrowed": items_borrowed,
+            "counts": counts
+        })
+
+    except Exception as exc:
+        traceback.print_exc()
+        return JsonResponse({"success": False, "error": str(exc)}, status=500)
 
 
 # Toggle user admin status - used via AJAX POST
@@ -1397,7 +1583,7 @@ def report_issue_api(request):
 @supabase_login_required
 @require_GET
 def admin_reports_view(request):
-    # ensure admin guard – adapt to your session flag
+    # ensure admin guard
     is_admin = request.session.get("is_admin", False)
     if not is_admin:
         return HttpResponseForbidden("Forbidden")
@@ -1405,31 +1591,53 @@ def admin_reports_view(request):
     try:
         resp = supabase.table("reports").select("*").order("created_at", desc=True).execute()
         reports = resp.data if getattr(resp, "data", None) else []
-    except Exception:
+    except Exception as e:
+        logger.exception("Supabase error listing reports: %s", e)
         reports = []
 
-    # pass to template; the template will show the list
-    return render(request, "admin/reports.html", {"reports": reports})
+    # compute counts server-side (fallback; client will recalc too)
+    counts = {"open": 0, "in_progress": 0, "resolved": 0}
+    for r in reports:
+        s = (r.get("status") or "open").lower()
+        if s in counts:
+            counts[s] += 1
+        elif s == "in progress":
+            counts["in_progress"] += 1
+        else:
+            counts["open"] += 1
 
-@login_required
+    return render(request, "admin/reports.html", {"reports": reports, "counts": counts})
+
 @require_POST
+@supabase_login_required
 def admin_update_report_status(request):
+    # admin guard
     if not request.session.get("is_admin"):
         return JsonResponse({"success": False, "message": "Forbidden"}, status=403)
-    data = json.loads(request.body.decode("utf-8"))
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
     report_id = data.get("report_id")
     status = data.get("status")
-    if not report_id or status not in ("open", "in_progress", "resolved"):
+    if not report_id or status not in ("open", "in_progress", "resolved", "in progress"):
         return JsonResponse({"success": False, "message": "Bad request"}, status=400)
+
+    # normalize to underscore style
+    normalized = "in_progress" if status == "in progress" else status
+
     try:
-        resp = supabase.table("reports").update({"status": status}).eq("report_id", report_id).execute()
+        resp = supabase.table("reports").update({"status": normalized}).eq("report_id", report_id).execute()
         if getattr(resp, "error", None):
+            logger.error("Supabase update error: %s", resp.error)
             return JsonResponse({"success": False, "message": str(resp.error)}, status=500)
-        return JsonResponse({"success": True})
+        # optionally return updated row or success
+        return JsonResponse({"success": True, "status": normalized})
     except Exception as e:
+        logger.exception("Exception updating report status: %s", e)
         return JsonResponse({"success": False, "message": str(e)}, status=500)
-
-
 
 @require_POST
 def forgot_password(request):
