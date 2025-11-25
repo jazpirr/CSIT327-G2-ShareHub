@@ -37,6 +37,7 @@ urlpatterns = [
     path('reports/update-status/', views.admin_update_report_status, name='admin_update_report_status'),
     path('toggle-user-admin/', views.toggle_user_admin, name='toggle_user_admin'),
     path('toggle-block/', views.toggle_block_user, name='toggle_user_block'),
+    path("api/user-details/", views.admin_user_details_api, name="admin_user_details_api"),
     
 ]
  

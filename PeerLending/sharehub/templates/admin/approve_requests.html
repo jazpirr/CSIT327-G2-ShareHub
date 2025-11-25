@@ -1,26 +1,86 @@
 {# templates/admin/approve_requests.html #}
 {% extends "admin/admin_base.html" %}
+{% load static %}
 {% block title %}Approve Requests · Admin{% endblock %}
+
 {% block content %}
-  <h2>Approve Requests</h2>
-  <table>
-    <thead><tr><th>Item</th><th>Requester</th><th>Requested At</th><th>Action</th></tr></thead>
-    <tbody>
-      {% for r in pending_requests %}
-        <tr data-request-id="{{ r.request_id }}">
-          <td>{{ r.item_title }}</td>
-          <td>{{ r.requester_name }}</td>
-          <td>{{ r.request_date }}</td>
+<div class="page-header">
+  <h1>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Approve Requests
+  </h1>
+  <p>Review and respond to pending borrow requests</p>
+</div>
+
+<div class="requests-stats">
+  <div class="stat-item">
+    <span class="stat-label">Pending</span>
+    <span class="stat-value">{{ pending_requests|length }}</span>
+  </div>
+</div>
+
+<div class="table-section">
+  <div class="table-container">
+    <table class="borrowed-items-table requests-table" role="table">
+      <thead>
+        <tr role="row">
+          <th role="columnheader">Item</th>
+          <th role="columnheader">Requester</th>
+          <th role="columnheader">Requested At</th>
+          <th role="columnheader" style="text-align: center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in pending_requests %}
+        <tr data-request-id="{{ r.request_id }}" class="request-row">
           <td>
-            <button class="approve-btn" data-action="approve">Approve</button>
-            <button class="deny-btn" data-action="deny">Deny</button>
+            <div class="item-info">
+              <span class="item-title">{{ r.item_title }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="user-info">
+              <span class="user-name">{{ r.requester_name }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="request-date">{{ r.request_date }}</span>
+          </td>
+          <td>
+            <div class="action-buttons-row">
+              <button class="action-btn-small approve-action-btn" data-action="approve" title="Approve request">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Approve
+              </button>
+              <button class="action-btn-small deny-action-btn" data-action="deny" title="Deny request">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Deny
+              </button>
+            </div>
           </td>
         </tr>
-      {% empty %}
-        <tr><td colspan="4">No pending requests</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="empty-state">
+            <div class="empty-state-content">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style="color: var(--color-slate-500); opacity: 0.4;">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <p>No pending requests at the moment</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -38,7 +98,11 @@
       const data = await resp.json();
       if (data.success) {
         const tr = document.querySelector(`tr[data-request-id="${request_id}"]`);
-        if (tr) tr.remove();
+        if (tr) {
+          tr.style.opacity = '0';
+          tr.style.transform = 'translateX(20px)';
+          setTimeout(() => tr.remove(), 300);
+        }
       } else {
         alert('Failed: ' + (data.message || JSON.stringify(data)));
       }
@@ -48,12 +112,146 @@
     }
   }
 
-  document.querySelectorAll('.approve-btn, .deny-btn').forEach(btn => {
+  document.querySelectorAll('.approve-action-btn, .deny-action-btn').forEach(btn => {
     btn.addEventListener('click', e => {
+      e.preventDefault();
       const tr = e.target.closest('tr');
       const rid = tr.getAttribute('data-request-id');
-      postRespond(rid, e.target.dataset.action);
+      const action = e.target.closest('button').dataset.action;
+      
+      // Disable buttons to prevent double-click
+      tr.querySelectorAll('button').forEach(b => b.disabled = true);
+      
+      postRespond(rid, action);
     });
   });
 </script>
+
+<style>
+.requests-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-card-border);
+  border-radius: 12px;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--color-slate-500);
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.requests-table .item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item-title {
+  font-weight: 600;
+  color: var(--color-slate-900);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name {
+  color: var(--color-slate-900);
+  font-weight: 500;
+}
+
+.request-date {
+  color: var(--color-slate-500);
+  font-size: 13px;
+}
+
+.action-buttons-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn-small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.action-btn-small:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.approve-action-btn {
+  background: var(--color-success);
+  color: white;
+}
+
+.approve-action-btn:hover:not(:disabled) {
+  background: #229653;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+}
+
+.deny-action-btn {
+  background: var(--color-error);
+  color: white;
+}
+
+.deny-action-btn:hover:not(:disabled) {
+  background: #e63c40;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 84, 89, 0.2);
+}
+
+.request-row {
+  transition: all 0.3s ease;
+}
+
+.empty-state {
+  padding: 60px 20px !important;
+  text-align: center;
+}
+
+.empty-state-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-state-content p {
+  margin: 0;
+  color: var(--color-slate-500);
+  font-size: 15px;
+}
+</style>
 {% endblock %}

@@ -1,68 +1,260 @@
+{# templates/admin/admin_reports.html #}
 {% extends "admin/admin_base.html" %}
-{% block content %}
-  <h2>Reported Issues</h2>
+{% load static %}
+{% block title %}Reported Issues · Admin{% endblock %}
 
+{% block content %}
+<div class="page-header">
+  <h1>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Reported Issues
+  </h1>
+  <p>Monitor and resolve reported problems</p>
+</div>
+
+<div class="reports-stats">
+  <div class="stat-item stat-pending">
+    <span class="stat-label">Open</span>
+    <span class="stat-value" id="open-count">{{ counts.open|default:0 }}</span>
+  </div>
+  <div class="stat-item stat-progress">
+    <span class="stat-label">In Progress</span>
+    <span class="stat-value" id="progress-count">{{ counts.in_progress|default:0 }}</span>
+  </div>
+  <div class="stat-item stat-resolved">
+    <span class="stat-label">Resolved</span>
+    <span class="stat-value" id="resolved-count">{{ counts.resolved|default:0 }}</span>
+  </div>
+</div>
+
+<div class="table-section">
   {% if reports %}
-    <table style="width:100%; border-collapse:collapse;">
+  <div class="table-container" id="reports-table-container">
+    <table class="borrowed-items-table reports-table" role="table">
       <thead>
-        <tr style="text-align:left; border-bottom:1px solid #e6e6e6;">
-          <th>When</th><th>Item / Request</th><th>Title</th><th>Description</th><th>Reporter</th><th>Status</th><th>Action</th>
+        <tr role="row">
+          <th role="columnheader">When</th>
+          <th role="columnheader">Item/Request</th>
+          <th role="columnheader">Issue Title</th>
+          <th role="columnheader">Description</th>
+          <th role="columnheader">Reporter</th>
+          <th role="columnheader">Status</th>
+          <th role="columnheader" style="text-align: center;">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for r in reports %}
-          <tr data-report-id="{{ r.report_id }}" style="border-bottom:1px solid #f2f2f2;">
-            <td style="padding:10px 8px;">{{ r.created_at }}</td>
-            <td style="padding:10px 8px;">{% if r.item_id %}Item: {{ r.item_id }}{% elif r.request_id %}Req: {{ r.request_id }}{% else %}-{% endif %}</td>
-            <td style="padding:10px 8px;">{{ r.title }}</td>
-            <td style="padding:10px 8px;">{{ r.description }}</td>
-            <td style="padding:10px 8px;">{{ r.reported_by_email|default:r.reported_by }}</td>
-            <td class="status-cell" style="padding:10px 8px;">{{ r.status }}</td>
-            <td style="padding:10px 8px;">
-              <button class="btn mark-inprogress" data-action="in_progress">In progress</button>
-              <button class="btn mark-resolved" data-action="resolved">Resolve</button>
-            </td>
-          </tr>
+        {% with status=r.status|default:"open" %}
+        <tr data-report-id="{{ r.report_id }}" class="report-row">
+          <td>
+            <span class="report-date">{{ r.created_at }}</span>
+          </td>
+          <td>
+            <span class="ref-id">
+              {% if r.item_id %}
+                <span class="ref-badge item-ref">Item {{ r.item_id }}</span>
+              {% elif r.request_id %}
+                <span class="ref-badge request-ref">Req {{ r.request_id }}</span>
+              {% else %}
+                <span class="ref-badge">-</span>
+              {% endif %}
+            </span>
+          </td>
+          <td>
+            <span class="report-title">{{ r.title }}</span>
+          </td>
+          <td>
+            <span class="report-desc">{{ r.description|truncatewords:15 }}</span>
+          </td>
+          <td>
+            <span class="reporter-email">{{ r.reported_by_email|default:r.reported_by }}</span>
+          </td>
+
+          <td class="status-cell">
+            {# normalized status -> render a single badge with proper class/text #}
+            {% if status == "in progress" or status == "in_progress" %}
+              <span class="status-badge status-in_progress">In Progress</span>
+            {% elif status == "resolved" %}
+              <span class="status-badge status-resolved">Resolved</span>
+            {% else %}
+              {# fallback treat everything else as open #}
+              <span class="status-badge status-open">Open</span>
+            {% endif %}
+          </td>
+
+          <td>
+            <div class="action-buttons-row" aria-hidden="false">
+              {# In Progress button: only enabled when status is "open" #}
+              <button
+                class="action-btn-small mark-inprogress"
+                data-report-id="{{ r.report_id }}"
+                data-action="in_progress"
+                title="Mark as in progress"
+                {% if status != "open" %}disabled{% endif %}
+                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                In Progress
+              </button>
+
+              {# Resolve button: only enabled when status is in_progress #}
+              <button
+                class="action-btn-small mark-resolved"
+                data-report-id="{{ r.report_id }}"
+                data-action="resolved"
+                title="Mark as resolved"
+                {% if status != "in_progress" and status != "in progress" %}disabled{% endif %}
+                >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Resolve
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endwith %}
         {% endfor %}
       </tbody>
     </table>
+  </div>
   {% else %}
-    <p>No reported issues.</p>
+  <div class="empty-state-wrapper">
+    <div class="empty-state-content">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" style="color: var(--color-slate-500); opacity: 0.3;">
+        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h3>No Reported Issues</h3>
+      <p>All clear! There are no reported issues at the moment.</p>
+    </div>
+  </div>
   {% endif %}
+</div>
 {% endblock %}
 
-{% block extra_scripts %}
-<script>
-  // buttons to change status using Supabase via an API on server
-  async function updateReportStatus(reportId, status) {
-    const csrf = getCookie('csrftoken');
-    try {
-      const r = await fetch("{% url 'admin_update_report_status' %}", {
-        method: "POST",
-        headers: {"Content-Type":"application/json", "X-CSRFToken": csrf},
-        body: JSON.stringify({ report_id: reportId, status: status })
-      });
-      const data = await r.json();
-      if (data.success) window.location.reload();
-      else alert('Failed: ' + (data.message || 'unknown'));
-    } catch(e) {
-      console.error(e);
-      alert('Network error');
-    }
-  }
+{% block scripts %}
+{{ reports|json_script:"reports-data" }}
 
+<script>
+(function () {
+  const UPDATE_URL = "{% url 'admin_update_report_status' %}";
   function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  }
+  function showMessage(msg) { try { console.info(msg); } catch(e) {} }
+
+  function recalcCounts() {
+    let open = 0, progress = 0, resolved = 0;
+    document.querySelectorAll('.report-row').forEach(tr => {
+      const badge = tr.querySelector('.status-badge');
+      const cls = badge?.className || '';
+      if (cls.includes('status-open')) open++;
+      else if (cls.includes('status-in_progress') || cls.includes('status-in-progress')) progress++;
+      else if (cls.includes('status-resolved')) resolved++;
+      else {
+        const txt = badge?.textContent?.trim().toLowerCase();
+        if (txt === 'open') open++;
+        else if (txt === 'in progress' || txt === 'in_progress') progress++;
+        else if (txt === 'resolved') resolved++;
+      }
+    });
+    const openEl = document.getElementById('open-count');
+    const pEl = document.getElementById('progress-count');
+    const rEl = document.getElementById('resolved-count');
+    if (openEl) openEl.textContent = open;
+    if (pEl) pEl.textContent = progress;
+    if (rEl) rEl.textContent = resolved;
   }
 
-  document.querySelectorAll('.mark-inprogress, .mark-resolved').forEach(btn => {
-    btn.addEventListener('click', e => {
-      const tr = e.target.closest('tr');
-      const rid = tr.getAttribute('data-report-id');
-      updateReportStatus(rid, e.target.dataset.action);
-    });
+  async function postJson(url, body) {
+    const csrftoken = getCookie('csrftoken');
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+        body: JSON.stringify(body),
+        credentials: 'same-origin'
+      });
+      const data = await resp.json();
+      return { ok: resp.ok, data };
+    } catch (e) { console.error('Network error', e); return { ok: false, data: null, error: e }; }
+  }
+
+  function setRowStatus(tr, newStatus) {
+    const badge = tr.querySelector('.status-badge'); if (!badge) return;
+    const safeStatus = String(newStatus).replace(/\s+/g, '_').toLowerCase();
+    badge.className = 'status-badge status-' + safeStatus;
+    const label = safeStatus === 'in_progress' ? 'In Progress' : safeStatus.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+    badge.textContent = label;
+    const inProgressBtn = tr.querySelector('.mark-inprogress');
+    const resolveBtn = tr.querySelector('.mark-resolved');
+    if (safeStatus === 'open') { if (inProgressBtn) inProgressBtn.disabled = false; if (resolveBtn) resolveBtn.disabled = true; }
+    else if (safeStatus === 'in_progress') { if (inProgressBtn) inProgressBtn.disabled = true; if (resolveBtn) resolveBtn.disabled = false; }
+    else { if (inProgressBtn) inProgressBtn.disabled = true; if (resolveBtn) resolveBtn.disabled = true; }
+  }
+
+  document.addEventListener('click', async function (ev) {
+    const btn = ev.target.closest('button.mark-inprogress, button.mark-resolved');
+    if (!btn) return;
+    ev.preventDefault();
+    const reportId = btn.getAttribute('data-report-id') || btn.dataset.reportId;
+    const action = btn.getAttribute('data-action') || btn.dataset.action;
+    if (!reportId || !action) return;
+    const tr = btn.closest('tr');
+    tr?.querySelectorAll('button').forEach(b => b.disabled = true);
+    const resp = await postJson(UPDATE_URL, { report_id: reportId, status: action });
+    if (!resp.ok || !resp.data) { showMessage('Network error while updating status'); tr?.querySelectorAll('button').forEach(b => b.disabled = false); return; }
+    if (resp.data.success) { setRowStatus(tr, action); recalcCounts(); showMessage('Report updated'); }
+    else { showMessage('Failed: ' + (resp.data.message || resp.data.error || 'unknown')); tr?.querySelectorAll('button').forEach(b => b.disabled = false); }
   });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.report-row').forEach(tr => {
+      const badge = tr.querySelector('.status-badge');
+      const cls = badge?.className || '';
+      if (cls.includes('status-open')) setRowStatus(tr, 'open');
+      else if (cls.includes('status-in_progress') || cls.includes('status-in-progress')) setRowStatus(tr, 'in_progress');
+      else if (cls.includes('status-resolved')) setRowStatus(tr, 'resolved');
+      else { setRowStatus(tr, badge?.textContent?.trim() || 'open'); }
+    });
+    recalcCounts();
+  });
+})();
 </script>
+
+<style>
+/* paste your CSS here (copied from earlier) */
+.reports-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.stat-item { background: var(--color-surface); border: 1px solid var(--color-card-border); border-radius: 12px; padding: 16px 24px; display:flex; flex-direction:column; gap:4px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden;}
+.stat-item::before { content: ''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+.stat-pending::before { background: var(--color-warning); }
+.stat-progress::before { background: var(--color-info); }
+.stat-resolved::before { background: var(--color-success); }
+.reports-table .report-date { color: var(--color-slate-500); font-size:13px; }
+.ref-badge { display:inline-block; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600; background:rgba(0,0,0,0.04); color: var(--color-slate-900); }
+.item-ref { background: rgba(246, 199, 0, 0.1); color: var(--color-warning); }
+.request-ref { background: rgba(123, 30, 30, 0.08); color: var(--color-primary); }
+.report-title { font-weight:600; color:var(--color-slate-900); }
+.report-desc { color:var(--color-slate-500); font-size:13px; line-height:1.5; }
+.reporter-email { color:var(--color-slate-500); font-size:13px; }
+.status-badge { display:inline-block; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:600; text-transform:capitalize; }
+.status-open { background: rgba(246,199,0,0.12); color: var(--color-warning); }
+.status-in_progress { background: rgba(47,58,70,0.1); color: var(--color-info); }
+.status-resolved { background: rgba(39,174,96,0.12); color: var(--color-success); }
+.action-btn-small { display:inline-flex; gap:8px; align-items:center; padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+.mark-inprogress { background: var(--color-info); color:white; }
+.mark-resolved { background: var(--color-success); color:white; }
+.action-btn-small:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+.report-row { transition: all 0.2s ease; }
+.empty-state-wrapper { background:var(--color-surface); border:1px solid var(--color-card-border); border-radius:12px; padding:80px 40px; text-align:center; }
+.empty-state-content h3 { margin: 16px 0 8px; color: var(--color-slate-900); font-size:20px; }
+.empty-state-content p { margin:0; color:var(--color-slate-500); font-size:15px; }
+</style>
 {% endblock %}
