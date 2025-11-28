@@ -1,5 +1,4 @@
 (function(){
-  // ---- Popup helper IIFE (single source of truth) ----
   function _hideDomPopup() {
     try {
       const popup = document.getElementById('errorPopup');
@@ -28,7 +27,6 @@
       _hideDomPopup();
     } catch(e){ console.warn('closeActionPopup error', e); }
 
-    // hide addItem-specific overlay/popup if present
     try {
       const addOv = document.getElementById('addItemOverlay');
       const addPop = document.getElementById('addItemPopup');
@@ -38,7 +36,6 @@
   };
 
   window.showAddItemPopup = function showAddItemPopup(message, isSuccess = true) {
-    // prefer shared API (popup.js)
     if (window.showMessagePopup) {
       const title = isSuccess ? 'Success!' : 'Error';
       const autoCloseMs = isSuccess ? 3000 : 0;
@@ -46,7 +43,6 @@
       return;
     }
 
-    // DOM fallback using errorPopup / errorOverlay
     const popup = document.getElementById('errorPopup');
     const overlay = document.getElementById('errorOverlay');
     const header = document.getElementById('popupHeader');
@@ -86,7 +82,7 @@
 
 document.addEventListener('DOMContentLoaded', function () {
   const openModalBtn = document.querySelector('.add-item-btn');
-  const modal = document.getElementById('addItemModal');            // overlay modal
+  const modal = document.getElementById('addItemModal');           
   const cancelBtn = document.getElementById('cancelAddItem');
   const uploadArea = document.getElementById('uploadArea');
   const fileInput = document.getElementById('itemImage');
@@ -335,7 +331,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             safeResetForm();
 
-            // show success popup (will auto-close)
             window.showAddItemPopup('Your item has been added successfully and is now available for borrowing!', true);
 
         } else {
