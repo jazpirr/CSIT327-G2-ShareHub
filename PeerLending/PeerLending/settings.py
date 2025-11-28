@@ -90,20 +90,20 @@ ASGI_APPLICATION = 'PeerLending.asgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # TEMPORARY FIX: Use SQLite to avoid Supabase connection limits
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),
-#         conn_max_age=600, 
-#         ssl_require=False
-#     )
-# }
+ DATABASES = {
+     'default': dj_database_url.config(
+         default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),
+         conn_max_age=600, 
+         ssl_require=False
+     )
+ }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+#DATABASES = {
+#    'default': {
+#        'ENGINE': 'django.db.backends.sqlite3',
+#        'NAME': BASE_DIR / 'db.sqlite3',
+#    }
+#}
 
 # Channels / Channel layer
 # We'll use Redis in production (recommended). For local dev you may use InMemoryChannelLayer by
