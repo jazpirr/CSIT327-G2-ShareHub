@@ -1,10 +1,3 @@
-// static/js/add-item-modal.js
-// Copy-paste ready — single popup implementation, no duplicates.
-// Requires popup.js to be loaded BEFORE this file (preferred).
-// IDs expected in HTML: addItemModal, addItemForm, uploadArea, itemImage,
-// errorPopup, errorOverlay, popupHeader, popupBody (popup.js markup).
-// If popup.js isn't present, this falls back to DOM errorPopup or alert.
-
 (function(){
   // ---- Popup helper IIFE (single source of truth) ----
   function _hideDomPopup() {
