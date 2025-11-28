@@ -1,4 +1,3 @@
-{# templates/admin/admin_base.html - base used by all admin pages #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,27 +6,37 @@
   <title>{% block title %}Admin · ShareHub{% endblock %}</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/admindashboard.css' %}" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% block head_extra %}{% endblock %}
 </head>
 <body data-color-scheme="light">
 
-  <nav class="navbar" role="navigation" aria-label="Top navigation">
-    <div class="nav-container">
-      <div class="nav-left">
-        <div class="logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
-            <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <span class="logo-text">ShareHub - CIT-U</span>
+  <!-- Admin Header -->
+  <header class="admin-header">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="brand-logo">
+          <div class="logo-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" fill="#7B1E1E"/>
+              <path d="M8 12h8M12 8v8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">ShareHub</span>
+            <span class="brand-subtitle">CIT-U Admin</span>
+          </div>
         </div>
       </div>
 
-      <div class="nav-right">
-        <form method="post" action="{% url 'logout' %}">
+      <div class="header-right">
+        <div class="admin-info">
+          <span class="admin-badge">Administrator</span>
+        </div>
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
           {% csrf_token %}
           <button class="logout-btn" type="submit" aria-label="Logout">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M16 17l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M9 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -37,13 +46,12 @@
         </form>
       </div>
     </div>
-  </nav>
+  </header>
 
-  <main class="main-content" role="main">
+  <main class="admin-main">
     {% block content %}{% endblock %}
   </main>
 
-  {# expose CSRF token and optional admin URLs to JS in a safe, central way #}
   <script>
     window.APP = window.APP || {};
     window.APP.CSRF_TOKEN = "{{ csrf_token }}";
