@@ -1,5 +1,4 @@
 :root {
-  /* Color System */
   --color-primary: #7B1E1E;
   --color-primary-light: rgba(123, 30, 30, 0.1);
   --color-primary-dark: #5a1616;
@@ -16,7 +15,7 @@
   --color-info: #2F3A46;
   --color-info-light: rgba(47, 58, 70, 0.1);
   
-  /* Neutral Colors */
+ 
   --color-background: #F9F5F1;
   --color-surface: #FFFFFF;
   --color-surface-elevated: #FFFFFF;
