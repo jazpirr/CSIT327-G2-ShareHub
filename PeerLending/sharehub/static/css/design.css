@@ -1034,6 +1034,7 @@ body {
 
 .filter-btn-wrapper {
   position: relative;
+  z-index: 100;
 }
 
 .search-filter-btn {
@@ -1075,6 +1076,7 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   overflow: hidden;
+  will-change: top, right;
 }
 
 .filter-popup.active {
@@ -4127,6 +4129,108 @@ textarea.form-control {
   transform: translate(-50%, -50%) scale(1) !important;
   animation: popup-entrance 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* ---------- Defensive overlay / popup interaction fix ---------- */
+/* Apply only to the known overlay/popup elements by ID/class you use */
+
+#addItemOverlay,
+#errorOverlay,
+.shared-popup-overlay,
+.shared-popup,
+#addItemPopup,
+#errorPopup {
+  /* Hidden by default: make absolutely sure they do not block clicks */
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* When you actually show them you should add .show or set aria-hidden="false".
+   Either case we make them visible and interactive. */
+#addItemOverlay.show,
+#errorOverlay.show,
+.shared-popup-overlay.show,
+.shared-popup.show,
+#addItemPopup.show,
+#errorPopup.show,
+#addItemOverlay[aria-hidden="false"],
+#errorOverlay[aria-hidden="false"],
+.shared-popup-overlay[aria-hidden="false"],
+.shared-popup[aria-hidden="false"],
+#addItemPopup[aria-hidden="false"],
+#errorPopup[aria-hidden="false"] {
+  display: flex !important;         /* overlay uses flex in your code */
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;  /* only interactive when displayed */
+}
+
+/* Popups themselves (centered dialog) should be visible when show is present */
+.shared-popup.show,
+#addItemPopup.show,
+#errorPopup.show {
+  display: block !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Defensive: if some other code sets display:block but forgets .show,
+   don't let those elements catch pointer events unless aria-hidden="false" */
+#addItemOverlay,
+#errorOverlay,
+.shared-popup-overlay,
+.shared-popup,
+#addItemPopup,
+#errorPopup {
+  pointer-events: none !important;
+}
+#addItemOverlay[aria-hidden="false"],
+#errorOverlay[aria-hidden="false"],
+.shared-popup-overlay[aria-hidden="false"],
+.shared-popup[aria-hidden="false"],
+#addItemPopup[aria-hidden="false"],
+#errorPopup[aria-hidden="false"] {
+  pointer-events: auto !important;
+}
+
+/* Make header / avatar dropdown definitely on top of overlays */
+header, .site-header, .navbar {
+  z-index: 12000; /* header base */
+  position: relative; /* ensure z-index works */
+}
+
+header .profile-dropdown,
+header .profile-menu,
+.profile-overlay,
+.user-menu,
+.navbar .profile-dropdown,
+.header .profile-dropdown {
+  position: relative;
+  z-index: 12100 !important; /* above overlays (which were at ~9999) */
+}
+
+/* Also ensure the avatar toggle button is above overlays */
+.header .profile-toggle,
+.header .avatar-btn,
+.profile-toggle,
+.navbar .avatar-btn {
+  position: relative;
+  z-index: 12101 !important;
+}
+
+/* Quick debug helper: temporarily add visible outline so you can see what's covering an area.
+   Remove after debugging. */
+body.debug-show-overlay-blockers * {
+  outline: none !important;
+}
+body.debug-show-overlay-blockers #addItemOverlay,
+body.debug-show-overlay-blockers #errorOverlay,
+body.debug-show-overlay-blockers .shared-popup-overlay {
+  outline: 3px dashed rgba(255,0,0,0.6) !important;
+}
+
 
 @keyframes popup-entrance {
   0% { 
