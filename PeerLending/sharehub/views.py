@@ -1748,6 +1748,7 @@ def add_item(request):
             "condition": condition,
             "available": availability_bool,
             "image_url": image_url,
+            "created_at": datetime.utcnow().isoformat(),
         }
 
         logger.debug("INSERT payload: %s", payload)

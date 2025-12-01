@@ -265,51 +265,8 @@
 </div>
 
 <script src="{% static 'js/report_issue.js' %}"></script>
-<script>
-  // Open the report modal and populate the hidden inputs
-  document.addEventListener('click', function (e) {
-    const btn = e.target.closest('.report-issue-btn');
-    if (!btn) return;
 
-    const requestId = btn.getAttribute('data-request-id') || '';
-    const itemId = btn.getAttribute('data-item-id') || '';
 
-    // If modal inputs exist in base.html (you mentioned modal is in base.html)
-    const reqInput = document.getElementById('report_request_id');
-    const itemInput = document.getElementById('report_item_id');
-
-    if (reqInput) reqInput.value = requestId;
-    if (itemInput) itemInput.value = itemId;
-
-    // If your report modal element id is `reportIssueModal` (as in return_items), show it:
-    const modal = document.getElementById('reportIssueModal');
-    if (modal) {
-      modal.style.display = 'flex';
-      // focus first input
-      const titleInput = document.getElementById('report_title');
-      if (titleInput) titleInput.focus();
-    } else {
-      // fallback: if report_issue.js provides a function to open the modal, call it
-      if (typeof openReportModal === 'function') {
-        openReportModal({ request_id: requestId, item_id: itemId });
-      }
-    }
-  });
-
-  // Optional: close modal on backdrop click (defensive, only if modal exists)
-  document.addEventListener('click', function (e) {
-    const modal = document.getElementById('reportIssueModal');
-    if (!modal) return;
-    if (e.target === modal) {
-      modal.style.display = 'none';
-      // clear inputs
-      const reqInput = document.getElementById('report_request_id');
-      const itemInput = document.getElementById('report_item_id');
-      if (reqInput) reqInput.value = '';
-      if (itemInput) itemInput.value = '';
-    }
-  });
-</script>
 <script>
   // Helpers
   function getCookie(name) {

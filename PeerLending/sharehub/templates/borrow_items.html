@@ -158,6 +158,16 @@
                 class="message-owner-btn"
                 onclick="startChat('{{ item.item_id }}')"
               >Message Owner</button>
+
+              <button
+                type="button"
+                class="report-issue-btn"
+                data-item-id="{{ item.item_id }}"
+                data-item-title="{{ item.title|escape }}"
+                data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
+                data-owner-name="{{ item.owner_display|escape }}"
+              >Report</button>
+
             </div>
           {% endfor %}
         {% else %}
@@ -270,4 +280,5 @@
 <script src="{% static 'js/popup.js' %}"></script>
 <script src="{% static 'js/borrow_items.js' %}"></script>
 <script src="{% static 'js/home-search.js' %}"></script>
+<script src="{% static 'js/report_issue.js' %}"></script>
 {% endblock %}
