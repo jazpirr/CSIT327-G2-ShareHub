@@ -2,27 +2,31 @@ from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.conf import settings
+import uuid
 
 class CustomUserManager(BaseUserManager):
     use_in_migrations = True
 
-    def create_user(self, id, email=None, password=None, **extra_fields):
-        if not id:
-            raise ValueError("Supabase user id required")
-        email = self.normalize_email(email)
+    def create_user(self, id=None, email=None, password=None, **extra_fields):
+        # since Supabase creates users, normally you don't create users from Django.
+        if not id and not email:
+            raise ValueError("Either Supabase user id or email required")
+        if email:
+            email = self.normalize_email(email)
         user = self.model(id=id, email=email, **extra_fields)
-        user.set_unusable_password()  # Supabase handles authentication
+        # Supabase handles auth; keep unusable password
+        user.set_unusable_password()
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, id, email=None, password=None, **extra_fields):
+    def create_superuser(self, id=None, email=None, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        return self.create_user(id, email=email, password=password, **extra_fields)
+        return self.create_user(id=id, email=email, password=password, **extra_fields)
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
 
     first_name = models.CharField(max_length=200, null=True, blank=True)
@@ -35,14 +39,19 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     is_admin = models.BooleanField(default=False)
     is_block = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)   # add this so Django admin checks work
 
     USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["id"]
+
+    objects = CustomUserManager()
 
     class Meta:
-        db_table = "user"     # <- maps to your existing Supabase 'user' table
+        db_table = "user"
+        managed = False   # IMPORTANT: prevent Django from attempting to change the existing Supabase table
 
     def __str__(self):
-        return self.email or self.id
+        return self.email or str(self.id)
 
 class Item(models.Model):
     item_id = models.UUIDField(primary_key=True)
