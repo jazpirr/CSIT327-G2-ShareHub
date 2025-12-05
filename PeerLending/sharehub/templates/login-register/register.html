@@ -3,174 +3,245 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PeerLending Signup</title>
+  <title>ShareHub | Create Account</title>
   {% load static %}
-  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}?v=8">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
 </head>
 <body>
+    <div class="background-elements">
+        <div class="gradient-circle gradient-1"></div>
+        <div class="gradient-circle gradient-2"></div>
+        <div class="gradient-circle gradient-3"></div>
+        <div class="gradient-circle gradient-4"></div>
+    </div>
 
-<div id="errorOverlay"></div>
-<div id="errorPopup">
-    <div class="popup-header" id="popupHeader">Error</div>
-    <div class="popup-body" id="popupBody"></div>
-    <button class="close-btn" onclick="closePopup()">&times;</button>
-</div>
+    <!-- Error Popup -->
+    <div id="errorOverlay" class="overlay"></div>
+    <div id="errorPopup" class="error-popup">
+        <div class="popup-header">
+            <span>Error</span>
+            <button class="close-btn" onclick="closePopup()">&times;</button>
+        </div>
+        <div class="popup-body" id="popupBody"></div>
+    </div>
 
-<div class="container">
-  <div class="left-side">
-    <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Signup Side Image">
-  </div>
-
-  <div class="right-side">
-    <div class="form-wrap">
-      <div class="logo-container">
-        <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo">
-        <h3>Join ShareHub - CIT-U Peer Lending Library</h3>
-        <p>Create your account to start lending and borrowing academic resources</p>
-      </div>
-
-      <form id="signupForm" method="POST" action="{% url 'register' %}" novalidate>
-        {% csrf_token %}
-
-        <div class="form-header">
-          <h4>Required Information</h4>
-          <hr class="section-line">
+    <div class="container">
+        <!-- Left Side -->
+        <div class="left-side">
+            <div class="logo-container">
+                <div class="logo-wrapper">
+                    <i class="fas fa-hands-helping logo-icon"></i>
+                </div>
+                <h1><span>ShareHub</span></h1>
+                <p class="tagline">CIT-U Peer Lending Library</p>
+            </div>
+            
+            <div class="left-side-content">
+                <h2 class="tagline-main">Borrow. Lend. Succeed Together.</h2>
+                <p>Join the community of students sharing academic resources. Simplify your studies.</p>
+                
+                <!-- UPDATED Features Grid Layout -->
+                <div class="features-grid">
+                    <div class="feature-column">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <div class="feature-text">Borrow<br>Items Easily</div>
+                    </div>
+                    
+                    <div class="feature-column">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-hand-holding-heart"></i>
+                        </div>
+                        <div class="feature-text">Lend<br>Items Securely</div>
+                    </div>
+                    
+                    <div class="feature-column">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="feature-text">Track<br>Due Dates</div>
+                    </div>
+                </div>
+                
+                <!-- Updated CIT-U Badge -->
+                <div class="cit-badge">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Exclusive to CIT-U Students</span>
+                </div>
+            </div>
         </div>
 
-        <!-- email -->
-        <div class="form-group">
-          <label for="email">
-            <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon">
-            Email
-          </label>
-          <input type="email" name="email" id="email" placeholder="Enter your email" required>
+        <!-- Right Side - SCROLLABLE -->
+        <div class="right-side has-scroll">
+            <div class="form-wrap register-form">
+                <div class="form-header">
+                    <h3>Create Account</h3>
+                    <p>Join ShareHub in minutes</p>
+                </div>
+
+                <!-- Scrollable Form Area - FIXED SCROLL -->
+                <div class="form-scroll-area">
+                    <form id="signupForm" method="POST" action="{% url 'register' %}" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Account Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-user-circle icon"></i> Account Information</h4>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">
+                                <i class="fas fa-envelope icon"></i>
+                                CIT-U Email
+                            </label>
+                            <input type="email" name="email" id="email" class="form-input" 
+                                   placeholder="name@cit.edu" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="password1">
+                                    <i class="fas fa-lock icon"></i>
+                                    Password
+                                </label>
+                                <div class="password-wrap">
+                                    <input type="password" name="password1" id="password1" class="form-input" 
+                                           placeholder="Create password" required>
+                                    <button type="button" class="password-toggle" data-target="password1">
+                                        <i class="fas fa-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password2">
+                                    <i class="fas fa-lock icon"></i>
+                                    Confirm Password
+                                </label>
+                                <div class="password-wrap">
+                                    <input type="password" name="password2" id="confirm_password" class="form-input" 
+                                           placeholder="Confirm password" required>
+                                    <button type="button" class="password-toggle" data-target="confirm_password">
+                                        <i class="fas fa-eye-slash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-user icon"></i> Personal Information</h4>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="first_name">
+                                    <i class="fas fa-user icon"></i>
+                                    First Name
+                                </label>
+                                <input type="text" name="first_name" id="first_name" class="form-input" 
+                                       placeholder="Enter first name" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="last_name">
+                                    <i class="fas fa-user icon"></i>
+                                    Last Name
+                                </label>
+                                <input type="text" name="last_name" id="last_name" class="form-input" 
+                                       placeholder="Enter last name" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="birthday">
+                                    <i class="fas fa-calendar icon"></i>
+                                    Birthday (Optional)
+                                </label>
+                                <input type="date" name="birthday" id="birthday" class="form-input">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone_number">
+                                    <i class="fas fa-phone icon"></i>
+                                    Phone (Optional)
+                                </label>
+                                <input type="tel" name="phone_number" id="phone_number" class="form-input" 
+                                       placeholder="09XX-XXX-XXXX">
+                            </div>
+                        </div>
+
+                        <!-- Academic Information -->
+                        <div class="form-section">
+                            <h4><i class="fas fa-graduation-cap icon"></i> Academic Information</h4>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="college_dept">
+                                    <i class="fas fa-building icon"></i>
+                                    Department
+                                </label>
+                                <select name="college_dept" id="college_dept" class="form-input form-select" required>
+                                    <option value="">Select department</option>
+                                    {% for value, label in form.college_dept.field.choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="course">
+                                    <i class="fas fa-book-open icon"></i>
+                                    Course
+                                </label>
+                                <select name="course" id="course" class="form-input form-select" required>
+                                    <option value="">Select course</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="year_level">
+                                    <i class="fas fa-calendar-alt icon"></i>
+                                    Year Level
+                                </label>
+                                <select name="year_level" id="year_level" class="form-input form-select" required>
+                                    <option value="">Select year</option>
+                                    {% for value, label in form.year_level.field.choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="btn-row">
+                            <button type="submit" class="btn-primary">
+                                Create Account
+                            </button>
+                            <a class="btn-secondary" href="{% url 'login' %}">
+                                Already have account?
+                            </a>
+                        </div>
+
+                        <div class="terms-text">
+                            <p>
+                               
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
+    </div>
 
-      <!-- Password -->
-      <div class="form-group">
-        <label for="password1">
-          <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-          Password
-        </label>
-        <div class="password-wrap">
-          <input type="password" name="password1" id="password1" placeholder="Enter your password">
-          <button type="button" class="password-toggle" data-target="password1" aria-label="Show password" title="Show password">
-            <i class="fa-solid fa-eye-slash"></i>
-          </button>
-        </div>
-      </div>
+    {% if form.errors %}
+        {{ form.errors.get_json_data|json_script:"serverErrors" }}
+    {% endif %}
 
-      <!-- Confirm Password -->
-      <div class="form-group">
-        <label for="password2">
-          <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-          Confirm Password
-        </label>
-        <div class="password-wrap">
-          <input type="password" name="password2" id="confirm_password" placeholder="Confirm password">
-          <button type="button" class="password-toggle" data-target="confirm_password" aria-label="Show password" title="Show password">
-            <i class="fa-solid fa-eye-slash"></i>
-          </button>
-        </div>
-      </div>
-
-
-        <div class="form-header">
-          <h4>Personal Information</h4>
-          <hr class="section-line">
-        </div>
-
-        <!-- names -->
-        <div class="name-row">
-          <div class="half form-group">
-            <label for="first_name">
-              <img src="{% static 'images/user.png' %}" class="icon" alt="Person Icon">
-              First Name
-            </label>
-            <input type="text" name="first_name" id="first_name" placeholder="Enter your first name" required>
-          </div>
- 
-          <div class="half form-group">
-            <label for="last_name">
-              <img src="{% static 'images/user.png' %}" class="icon" alt="Person Icon">
-              Last Name
-            </label>
-            <input type="text" name="last_name" id="last_name" placeholder="Enter your last name" required>
-          </div>
-        </div>
-
-        <!-- optional -->
-        <div class="name-row">
-          <div class="half form-group">
-            <label for="birthday">
-              <img src="{% static 'images/calendar.png' %}" class="icon" alt="Calendar Icon">
-              Birthday
-            </label>
-            <input type="date" name="birthday" id="birthday">
-          </div>
-
-          <div class="half form-group">
-            <label for="phone_number">
-              <img src="{% static 'images/phone.png' %}" class="icon" alt="Phone Icon">
-              Phone Number
-            </label>
-            <input type="tel" name="phone_number" id="phone_number" placeholder="Enter your phone number">
-          </div>
-        </div>
-
-        <div class="name-row">
-          <div class="third form-group">
-            <label for="college_dept">
-              <img src="{% static 'images/department.png' %}" class="icon" alt="College Icon">
-              College Department
-            </label>
-            <select name="college_dept" id="college_dept">
-              <option value="">Select your department</option>
-              {% for value, label in form.college_dept.field.choices %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="third form-group"> 
-            <label for="course">
-              <img src="{% static 'images/course.png' %}" class="icon" alt="Course Icon">
-              Course
-            </label>
-            <select name="course" id="course">
-              <option value="">Select your course</option>
-            </select>
-          </div>
-
-          <div class="third form-group">
-            <label for="year_level">
-              Year Level
-            </label>
-            <select name="year_level" id="year_level">
-              <option value="">Select your year level</option>
-              {% for value, label in form.year_level.field.choices %}
-                <option value="{{ value }}">{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </div>
-
-        <div class="btn-row horizontal">
-          <button type="submit" class="submit-btn">Create Account</button>
-          <a class="alt-btn" href="{% url 'login' %}">Already have an account? Sign In</a>
-        </div>
-      </form>
-    </div> 
-  </div>
-</div>
-
-{% if form.errors %}
-  {{ form.errors.get_json_data|json_script:"serverErrors" }}
-{% endif %}
-
-<script src="{% static 'js/register.js' %}"></script>
-
+    <script src="{% static 'js/register.js' %}?v=8"></script>
 </body>
 </html>
+
