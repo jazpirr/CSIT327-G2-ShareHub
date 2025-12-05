@@ -1,102 +1,83 @@
 {% load static %}
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShareHub{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{% static 'css/header.css' %}?v=3">
+</head>
+<body>
 <nav class="navbar">
   <div class="nav-container">
-    <!-- Left: Logo -->
     <div class="nav-left">
       <a href="{% url 'home' %}" class="logo">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M8 12h8M12 8v8"/>
-        </svg>
-        ShareHub - CIT-U
+        <div class="logo-wrapper">
+          <i class="fas fa-hands-helping logo-icon"></i>
+        </div>
+        <span class="logo-text">
+          <span class="share-text">Share</span>
+          <span class="hub-text">Hub</span>
+        </span>
       </a>
     </div>
 
-    <!-- Center: Navigation Links -->
     <div class="nav-center">
       <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-        </svg>
-        Home
+        <i class="fas fa-home nav-icon"></i>
+        <span class="nav-text">Home</span>
       </a>
       <a href="{% url 'borrow_items' %}" class="nav-link {% if request.resolver_match.url_name == 'borrow_items' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-        </svg>
-        Borrow Items
+        <i class="fas fa-box-open nav-icon"></i>
+        <span class="nav-text">Borrow Items</span>
       </a>
       <a href="{% url 'my_items' %}" class="nav-link {% if request.resolver_match.url_name == 'my_items' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
-        </svg>
-        My Items
+        <i class="fas fa-clipboard-list nav-icon"></i>
+        <span class="nav-text">My Items</span>
       </a>
       <a href="{% url 'return_items' %}" class="nav-link {% if request.resolver_match.url_name == 'return_items' %}active{% endif %}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <polyline points="9 11 12 14 22 4"/>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-        </svg>
-        Return Items
+        <i class="fas fa-undo-alt nav-icon"></i>
+        <span class="nav-text">Return Items</span>
       </a>
     </div>
 
-    <!-- Right: Actions & Profile -->
     <div class="nav-right">
-      <!-- Add Item Button -->
-      <button class="add-item-btn" >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <line x1="12" y1="5" x2="12" y2="19"/>
-          <line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Add Item
+      <button class="add-item-btn">
+        <span class="btn-text">Add Item</span>
       </button>
 
-      <!-- Notifications -->
-    <button class="notification-btn" type="button" aria-expanded="false" aria-controls="notificationPopup">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-    </svg>
-    {% if unread_count > 0 %}
-        <span id="notificationBadge" class="notification-badge">{{ unread_count }}</span>
-    {% else %}
-        <span id="notificationBadge" class="notification-badge" style="display:none;"></span>
-    {% endif %}
-    </button>
+      <button class="notification-btn" type="button" aria-expanded="false" aria-controls="notificationPopup">
+        <i class="fas fa-bell"></i>
+        {% if unread_count > 0 %}
+          <span id="notificationBadge" class="notification-badge">{{ unread_count }}</span>
+        {% else %}
+          <span id="notificationBadge" class="notification-badge" style="display:none;"></span>
+        {% endif %}
+      </button>
 
+      <button id="chatButton" class="chat-btn" type="button" aria-expanded="false" aria-controls="chatPanel" title="Chats">
+        <i class="fas fa-comments"></i>
+        <span id="chatBadge" class="notification-badge" style="display:none;"></span>
+      </button>
 
-    <!-- CHAT BUTTON (add next to notification-btn) -->
-    <button id="chatButton" class="chat-btn" type="button" aria-expanded="false" aria-controls="chatPanel" title="Chats">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="20" height="20">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/>
-      </svg>
-      <span id="chatBadge" class="notification-badge" style="display:none;"></span>
-    </button>
-
-      <!-- Profile Dropdown -->
-       
       <div class="profile-dropdown">
         <button class="profile-trigger" type="button" id="profileTrigger">
           <div class="profile-avatar">
             {% if user_info and user_info.profile_picture %}
-            <img src="{{ user_info.profile_picture }}" alt="{{ user_info.first_name }} {{ user_info.last_name }}">
+              <img src="{{ user_info.profile_picture }}" alt="{{ user_info.first_name }} {{ user_info.last_name }}">
             {% else %}
-            {% if user_info and user_info.first_name %}
+              {% if user_info and user_info.first_name %}
                 {{ user_info.first_name|first|upper }}{% if user_info.last_name %}{{ user_info.last_name|first|upper }}{% endif %}
-            {% else %}
+              {% else %}
                 {% if user_info and user_info.email %}
-                {{ user_info.email|first|upper }}
+                  {{ user_info.email|first|upper }}
                 {% else %}
-                <!-- fallback static avatar -->
-                <img src="{% static 'images/default-avatar.png' %}" alt="avatar">
+                  <i class="fas fa-user"></i>
                 {% endif %}
+              {% endif %}
             {% endif %}
-            {% endif %}
-
           </div>
         </button>
 
@@ -113,19 +94,13 @@
           </div>
 
           <a href="{% url 'profile' %}" class="profile-menu-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            Profile
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
           </a>
 
           <a href="{% url 'settings' %}" class="profile-menu-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"/>
-            </svg>
-            Settings
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
           </a>
 
           <div class="profile-menu-divider"></div>
@@ -133,12 +108,8 @@
           <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
             {% csrf_token %}
             <button type="submit" class="profile-menu-item logout">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              Logout
+              <i class="fas fa-sign-out-alt"></i>
+              <span>Logout</span>
             </button>
           </form>
         </div>
@@ -146,23 +117,29 @@
     </div>
   </div>
 </nav>
+
+
 <div id="profileOverlay" class="notification-overlay" aria-hidden="true"></div>
-<!-- Notification overlay + popup (place near </body>) -->
 <div id="notificationOverlay" class="notification-overlay" aria-hidden="true"></div>
 
 <div id="notificationPopup" class="notification-popup" aria-hidden="true" role="dialog" aria-label="Notifications">
   <div class="popup-header">
     <div class="title">Notifications</div>
     <div class="controls">
-      <button class="mark-read-btn" type="button" style="background:none;border:0;padding:6px 8px;font-size:13px;cursor:pointer;color:#6b0000;">Mark all read</button>
-      <button id="closePopup" type="button" aria-label="Close notifications" style="background:none;border:0;padding:6px 8px;cursor:pointer;font-size:16px;color:#666;">✕</button>
+      <button class="mark-read-btn" type="button" id="markAllReadBtn">
+        <i class="fas fa-check-double"></i>
+        <span>Mark all read</span>
+      </button>
+      <button id="closePopup" type="button" aria-label="Close notifications">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
   </div>
 
   <div class="notification-list" role="list" aria-live="polite">
     {% if notifications %}
       {% for n in notifications %}
-      <div class="notification-item {% if not n.is_read %}unread{% endif %}" role="listitem">
+      <div class="notification-item {% if not n.is_read %}unread{% endif %}" role="listitem" data-notification-id="{{ n.id }}">
         <div class="notification-message">{{ n.message }}</div>
         <div class="notification-meta">{{ n.created_at_human }}</div>
       </div>
@@ -175,41 +152,34 @@
   </div>
 </div>
 
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-  /* PROFILE DROPDOWN ---------------------------- */
   const profileTrigger = document.getElementById('profileTrigger');
   const profileDropdown = document.querySelector('.profile-dropdown');
   const profileMenu = document.getElementById('profileMenu');
   const profileOverlay = document.getElementById('profileOverlay');
 
-  function positionProfileMenu() {
-    const btnRect = profileTrigger.getBoundingClientRect();
-    const rightOffset = window.innerWidth - btnRect.right - 20; // 10px margin
-
-    profileMenu.style.position = 'fixed';
-    profileMenu.style.top = (btnRect.bottom + 10) + 'px';
-    profileMenu.style.right = (rightOffset ) + 'px';
-  }
-
   function openProfile() {
-    positionProfileMenu();
     profileDropdown.classList.add('active');
     profileOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
   }
 
   function closeProfile() {
     profileDropdown.classList.remove('active');
     profileOverlay.classList.remove('active');
+    document.body.style.overflow = '';
   }
 
   if (profileTrigger) {
     profileTrigger.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (profileDropdown.classList.contains('active')) closeProfile();
-      else openProfile();
+      if (profileDropdown.classList.contains('active')) {
+        closeProfile();
+      } else {
+        openProfile();
+      }
     });
   }
 
@@ -221,10 +191,119 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  window.addEventListener('resize', positionProfileMenu);
-  window.addEventListener('scroll', positionProfileMenu);
 
+  const notificationBtn = document.querySelector('.notification-btn');
+  const notificationPopup = document.getElementById('notificationPopup');
+  const notificationOverlay = document.getElementById('notificationOverlay');
+  const closePopupBtn = document.getElementById('closePopup');
+  const markReadBtn = document.getElementById('markAllReadBtn');
 
-  /* NOTIFICATIONS (leave your existing notification.js for logic) */
+  function openNotifications() {
+    notificationPopup.classList.add('active');
+    notificationOverlay.classList.add('active');
+    notificationBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeNotifications() {
+    notificationPopup.classList.remove('active');
+    notificationOverlay.classList.remove('active');
+    notificationBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  if (notificationBtn) {
+    notificationBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Notification button clicked');
+      
+      if (notificationPopup.classList.contains('active')) {
+        closeNotifications();
+      } else {
+        openNotifications();
+        
+        setTimeout(() => {
+          const unreadItems = document.querySelectorAll('.notification-item.unread');
+          unreadItems.forEach(item => {
+            item.classList.remove('unread');
+          });
+        
+          const badge = document.getElementById('notificationBadge');
+          if (badge) {
+            badge.style.display = 'none';
+          }
+        }, 100);
+      }
+    }, true); 
+  }
+
+  if (closePopupBtn) {
+    closePopupBtn.addEventListener('click', closeNotifications);
+  }
+
+  notificationOverlay.addEventListener('click', closeNotifications);
+
+  const notificationItems = document.querySelectorAll('.notification-item');
+  notificationItems.forEach(item => {
+    item.addEventListener('click', function() {
+
+      this.classList.remove('unread');
+      
+      const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+      const badge = document.getElementById('notificationBadge');
+      if (badge) {
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    });
+  });
+
+  if (markReadBtn) {
+    markReadBtn.addEventListener('click', function() {
+      const unreadItems = document.querySelectorAll('.notification-item.unread');
+      unreadItems.forEach(item => {
+        item.classList.remove('unread');
+      });
+      
+      const badge = document.getElementById('notificationBadge');
+      if (badge) {
+        badge.style.display = 'none';
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeProfile();
+      closeNotifications();
+    }
+  });
+
+  let lastScrollTop = 0;
+  const navbar = document.querySelector('.navbar');
+  
+  window.addEventListener('scroll', function() {
+    let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    if (scrollTop > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+    
+    lastScrollTop = scrollTop;
+  });
+
+  const addItemBtn = document.querySelector('.add-item-btn');
+  if (addItemBtn) {
+    addItemBtn.addEventListener('click', function() {
+      console.log('Add Item clicked');
+    });
+  }
 });
 </script>
