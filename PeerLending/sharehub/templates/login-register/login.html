@@ -3,131 +3,139 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PeerLending Login</title>
+    <title>ShareHub | CIT-U Peer Lending Library</title>
     {% load static %}
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=8" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link rel="stylesheet" href="{% static 'css/logoutdisplay.css' %}?v=1" />
 </head>
 <body>
-  <div id="successOverlay" class="overlay"></div>
-<div id="successPopup" class="popup">
-  <div class="popup-header">Notification</div>
-  <div class="popup-body">
-    <p>You have successfully Logout.</p>
-  </div>
-  <button class="ok-btn" onclick="closeSuccessPopup()">Okay</button>
-</div>
-<!-- Overlay Background -->
-<div id="successOverlay" class="overlay"></div>
-
-<!-- Popup Message -->
-<div id="successPopup" class="popup-box">
-  <h2>Notification</h2>
-  <p>You have successfully logged out!</p>
-  <button onclick="closeSuccessPopup()">Close</button> 
-</div>
-
-
-
-  <!-- Popup overlay + single popup -->
-  <div id="errorOverlay"></div>
-  <div id="errorPopup">
-      <div class="popup-header" id="popupHeader">Error</div>
-      <div class="popup-body" id="popupBody"></div>
-      <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
-  </div>  
-
-  <div class="container">  
-    <div class="left-side">
-      <img class="side-image" src="{% static 'images/logo (1).png' %}" alt="Login Side Image" />
+    <div class="background-elements">
+        <div class="gradient-circle gradient-1"></div>
+        <div class="gradient-circle gradient-2"></div>
+        <div class="gradient-circle gradient-3"></div>
+        <div class="gradient-circle gradient-4"></div>
     </div>
 
-    <div class="right-side">  
-      <div class="form-wrap login-form">
-        <div class="logo-container">
-          <img class="logo" src="{% static 'images/logo (1).png' %}" alt="PeerLending Logo" />
-          <h3>Welcome Back</h3>
-          <p>Signin to access ShareHub - CIT-U Peer Lending Library</p>
-        </div>   
+    <!-- Error Popup -->
+    <div id="errorOverlay" class="overlay"></div>
+    <div id="errorPopup" class="error-popup">
+        <div class="popup-header">
+            <span>Error</span>
+            <button class="close-btn" onclick="closePopup()">&times;</button>
+        </div>
+        <div class="popup-body" id="popupBody"></div>
+    </div>
 
-        <form id="loginForm" method="POST" action="{% url 'login' %}">
-          {% csrf_token %}
-
-          <label for="id_email">
-            <img src="{% static 'images/email.png' %}" class="icon" alt="Email Icon" />
-            Email
-          </label>
-          <input type="email" name="email" id="id_email" placeholder="Enter your email @cit.edu" autocomplete="username" />
-
-          <label for="id_password">
-          <img src="{% static 'images/lock.png' %}" class="icon" alt="Lock Icon">
-          Password
-        </label>
-        <div class="password-wrap">
-          <input type="password" name="password" id="id_password" placeholder="Enter your password">
-          <button type="button" class="password-toggle" data-target="id_password" aria-label="Show password" title="Show password">
-            <i class="fa-solid fa-eye-slash"></i>
-          </button>
+    <div class="container">  
+        <!-- Left Side -->
+        <div class="left-side">
+            <div class="logo-container">
+                <div class="logo-wrapper">
+                    <i class="fas fa-hands-helping logo-icon"></i>
+                </div>
+                <h1><span>ShareHub</span></h1>
+                <p class="tagline">CIT-U Peer Lending Library</p>
+            </div>
+            
+            <div class="left-side-content">
+                <h2 class="tagline-main">Borrow. Lend. Succeed Together.</h2>
+                <p>Access academic resources from fellow students. Calculators, books, lab equipment, and more.</p>
+                
+                <!-- UPDATED Features Grid Layout -->
+                <div class="features-grid">
+                    <div class="feature-column">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+                        <div class="feature-text">Borrow<br>Items Easily</div>
+                    </div>
+                    
+                    <div class="feature-column">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-hand-holding-heart"></i>
+                        </div>
+                        <div class="feature-text">Lend<br>Items Securely</div>
+                    </div>
+                    
+                    <div class="feature-column">
+                        <div class="feature-icon-wrapper">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="feature-text">Track<br>Due Dates</div>
+                    </div>
+                </div>
+                
+                <!-- Updated CIT-U Badge -->
+                <div class="cit-badge">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Exclusive to CIT-U Students</span>
+                </div>
+            </div>
         </div>
 
-          <div class="btn-row vertical">
-            <button type="submit" class="submit-btn">Sign In</button>
-            <a class="alt-btn" href="{% url 'register' %}">Create New Account</a>
-            <a class="forgot-link" href="#">Forgot your password?</a>
-          </div>
-        </form>
-      </div>
+        <!-- Right Side -->
+        <div class="right-side">  
+            <div class="form-wrap">
+                <div class="form-header">
+                    <h3>Welcome Back</h3>
+                    <p>Sign in to your account</p>
+                </div>   
+
+                <form id="loginForm" method="POST" action="{% url 'login' %}">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label for="id_email">
+                            <i class="fas fa-envelope icon"></i>
+                            Email Address
+                        </label>
+                        <input type="email" name="email" id="id_email" class="form-input" 
+                               placeholder="Enter your @cit.edu email" autocomplete="username" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_password">
+                            <i class="fas fa-lock icon"></i>
+                            Password
+                        </label>
+                        <div class="password-wrap">
+                            <input type="password" name="password" id="id_password" class="form-input" 
+                                   placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" data-target="id_password">
+                                <i class="fas fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="btn-row">
+                        <button type="submit" class="btn-primary">
+                            Sign In
+                        </button>
+                        <a class="btn-secondary" href="{% url 'register' %}">
+                            Create New Account
+                        </a>
+                        <a class="btn-link" href="#" id="forgotPasswordLink">
+                            Forgot your password?
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Provide Django URL to JS -->
-  <script>
-    window.FORGOT_PASSWORD_URL = "{% url 'forgot_password' %}";
-  </script>
-  <script src="{% static 'js/login.js' %}?v=3"></script>
-
-  {% if errors %}
-    {{ errors|json_script:"loginErrors" }}
     <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const errors = JSON.parse(document.getElementById("loginErrors").textContent);
-        if (window.showServerErrors) showServerErrors(errors);
-      });
+        window.FORGOT_PASSWORD_URL = "{% url 'forgot_password' %}";
     </script>
-  {% endif %}
+    <script src="{% static 'js/login.js' %}?v=8"></script>
 
-<!-- Logout Success Popup -->
-<div id="successOverlay" class="overlay"></div>
-
-<div id="successPopup" class="popup">
-  <div class="popup-header">Notification</div>
-  <div class="popup-body">
-    <p>You have successfully Logout.</p>
-  </div>
-  <button class="ok-btn" onclick="closeSuccessPopup()">Okay</button>
-</div>
-
-<script>
-function showSuccessPopup() {
-  document.getElementById("successOverlay").style.display = "block";
-  document.getElementById("successPopup").style.display = "flex";
-}
-
-function closeSuccessPopup() {
-  document.getElementById("successOverlay").style.display = "none";
-  document.getElementById("successPopup").style.display = "none";
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("logout_success") === "1") {
-    showSuccessPopup();
-  }  
-});
-</script> 
-
-<script src="{% static 'js/confirmation_logout.js' %}?v=1"></script>
-
+    {% if errors %}
+        {{ errors|json_script:"loginErrors" }}
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const errors = JSON.parse(document.getElementById("loginErrors").textContent);
+                if (window.showServerErrors) showServerErrors(errors);
+            });
+        </script>
+    {% endif %}
 </body>
 </html>
