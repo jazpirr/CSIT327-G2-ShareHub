@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ---- department/course logic (REPLACED) ----
     const departmentCourses = {
         "CCS": ["BSIT", "BSCS"],
         "CNAHS": ["BSN", "BSP", "BSMT"],
@@ -99,9 +100,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const deptSelect = document.getElementById('college_dept');
     const courseSelect = document.getElementById('course');
 
+    function populateDepartments() {
+        if (!deptSelect) return;
+        // Remove any existing dept options except the placeholder (value === "")
+        const placeholder = deptSelect.querySelector('option[value=""]');
+        deptSelect.innerHTML = '';
+        if (placeholder) {
+            deptSelect.appendChild(placeholder);
+        } else {
+            const ph = document.createElement('option');
+            ph.value = "";
+            ph.text = "Select department";
+            deptSelect.appendChild(ph);
+        }
+
+        Object.keys(departmentCourses).forEach(deptCode => {
+            const option = document.createElement('option');
+            option.value = deptCode;
+            option.text = deptCode;
+            deptSelect.appendChild(option);
+        });
+    }
+
     function updateCourses() {
-        const selectedDept = deptSelect.value;
-        courseSelect.innerHTML = '<option value="">Select your course</option>';
+        if (!courseSelect) return;
+        const selectedDept = deptSelect ? deptSelect.value : '';
+        courseSelect.innerHTML = '<option value="">Select course</option>';
 
         if (selectedDept && departmentCourses[selectedDept]) {
             departmentCourses[selectedDept].forEach(course => {
@@ -113,35 +137,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    deptSelect.addEventListener('change', updateCourses);
-    document.addEventListener('DOMContentLoaded', () => {
-        if (deptSelect.value) updateCourses();
-    });
+    if (deptSelect) {
+        populateDepartments();
+        // If server preselected a value (e.g. after validation error), keep it selected
+        const preselected = deptSelect.getAttribute('data-selected') || deptSelect.value;
+        if (preselected) {
+            deptSelect.value = preselected;
+        }
+        updateCourses();
+        // If server preselected course, try to restore it
+        const preCourse = courseSelect.getAttribute('data-selected') || courseSelect.value;
+        if (preCourse) {
+            // set after updating courses
+            setTimeout(() => { courseSelect.value = preCourse; }, 0);
+        }
 
-
-document.querySelectorAll('.password-toggle').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const id = btn.getAttribute('data-target');
-    const input = document.getElementById(id);
-    const icon = btn.querySelector('i');
-    if (!input || !icon) return;
-
-    if (input.type === 'password') {
-
-      input.type = 'text';
-      icon.classList.remove('fa-eye-slash');
-      icon.classList.add('fa-eye');
-      btn.setAttribute('aria-label', 'Hide password');
-      btn.title = 'Hide password';
-    } else {
-
-      input.type = 'password';
-      icon.classList.remove('fa-eye');
-      icon.classList.add('fa-eye-slash');
-      btn.setAttribute('aria-label', 'Show password');
-      btn.title = 'Show password';
+        deptSelect.addEventListener('change', updateCourses);
     }
-  });
-});
+    // ---- end department/course logic ----
+
+    document.querySelectorAll('.password-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-target');
+        const input = document.getElementById(id);
+        const icon = btn.querySelector('i');
+        if (!input || !icon) return;
+
+        if (input.type === 'password') {
+
+          input.type = 'text';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+          btn.setAttribute('aria-label', 'Hide password');
+          btn.title = 'Hide password';
+        } else {
+
+          input.type = 'password';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+          btn.setAttribute('aria-label', 'Show password');
+          btn.title = 'Show password';
+        }
+      });
+    });
 
 });
