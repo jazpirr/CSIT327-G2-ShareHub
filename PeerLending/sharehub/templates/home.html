@@ -23,7 +23,18 @@
   <!-- 1. Welcome Section -->
   <section class="welcome-section">
     <div class="welcome-content">
-      <h1>Welcome, <span class="username">Frances Anne!#</span></h1>
+      <h1>Welcome, <span class="username">
+        {% if user_info %}
+          {% if user_info.first_name or user_info.last_name %}
+            {{ user_info.first_name }} {{ user_info.last_name }}
+          {% else %}
+            {{ user_info.email|default:"You" }}
+          {% endif %}
+        {% else %}
+          You
+        {% endif %}
+      </span></h1>
+
       <p>Manage your borrowed items and discover available resources</p>
 
       {% if overdue_count and overdue_count > 0 %}
@@ -92,15 +103,16 @@
         </div>
       </div> -->
 
-      <div class="kpi-card">
-        <div class="kpi-icon lent">
-          <i class="fas fa-share-square"></i>
-        </div>
-        <div class="kpi-content">
-          <div class="kpi-value">8#</div>
-          <div class="kpi-label">Items Lent Out</div>
-        </div>
+    <div class="kpi-card">
+      <div class="kpi-icon lent">
+        <i class="fas fa-share-square"></i>
       </div>
+      <div class="kpi-content">
+        <div class="kpi-value" id="lentOutKpi">{{ lent_out_count|default:0 }}</div>
+        <div class="kpi-label">Items Lent Out</div>
+      </div>
+    </div>
+
     </div>
   </section>
 

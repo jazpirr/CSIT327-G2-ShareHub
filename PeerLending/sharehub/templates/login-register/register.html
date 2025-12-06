@@ -187,10 +187,8 @@
                                 </label>
                                 <select name="college_dept" id="college_dept" class="form-input form-select" required>
                                     <option value="">Select department</option>
-                                    {% for value, label in form.college_dept.field.choices %}
-                                        <option value="{{ value }}">{{ label }}</option>
-                                    {% endfor %}
                                 </select>
+
                             </div>
 
                             <div class="form-group">

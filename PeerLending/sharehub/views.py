@@ -538,6 +538,36 @@ def home(request):
         overdue_items = []
         overdue_count = 0
 
+    
+    # compute lent_out_count (items you own that are currently lent out)
+    lent_out_count = 0
+    try:
+        # ensure we have my_item_ids (list of item_id strings)
+        if 'my_item_ids' not in locals():
+            items_resp = supabase.table('item').select('item_id').eq('user_id', user_id).execute()
+            my_item_ids = [it.get('item_id') for it in (items_resp.data or [])]
+
+        if my_item_ids:
+            try:
+                # Query active approved requests for your items
+                reqs_resp = supabase.table('request') \
+                    .select('request_id,item_id,status,return') \
+                    .in_('item_id', my_item_ids) \
+                    .eq('status', 'approved') \
+                    .neq('return', True) \
+                    .execute()
+
+                lent_out_count = len(reqs_resp.data or [])
+            except Exception:
+                # Fallback: fetch all matching requests then filter in Python
+                all_reqs_resp = supabase.table('request').select('request_id,item_id,status,return').in_('item_id', my_item_ids).execute()
+                lent_out_count = sum(1 for r in (all_reqs_resp.data or []) if r.get('status') == 'approved' and not r.get('return'))
+        else:
+            lent_out_count = 0
+    except Exception:
+        lent_out_count = 0
+
+
 
     return render(request, "home.html", {
         "user_info": user_info,
@@ -551,6 +581,7 @@ def home(request):
         "overdue_items": overdue_items,
         "overdue_count": overdue_count,
         "unread_count": unread_count,
+        "lent_out_count": lent_out_count,
     })
  
  
