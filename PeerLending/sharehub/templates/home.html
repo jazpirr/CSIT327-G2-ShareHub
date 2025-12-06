@@ -3,591 +3,657 @@
 {% load static %}
 
 {% block extra_head %}
-  <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
-  <link rel="stylesheet" href="{% static 'css/carousel.css' %}">
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
+<link rel="stylesheet" href="{% static 'css/carousel.css' %}">
+<!-- Font Awesome for filled (solid) icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
-  <!-- Action popup (shared with login style) -->
-  <div id="errorOverlay"></div>
-  <div id="errorPopup">
-    <div class="popup-header" id="popupHeader">Error</div>
-    <div class="popup-body" id="popupBody"></div>
-    <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
-  </div>
+<!-- Action popup (shared with login style) -->
+<div id="errorOverlay"></div>
+<div id="errorPopup">
+  <div class="popup-header" id="popupHeader">Error</div>
+  <div class="popup-body" id="popupBody"></div>
+  <button class="close-btn" onclick="closePopup()" aria-label="Close popup">&times;</button>
+</div>
 
-  <main class="dashboard">
-    <section class="welcome">
-      <h2>Welcome, <span class="username">Student</span></h2>
-      <p>Manage your borrowed items and discover available resources for your studies</p>
-
+<main class="dashboard-container">
+  <!-- 1. Welcome Section -->
+  <section class="welcome-section">
+    <div class="welcome-content">
+      <h1>Welcome, <span class="username">Frances Anne!#</span></h1>
+      <p>Manage your borrowed items and discover available resources</p>
 
       {% if overdue_count and overdue_count > 0 %}
-        <div class="alert" role="status" aria-live="polite" style="background:#ffeced;border:1px solid #f3c6c8;color:#7b1e1e;padding:12px 16px;border-radius:6px;">
-          ⚠️ You have {{ overdue_count }} overdue {{ overdue_count|pluralize:"item,items" }}.
-          {% if overdue_count == 1 %}
+      <div class="overdue-alert" role="status" aria-live="polite">
+        <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="alert-content">
+          <div class="alert-text">
+            You have {{ overdue_count }} overdue {{ overdue_count|pluralize:"item,items" }}.
+            {% if overdue_count == 1 %}
             Please return "{{ overdue_items.0.item_title }}" as soon as possible.
             {% if overdue_items.0.return_date_human %} (was due {{ overdue_items.0.return_date_human }}){% endif %}
-          {% else %}
+            {% else %}
             Please return them as soon as possible.
-            <button type="button" id="showOverdueList" style="margin-left:10px;border:none;background:transparent;color:var(--maroon);text-decoration:underline;cursor:pointer;">View list</button>
-          {% endif %}
-        </div>
+            <button type="button" id="showOverdueList" class="alert-toggle">View list</button>
+            {% endif %}
+          </div>
 
-        {% if overdue_count > 1 %}
-          <div id="overdueList" style="display:none;margin-top:8px;">
+          {% if overdue_count > 1 %}
+          <div id="overdueList" class="overdue-list">
             <ul>
               {% for it in overdue_items %}
-                <li>
-                  {{ it.item_title }}{% if it.return_date_human %} — due {{ it.return_date_human }}{% endif %}
-                </li>
+              <li>
+                {{ it.item_title }}{% if it.return_date_human %} — due {{ it.return_date_human }}{% endif %}
+              </li>
               {% endfor %}
             </ul>
           </div>
-
-          <script>
-            document.addEventListener('click', function(e){
-              if (e.target && e.target.id === 'showOverdueList') {
-                const el = document.getElementById('overdueList');
-                if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-              }
-            });
-          </script>
-        {% endif %}
+          {% endif %}
+        </div>
+      </div>
       {% endif %}
-    </section>
+    </div>
+  </section>
 
-    <section class="content-grid">
-      <div class="card">
-        <h3>Quick Actions</h3>
-        <div class="placeholder"></div>
-      </div>
+  <!-- 3. KPI Cards -->
+  <section class="kpi-section">
+    <div class="kpi-grid">
 
-      <div class="card borrowed-card">
-        <div class="borrowed-header">
-          <h3>Currently Borrowed Items</h3>
-          <div class="borrowed-count">{{ borrowed_items|length }}</div>
+      <div class="kpi-card">
+        <div class="kpi-icon borrowed">
+          <i class="fas fa-hand-holding"></i>
         </div>
-
-        <div id="borrowedItemsList" role="list" aria-label="Currently borrowed items">
-          {% if borrowed_items %}
-            {% for b in borrowed_items %}
-              <div class="borrowed-item"
-                   role="listitem"
-                   title="{{ b.item_title }}"
-                   data-item-id="{{ b.item_id }}"
-                   data-item-title="{{ b.item_title|escape }}"
-                   data-item-image="{{ b.item_image|default:''|escape }}"
-                   data-item-owner="{{ b.owner_display|escape }}"
-                   data-description="{{ b.item_description|default:''|escape }}"
-                   data-borrow-date="{{ b.borrow_date|default:''|escape }}"
-                   data-borrow-date-human="{{ b.borrow_date_human|default:''|escape }}"
-                   data-return-date="{{ b.return_date|default:''|escape }}"
-                   data-return-date-human="{{ b.return_date_human|default:''|escape }}"
-                   data-status="{{ b.status|default:'Borrowed'|escape }}">
-                {% if b.item_image %}
-                  <div class="borrowed-item-thumb">
-                    <img src="{{ b.item_image }}" alt="{{ b.item_title|escape }}"
-                         onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'>📦</div>';">
-                  </div>
-                {% else %}
-                  <div class="borrowed-item-thumb-placeholder">📦</div>
-                {% endif %}
-
-                <div class="borrowed-item-info">
-                  <div class="borrowed-item-title">{{ b.item_title }}</div>
-
-                  <div class="borrowed-item-meta">
-                    <div class="borrowed-item-owner">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                      <span>{{ b.owner_display }}</span>
-                    </div>
-
-                    <div class="borrowed-item-date">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                      <span>{{ b.return_date_human }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
-          {% else %}
-            <div class="no-borrowed-items">
-              <p>No borrowed items yet.</p>
-            </div>
-          {% endif %}
-        </div>
-
-        <div class="show-all-container" style="margin-top: 8px; display:flex; justify-content:center;">
-          <a href="{% url 'return_items' %}" class="show-all-link" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px; padding:8px 14px; border-radius:8px; background:linear-gradient(135deg,#7B1E1E,#5a1515); color:white; font-weight:600; box-shadow:0 6px 16px rgba(123,30,30,0.12);">
-            View All Borrowed / Return Items
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:inherit;">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </a>
+        <div class="kpi-content">
+          <div class="kpi-value">{{ borrowed_items|length }}</div>
+          <div class="kpi-label">Currently Borrowed</div>
         </div>
       </div>
 
-      <div class="card borrowed-card">
-        <div class="borrowed-header">
-          <h3>Incoming Requests</h3>
-          <div class="borrowed-count">{{ incoming_requests|length }}</div>
+      <div class="kpi-card">
+        <div class="kpi-icon pending">
+          <i class="fas fa-clock"></i>
         </div>
-
-        <div id="borrowingStatsRequests">
-          {% if incoming_requests %}
-            <ul id="incomingRequestsUl">
-              {% for r in incoming_requests %}
-                <li class="incoming-request-row"
-                    data-request-id="{{ r.request_id }}"
-                    data-item-id="{{ r.item_id }}"
-                    data-item-title="{{ r.item_title|escape }}">
-                  <div class="request-item-title">{{ r.item_title }}</div>
-
-                  <div class="request-requester-info">
-                    <div class="request-requester-name">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px;">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                      </svg>
-                      {{ r.requester_name }}
-                    </div>
-
-                    <div class="request-date">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:3px;">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                      {{ r.request_date|date:"M d, Y • g:i A" }}
-                    </div>
-                  </div>
-
-                  <div class="owner-actions">
-                    <span class="req-status pending" id="status-{{ r.request_id }}">{{ r.status }}</span>
-                    <button class="btn-approve" data-request-id="{{ r.request_id }}">Approve</button>
-                    <button class="btn-deny" data-request-id="{{ r.request_id }}">Deny</button>
-                  </div>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <div class="no-requests">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.3;">
-                <path d="M9 12h6M9 16h6M9 8h6"/>
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              </svg>
-              <p>No incoming requests</p>
-            </div>
-          {% endif %}
+        <div class="kpi-content">
+          <div class="kpi-value">{{ incoming_requests|length }}</div>
+          <div class="kpi-label">Pending Requests</div>
         </div>
       </div>
 
-      <!-- CAROUSEL SECTION FOR RECENTLY ADDED ITEMS -->
-      <div class="card carousel-card">
-        <div class="carousel-header">
-          <h3>Recently Added Items</h3>
+      <!-- <div class="kpi-card">
+        <div class="kpi-icon available">
+          <i class="fas fa-box-open"></i>
         </div>
-
-        <div class="carousel-section">
-          <button class="carousel-btn carousel-btn-left" id="carouselPrev" aria-label="Previous">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-          </button>
-
-          <button class="carousel-btn carousel-btn-right" id="carouselNext" aria-label="Next">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 18 15 12 9 6"></polyline>
-            </svg>
-          </button>
-
-          <div class="carousel-container">
-            <div class="carousel-track" id="carouselTrack">
-              {% if available_items %}
-                {% for item in available_items %}
-                  <div class="carousel-item">
-                    <div class="item-box"
-                         data-item-id="{{ item.item_id }}"
-                         data-title="{{ item.title|escape }}"
-                         data-image="{{ item.image_url|default:''|escape }}"
-                         data-owner-name="{{ item.owner_display|escape }}"
-                         data-owner-id="{{ item.owner_id|default:item.user_id|default:'' }}"
-                         data-category="{{ item.category|default:''|escape }}"
-                         data-condition="{{ item.condition|default:''|escape }}"
-                         data-description="{{ item.description|default:''|escape }}"
-                         data-created-at="{{ item.created_at_iso }}">
-                      <div class="item-thumb">
-                        {% if item.image_url %}
-                          <img src="{{ item.image_url }}" alt="{{ item.title|default:'Item image' }}">
-                        {% else %}
-                          <div class="placeholder small" style="height:120px;border-radius:6px;"></div>
-                        {% endif %}
-                      </div>
-
-                      <div class="item-meta" style="margin-top:8px;">
-                        <div class="item-title" style="font-weight:700;">{{ item.title }}</div>
-                        <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category }}</div>
-                      </div>
-
-                      <button type="button" class="request-btn open-borrow-modal">Request to Borrow</button>
-                    </div>
-                  </div>
-                {% endfor %}
-              {% else %}
-                <div class="no-items" style="grid-column: 1/-1; text-align: center; padding: 40px;">
-                  No available items right now.
-                </div>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="carousel-dots" id="carouselDots"></div>
+        <div class="kpi-content">
+          <div class="kpi-value">24#</div>
+          <div class="kpi-label">Available Items</div>
         </div>
+      </div> -->
 
-        <div class="show-all-container">
-          <a href="{% url 'borrow_items' %}" class="show-all-link">
-            View All Items
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </a>
+      <div class="kpi-card">
+        <div class="kpi-icon lent">
+          <i class="fas fa-share-square"></i>
         </div>
-      </div>
-    </section>
-
-    <!-- Borrow Request Modal (page-specific) -->
-    <div class="modal-overlay" id="borrowModal" style="display:none;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="modalTitle">Item Details</h2>
-          <p id="modalSubtitle">View item information</p>
-        </div>
-
-        <div class="modal-body">
-          <form id="borrowForm">
-            <input type="hidden" id="modalItemId" name="item_id">
-
-            <div id="modalThumb">
-              <img id="modalImage" src="" alt="Item image" style="display:none;">
-              <div id="modalImagePlaceholder">No image available</div>
-            </div>
-
-            <div class="modal-description-section">
-              <label>Description</label>
-              <div id="modalDescription">No description provided</div>
-            </div>
-
-            <div id="modalDetailsView">
-              <div class="modal-info-grid">
-                <div class="form-group">
-                  <label>Item</label>
-                  <div class="form-display" id="modalItemName">—</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Owner</label>
-                  <div class="form-display" id="modalOwnerName">—</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Category</label>
-                  <div class="form-display" id="modalCategory">—</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Condition</label>
-                  <div class="form-display" id="modalCondition">—</div>
-                </div>
-              </div>
-            </div>
-
-            <div id="modalRequestView">
-              <div class="modal-info-grid">
-                <div class="form-group">
-                  <label>Item</label>
-                  <div class="form-display" id="modalItemName2">—</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Owner</label>
-                  <div class="form-display" id="modalOwnerName2">—</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Category</label>
-                  <div class="form-display" id="modalCategory2">—</div>
-                </div>
-
-                <div class="form-group">
-                  <label>Condition</label>
-                  <div class="form-display" id="modalCondition2">—</div>
-                </div>
-              </div>
-
-              <div class="date-range-container">
-                <div class="date-input-wrapper">
-                  <label for="borrowStart">From Date</label>
-                  <input id="borrowStart" class="form-control" type="date" required>
-                </div>
-                <div class="date-input-wrapper">
-                  <label for="borrowEnd">Return Date</label>
-                  <input id="borrowEnd" class="form-control" type="date" required>
-                </div>
-              </div>
-
-              <div class="form-note">
-                <p>The owner will be notified of your request and can approve or decline it.</p>
-              </div>
-            </div>
-          </form>
-        </div>
-
-        <div class="modal-footer">
-          <button type="button" class="btn btn-cancel" id="cancelBorrow">Close</button>
-          <button type="button" class="btn btn-request" id="showRequestForm">Request to Borrow</button>
-          <button type="button" class="btn btn-back" id="backToDetails" style="display:none;">Back</button>
-          <button type="submit" form="borrowForm" class="btn btn-request" id="sendRequestBtn" style="display:none;">Send Request</button>
+        <div class="kpi-content">
+          <div class="kpi-value">8#</div>
+          <div class="kpi-label">Items Lent Out</div>
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- Borrowed Item Details Modal (page-specific) -->
-    <div class="modal-overlay" id="borrowedItemModal" style="display:none;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2>Borrowed Item Details</h2>
-          <p>Information about your borrowed item</p>
+  <!-- 4. Main Content Grid -->
+  <section class="main-content">
+    <div class="content-grid">
+      <!-- Left Column (75%) -->
+      <div class="left-column">
+        <!-- Currently Borrowed Items Card -->
+        <div class="content-card borrowed-card">
+          <div class="card-header">
+            <h3>Currently Borrowed Items</h3>
+            <div class="card-badge">{{ borrowed_items|length }}</div>
+          </div>
+
+          <div id="borrowedItemsList" class="borrowed-list" role="list" aria-label="Currently borrowed items">
+            {% if borrowed_items %}
+            {% for b in borrowed_items %}
+            <div class="borrowed-item" role="listitem"
+                 title="{{ b.item_title }}"
+                 data-item-id="{{ b.item_id }}"
+                 data-item-title="{{ b.item_title|escape }}"
+                 data-item-image="{{ b.item_image|default:''|escape }}"
+                 data-item-owner="{{ b.owner_display|escape }}"
+                 data-description="{{ b.item_description|default:''|escape }}"
+                 data-borrow-date="{{ b.borrow_date|default:''|escape }}"
+                 data-borrow-date-human="{{ b.borrow_date_human|default:''|escape }}"
+                 data-return-date="{{ b.return_date|default:''|escape }}"
+                 data-return-date-human="{{ b.return_date_human|default:''|escape }}"
+                 data-status="{{ b.status|default:'Borrowed'|escape }}">
+
+              <div class="borrowed-item-thumb">
+                {% if b.item_image %}
+                <img src="{{ b.item_image }}" alt="{{ b.item_title|escape }}"
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\'borrowed-item-thumb-placeholder\'><i class=\'fas fa-box\'></i></div>';">
+                {% else %}
+                <div class="borrowed-item-thumb-placeholder"><i class="fas fa-box"></i></div>
+                {% endif %}
+              </div>
+
+              <div class="borrowed-item-info">
+                <div class="item-title">{{ b.item_title }}</div>
+                <div class="item-meta">
+                  <div class="meta-item borrowed-item-owner">
+                    <i class="fas fa-user"></i>
+                    <span>{{ b.owner_display }}</span>
+                  </div>
+                  <div class="meta-item borrowed-item-date">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>{{ b.return_date_human }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <a href="{% url 'return_items' %}" class="item-action-btn" aria-label="View details">
+                <i class="fas fa-chevron-right"></i>
+              </a>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="no-borrowed-items">
+              <i class="fas fa-hand-holding" style="font-size: 48px;"></i>
+              <p>No borrowed items yet</p>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="card-footer">
+            <a href="{% url 'return_items' %}" class="view-all-btn">
+              View All Borrowed / Return Items
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
         </div>
 
-        <div class="modal-body">
-          <div id="borrowedModalThumb" style="margin-bottom:12px;">
-            <img id="borrowedModalImage" src="" alt="Item image" style="display:none; width:100%; max-height:240px; object-fit:cover; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.08);">
-            <div id="borrowedModalImagePlaceholder" style="display:none; padding:28px; background:#fafafa; border-radius:6px; text-align:center; color:#999;">
-              No image available
+        <!-- Recently Added Items Carousel -->
+        <div class="content-card carousel-card">
+          <div class="card-header">
+            <h3>Recently Added Items</h3>
+          </div>
+
+          <div class="carousel-section">
+            <div class="carousel-container">
+              <div class="carousel-controls">
+                <button class="carousel-btn prev" id="carouselPrev" aria-label="Previous">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="carousel-btn next" id="carouselNext" aria-label="Next">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+              </div>
+
+              <div class="carousel-track" id="carouselTrack">
+                {% if available_items %}
+                {% for item in available_items|slice:":6" %}
+                <div class="carousel-item">
+                  <div class="item-box item-card" 
+                       data-item-id="{{ item.item_id }}"
+                       data-title="{{ item.title|escape }}"
+                       data-image="{{ item.image_url|default:''|escape }}"
+                       data-owner-name="{{ item.owner_display|escape }}"
+                       data-owner-id="{{ item.owner_id|default:item.user_id|default:'' }}"
+                       data-category="{{ item.category|default:''|escape }}"
+                       data-condition="{{ item.condition|default:''|escape }}"
+                       data-description="{{ item.description|default:''|escape }}"
+                       data-created-at="{{ item.created_at_iso }}">
+
+                    <div class="item-thumb">
+                      {% if item.image_url %}
+                      <img src="{{ item.image_url }}" alt="{{ item.title|default:'Item image' }}">
+                      {% else %}
+                      <div class="image-placeholder">
+                        <i class="fas fa-box-open"></i>
+                      </div>
+                      {% endif %}
+                    </div>
+
+                    <div class="item-meta" style="margin-top:8px;">
+                      <div class="item-title" style="font-weight:700;">{{ item.title|truncatechars:30 }}</div>
+                      <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category|default:"Uncategorized" }}</div>
+                    </div>
+
+                    <button type="button" class="request-btn open-borrow-modal">Request to Borrow</button>
+                  </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="no-items">
+                  <i class="fas fa-box-open" style="font-size: 48px;"></i>
+                  <p>No items available</p>
+                </div>
+                {% endif %}
+              </div>
             </div>
+
+            <div class="carousel-dots" id="carouselDots"></div>
           </div>
 
-          <div class="modal-description-section">
-            <label>Description</label>
-            <div id="borrowedModalDescription">No description provided</div>
+          <div class="card-footer">
+            <a href="{% url 'borrow_items' %}" class="view-all-btn">
+              View All Items
+              <i class="fas fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column (25%) -->
+      <div class="right-column">
+        <!-- Quick Actions Card -->
+        <div class="content-card actions-card">
+          <div class="card-header">
+            <h3>Quick Actions</h3>
           </div>
 
+          <div class="actions-grid">
+            <a href="{% url 'borrow_items' %}" class="action-btn action-browse">
+              <div class="action-content">
+                <div class="action-title">Browse Available Items</div>
+              </div>
+            </a>
+
+            <button class="action-btn action-add" id="addItemBtn">
+              <div class="action-content">
+                <div class="action-title">Add New Item</div>
+              </div>
+            </button>
+
+            <a href="{% url 'my_items' %}" class="action-btn action-view">
+              <div class="action-content">
+                <div class="action-title">View My Items</div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        <!-- Incoming Requests Card -->
+        <div class="content-card requests-card">
+          <div class="card-header">
+            <h3>Incoming Requests</h3>
+            <div class="card-badge">{{ incoming_requests|length }}</div>
+          </div>
+
+          <div id="borrowingStatsRequests" class="requests-list">
+            {% if incoming_requests %}
+            <ul id="incomingRequestsUl">
+              {% for r in incoming_requests %}
+              <li class="incoming-request-row"
+                  data-request-id="{{ r.request_id }}"
+                  data-item-id="{{ r.item_id }}"
+                  data-item-title="{{ r.item_title|escape }}">
+
+                <div class="request-info">
+                  <div class="request-item-title">{{ r.item_title|truncatechars:30 }}</div>
+                  <div class="request-requester-info">
+                    <div class="request-requester-name">
+                      <i class="fas fa-user"></i>
+                      {{ r.requester_name|truncatechars:20 }}
+                    </div>
+                    <div class="request-date">
+                      <i class="fas fa-calendar-day"></i>
+                      {{ r.request_date|date:"M d, Y • g:i A" }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="owner-actions">
+                  <button class="btn-approve" data-request-id="{{ r.request_id }}">Approve</button>
+                  <button class="btn-deny" data-request-id="{{ r.request_id }}">Deny</button>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="no-requests">
+              <i class="fas fa-inbox" style="font-size: 48px;"></i>
+              <p>No incoming requests</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Borrow Request Modal (page-specific) -->
+<div class="modal-overlay" id="borrowModal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Item Details</h2>
+      <p id="modalSubtitle">View item information</p>
+    </div>
+
+    <div class="modal-body">
+      <form id="borrowForm">
+        <input type="hidden" id="modalItemId" name="item_id">
+
+        <div id="modalThumb">
+          <img id="modalImage" src="" alt="Item image" style="display:none;">
+          <div id="modalImagePlaceholder">No image available</div>
+        </div>
+
+        <div class="modal-description-section">
+          <label>Description</label>
+          <div id="modalDescription">No description provided</div>
+        </div>
+
+        <div id="modalDetailsView">
           <div class="modal-info-grid">
             <div class="form-group">
               <label>Item</label>
-              <div class="form-display" id="borrowedModalItemName">—</div>
+              <div class="form-display" id="modalItemName">—</div>
             </div>
 
             <div class="form-group">
               <label>Owner</label>
-              <div class="form-display" id="borrowedModalOwner">—</div>
+              <div class="form-display" id="modalOwnerName">—</div>
             </div>
 
             <div class="form-group">
-              <label>Borrowed On</label>
-              <div class="form-display" id="borrowedModalBorrowDate">—</div>
+              <label>Category</label>
+              <div class="form-display" id="modalCategory">—</div>
             </div>
 
             <div class="form-group">
-              <label>Return Date</label>
-              <div class="form-display" id="borrowedModalReturnDate">—</div>
-            </div>
-
-            <div class="form-group">
-              <label>Status</label>
-              <div class="form-display" id="borrowedModalStatus">Borrowed</div>
+              <label>Condition</label>
+              <div class="form-display" id="modalCondition">—</div>
             </div>
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button type="button" class="btn btn-cancel" id="closeBorrowedModal">Close</button>
+        <div id="modalRequestView">
+          <div class="modal-info-grid">
+            <div class="form-group">
+              <label>Item</label>
+              <div class="form-display" id="modalItemName2">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Owner</label>
+              <div class="form-display" id="modalOwnerName2">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Category</label>
+              <div class="form-display" id="modalCategory2">—</div>
+            </div>
+
+            <div class="form-group">
+              <label>Condition</label>
+              <div class="form-display" id="modalCondition2">—</div>
+            </div>
+          </div>
+
+          <div class="date-range-container">
+            <div class="date-input-wrapper">
+              <label for="borrowStart">From Date</label>
+              <input id="borrowStart" class="form-control" type="date" required>
+            </div>
+            <div class="date-input-wrapper">
+              <label for="borrowEnd">Return Date</label>
+              <input id="borrowEnd" class="form-control" type="date" required>
+            </div>
+          </div>
+
+          <div class="form-note">
+            <p>The owner will be notified of your request and can approve or decline it.</p>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" id="cancelBorrow">Close</button>
+      <button type="button" class="btn btn-request" id="showRequestForm">Request to Borrow</button>
+      <button type="button" class="btn btn-back" id="backToDetails" style="display:none;">Back</button>
+      <button type="submit" form="borrowForm" class="btn btn-request" id="sendRequestBtn" style="display:none;">Send Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- Borrowed Item Details Modal (page-specific) -->
+<div class="modal-overlay" id="borrowedItemModal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Borrowed Item Details</h2>
+      <p>Information about your borrowed item</p>
+    </div>
+
+    <div class="modal-body">
+      <div id="borrowedModalThumb" style="margin-bottom:12px;">
+        <img id="borrowedModalImage" src="" alt="Item image" style="display:none; width:100%; max-height:240px; object-fit:cover; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.08);">
+        <div id="borrowedModalImagePlaceholder" style="display:none; padding:28px; background:#fafafa; border-radius:6px; text-align:center; color:#999;">
+          No image available
+        </div>
+      </div>
+
+      <div class="modal-description-section">
+        <label>Description</label>
+        <div id="borrowedModalDescription">No description provided</div>
+      </div>
+
+      <div class="modal-info-grid">
+        <div class="form-group">
+          <label>Item</label>
+          <div class="form-display" id="borrowedModalItemName">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Owner</label>
+          <div class="form-display" id="borrowedModalOwner">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Borrowed On</label>
+          <div class="form-display" id="borrowedModalBorrowDate">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Return Date</label>
+          <div class="form-display" id="borrowedModalReturnDate">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <div class="form-display" id="borrowedModalStatus">Borrowed</div>
         </div>
       </div>
     </div>
-  </main>
 
-  <!-- Add Item Success/Error Modal (if you prefer page-specific override, otherwise base already includes it) -->
-  <!-- base.html already includes the global addItemOverlay, so you can omit this -->
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" id="closeBorrowedModal">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/popup.js' %}"></script>
-  <script src="{% static 'js/borrow_items.js' %}"></script>
-  <script src="{% static 'js/carousel.js' %}"></script>
-  <script src="{% static 'js/borrowed-item-modal.js' %}"></script>
-  <script src="{% static 'js/overdue-toggle.js' %}"></script>
-  <script>
-(function(){
-  // Ensure RESPOND_URL is available
-  const RESPOND_URL = window.RESPOND_URL || "{% url 'api_respond_request' %}";
+<script src="{% static 'js/popup.js' %}"></script>
+<script src="{% static 'js/borrow_items.js' %}"></script>
+<script src="{% static 'js/carousel.js' %}"></script>
+<script src="{% static 'js/borrowed-item-modal.js' %}"></script>
+<script src="{% static 'js/overdue-toggle.js' %}"></script>
+<script>
+  // Restore overdue toggle functionality
+  document.addEventListener('click', function(e){
+    if (e.target && e.target.id === 'showOverdueList') {
+      const el = document.getElementById('overdueList');
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+  });
 
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let c of cookies) {
-        const cookie = c.trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
+  // Initialize carousel
+  document.addEventListener('DOMContentLoaded', function() {
+    // Make borrowed items clickable (they should open the borrowed item modal)
+    document.querySelectorAll('.borrowed-item').forEach(item => {
+      item.style.cursor = 'pointer';
+      item.addEventListener('click', function(e) {
+        // Don't trigger if clicking on the action button
+        if (!e.target.closest('.item-action-btn')) {
+          // This will be handled by borrowed-item-modal.js
+          // The borrowed-item-modal.js looks for elements with class 'borrowed-item'
+        }
+      });
+    });
+
+    // Add item button functionality
+    const addItemBtn = document.getElementById('addItemBtn');
+    if (addItemBtn) {
+      addItemBtn.addEventListener('click', function() {
+        // Trigger the add item modal from header
+        const addItemBtn = document.querySelector('.add-item-btn');
+        if (addItemBtn) {
+          addItemBtn.click();
+        }
+      });
+    }
+
+    // Ensure RESPOND_URL is available for incoming requests
+    window.RESPOND_URL = "{% url 'api_respond_request' %}";
+
+    // Initialize request response functionality
+    (function(){
+      const RESPOND_URL = window.RESPOND_URL || "{% url 'api_respond_request' %}";
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let c of cookies) {
+            const cookie = c.trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+      const csrftoken = getCookie('csrftoken');
+
+      // Helper: update the numeric badge inside the card that contains the incoming requests.
+      function decrementIncomingCardCount(listItemEl) {
+        const card = listItemEl.closest('.card') || listItemEl.closest('.requests-card') || listItemEl.closest('.content-card');
+        if (!card) return;
+        const countEl = card.querySelector('.card-badge');
+        if (!countEl) return;
+        const cur = parseInt(countEl.textContent) || 0;
+        const newv = Math.max(0, cur - 1);
+        countEl.textContent = newv;
+      }
+
+      // Also update the small incomingRequests ul length if present
+      function decrementIncomingRequestsUl() {
+        const ul = document.getElementById('incomingRequestsUl');
+        if (!ul) return;
+        const items = ul.querySelectorAll('li.incoming-request-row');
+        const newv = Math.max(0, items.length);
+        const anyCardCount = document.querySelector('.requests-card .card-badge');
+        if (anyCardCount) {
+          anyCardCount.textContent = newv;
         }
       }
-    }
-    return cookieValue;
-  }
-  const csrftoken = getCookie('csrftoken');
 
-  // Helper: update the numeric badge inside the card that contains the incoming requests.
-  function decrementIncomingCardCount(listItemEl) {
-    // find the card container that holds the list (closest .card or .borrowed-card)
-    const card = listItemEl.closest('.card') || listItemEl.closest('.borrowed-card') || listItemEl.closest('.borrowed-card, .card');
-    if (!card) return;
-    // find the count element inside this card (class borrowed-count in template)
-    const countEl = card.querySelector('.borrowed-count, .borrowed-count');
-    if (!countEl) return;
-    const cur = parseInt(countEl.textContent) || 0;
-    const newv = Math.max(0, cur - 1);
-    countEl.textContent = newv;
-  }
+      async function respondRequest(requestId, action, btn) {
+        if (!requestId) return;
+        btn.disabled = true;
+        const orig = btn.innerHTML;
+        btn.innerHTML = action === 'approve' ? 'Approving...' : 'Denying...';
 
-  // Also update the small incomingRequests ul length if present
-  function decrementIncomingRequestsUl() {
-    const ul = document.getElementById('incomingRequestsUl');
-    if (!ul) return;
-    // If using <li> children
-    const items = ul.querySelectorAll('li.incoming-request-row');
-    // prefer visible count
-    const newv = Math.max(0, items.length);
-    // find card .borrowed-count (global)
-    const anyCardCount = document.querySelector('.card .borrowed-count, .borrowed-card .borrowed-count');
-    if (anyCardCount) {
-      anyCardCount.textContent = newv;
-    }
-  }
+        try {
+          const res = await fetch(RESPOND_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrftoken,
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ request_id: requestId, action: action })
+          });
 
-  async function respondRequest(requestId, action, btn) {
-    if (!requestId) return;
-    btn.disabled = true;
-    const orig = btn.innerHTML;
-    btn.innerHTML = action === 'approve' ? 'Approving...' : 'Denying...';
+          const data = await res.json().catch(()=>({}));
 
-    try {
-      const res = await fetch(RESPOND_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrftoken,
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ request_id: requestId, action: action })
+          if (res.ok && data.success) {
+            const li = document.querySelector(`[data-request-id="${requestId}"], #req-${requestId}`);
+            if (li) {
+              li.style.transition = 'all 0.22s ease';
+              li.style.opacity = '0';
+              li.style.transform = 'translateX(18px)';
+              setTimeout(() => {
+                li.remove();
+                decrementIncomingCardCount(li);
+                decrementIncomingRequestsUl();
+
+                const ul = document.getElementById('incomingRequestsUl');
+                if (ul && ul.querySelectorAll('li').length === 0) {
+                  const container = document.getElementById('borrowingStatsRequests') || ul.parentElement;
+                  if (container) {
+                    container.innerHTML = `
+                      <div class="no-requests">
+                        <i class="fas fa-inbox" style="font-size: 48px;"></i>
+                        <p>No incoming requests</p>
+                      </div>
+                    `;
+                  }
+                }
+              }, 240);
+            } else {
+              window.location.reload();
+            }
+          } else {
+            const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
+            alert('Failed: ' + msg);
+            btn.disabled = false;
+            btn.innerHTML = orig;
+          }
+        } catch (err) {
+          console.error('Network error', err);
+          alert('Network error. Try again.');
+          btn.disabled = false;
+          btn.innerHTML = orig;
+        }
+      }
+
+      // Delegate clicks for approve/deny buttons
+      document.addEventListener('click', function(e){
+        const approve = e.target.closest('.btn-approve');
+        const deny = e.target.closest('.btn-deny');
+
+        if (approve) {
+          const requestId = approve.dataset.requestId || approve.getAttribute('data-request-id');
+          respondRequest(requestId, 'approve', approve);
+        } else if (deny) {
+          const requestId = deny.dataset.requestId || deny.getAttribute('data-request-id');
+          respondRequest(requestId, 'deny', deny);
+        }
       });
 
-      const data = await res.json().catch(()=>({}));
-
-      if (res.ok && data.success) {
-        // find the list item and remove it
-        const li = document.querySelector(`[data-request-id="${requestId}"], #req-${requestId}`);
-        if (li) {
-          // animate out
-          li.style.transition = 'all 0.22s ease';
-          li.style.opacity = '0';
-          li.style.transform = 'translateX(18px)';
-          setTimeout(() => {
-            // update status span in the row if present
-            const statusSpan = document.getElementById('status-' + requestId) || li.querySelector(`#status-${requestId}`);
-            if (statusSpan) {
-              statusSpan.textContent = (action === 'approve') ? 'approved' : 'denied';
-              statusSpan.classList.remove('pending');
-              statusSpan.classList.add(action === 'approve' ? 'approved' : 'denied');
-            }
-
-            // remove from DOM
-            li.remove();
-
-            // update counts
-            decrementIncomingCardCount(li);
-            decrementIncomingRequestsUl();
-
-            // if there are no more <li> in incomingRequestsUl, show the no-requests placeholder if available
-            const ul = document.getElementById('incomingRequestsUl');
-            if (ul && ul.querySelectorAll('li').length === 0) {
-              const container = document.getElementById('borrowingStatsRequests') || ul.parentElement;
-              if (container) {
-                container.innerHTML = `
-                  <div class="no-requests">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px;opacity:0.3;">
-                      <path d="M9 12h6M9 16h6M9 8h6"/>
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    </svg>
-                    <p>No incoming requests</p>
-                  </div>
-                `;
-              }
-            }
-          }, 240);
-        } else {
-          // fallback to reload if we can't find the element to remove
-          window.location.reload();
+      // Normalize the incoming count on load
+      document.addEventListener('DOMContentLoaded', function(){
+        try {
+          const ul = document.getElementById('incomingRequestsUl');
+          if (ul) {
+            const count = ul.querySelectorAll('li.incoming-request-row').length;
+            const cardCount = document.querySelector('.requests-card .card-badge');
+            if (cardCount) cardCount.textContent = count;
+          }
+        } catch (e) {
+          console.error('normalize incoming count failed', e);
         }
-      } else {
-        // error from server
-        const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
-        alert('Failed: ' + msg);
-        btn.disabled = false;
-        btn.innerHTML = orig;
-      }
-    } catch (err) {
-      console.error('Network error', err);
-      alert('Network error. Try again.');
-      btn.disabled = false;
-      btn.innerHTML = orig;
-    }
-  }
-
-  // Delegate clicks for approve/deny buttons
-  document.addEventListener('click', function(e){
-    const approve = e.target.closest('.btn-approve, .btn-approve-new, button.btn-approve');
-    const deny = e.target.closest('.btn-deny, .btn-deny-new, button.btn-deny');
-
-    if (approve) {
-      const requestId = approve.dataset.requestId || approve.getAttribute('data-request-id');
-      respondRequest(requestId, 'approve', approve);
-    } else if (deny) {
-      const requestId = deny.dataset.requestId || deny.getAttribute('data-request-id');
-      respondRequest(requestId, 'deny', deny);
-    }
+      });
+    })();
   });
-
-  // Defensive: normalize the incoming count on load
-  document.addEventListener('DOMContentLoaded', function(){
-    try {
-      const ul = document.getElementById('incomingRequestsUl');
-      if (ul) {
-        const count = ul.querySelectorAll('li.incoming-request-row').length;
-        const cardCount = document.querySelector('.card .borrowed-count, .borrowed-card .borrowed-count');
-        if (cardCount) cardCount.textContent = count;
-      }
-    } catch (e) {
-      // ignore
-      console.error('normalize incoming count failed', e);
-    }
-  });
-})();
 </script>
-
-
-  <script>
-    window.RESPOND_URL = "{% url 'api_respond_request' %}";
-  </script>
 {% endblock %}
