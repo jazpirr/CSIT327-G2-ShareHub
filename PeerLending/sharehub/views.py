@@ -69,43 +69,52 @@ def settings_view(request):
     return render(request, "settings.html", {"user_settings": user_settings})
  
  
-@never_cache  
+@never_cache
 def register_view(request):
     if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
+            # convert year_level to int (or None) because the form ChoiceField returns a string
+            year_val = data.get("year_level")
+            try:
+                year_val = int(year_val) if year_val not in (None, '') else None
+            except (ValueError, TypeError):
+                year_val = None
+
             try:
                 response = supabase.auth.sign_up({
                     "email": data["email"],
                     "password": data["password1"],
                 })
- 
+
                 if not getattr(response, "user", None):
                     return JsonResponse({
                         "errors": {"general": [{"message": "Registration failed. Please try again."}]}
                     }, status=400)
- 
+
                 user_id = response.user.id
- 
-                insert = supabase.table("user").insert({
+
+                insert_payload = {
                     "id": user_id,
                     "email": data["email"],
-                    "first_name": data["first_name"],
-                    "last_name": data["last_name"],
+                    "first_name": data.get("first_name"),
+                    "last_name": data.get("last_name"),
                     "birthday": data.get("birthday").isoformat() if data.get("birthday") else None,
                     "phone_number": data.get("phone_number"),
                     "college_dept": data.get("college_dept"),
                     "course": data.get("course"),
-                    "year_level": data.get("year_level"),
-                }).execute()
- 
+                    "year_level": year_val,
+                }
+
+                insert = supabase.table("user").insert(insert_payload).execute()
+
                 if getattr(insert, "error", None):
                     try:
                         supabase.auth.admin.delete_user(user_id)
                     except Exception:
                         pass
- 
+
                     err_msg = "Registration failed. Please try again."
                     try:
                         if hasattr(insert.error, "message"):
@@ -114,13 +123,13 @@ def register_view(request):
                             err_msg = insert.error.get("message")
                     except Exception:
                         pass
- 
+
                     return JsonResponse({
                         "errors": {"general": [{"message": err_msg}]}
                     }, status=400)
- 
+
                 return JsonResponse({"success": True, "redirect_url": "/login"})
- 
+
             except AuthApiError as e:
                 err_msg = "Email is already registered."
                 try:
@@ -131,9 +140,10 @@ def register_view(request):
                     pass
                 return JsonResponse({"errors": {"general": [{"message": err_msg}]}}, status=400)
         else:
+            print("REGISTER FORM INVALID:", form.errors.as_json())   # remove later
             errors = {field: [{"message": err} for err in errs] for field, errs in form.errors.items()}
             return JsonResponse({"errors": errors}, status=400)
- 
+
     resp = render(request, "login-register/register.html", {"form": CustomUserCreationForm()})
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp["Pragma"] = "no-cache"
@@ -1243,7 +1253,7 @@ def admin_dashboard(request):
                 label = "Borrowed" if not overdue_text else "Late"
             else:
                 label = status_label.title()
-
+            
             borrowed_items.append({
                 "request_id": r.get("request_id"),
                 "item_name": item_name,
@@ -2380,12 +2390,16 @@ def my_items(request):
     user_id = request.session.get("supabase_user_id")
     notifications, unread_count = fetch_notifications_for(user_id)
 
-    # fetch items owned by this user
     items = []
     try:
-        items_resp = supabase.table("item").select("*").eq("user_id", user_id).order("created_at", desc=True).execute()
+        items_resp = supabase.table("item") \
+            .select("*") \
+            .eq("user_id", user_id) \
+            .order("created_at", desc=True) \
+            .execute()
         items = items_resp.data or []
-    except Exception:
+    except Exception as exc:
+        print("Error fetching items:", exc)
         items = []
 
     items_with_requests = []
@@ -2393,9 +2407,8 @@ def my_items(request):
         item_ids = [itm.get("item_id") for itm in items if itm.get("item_id")]
         reqs = []
         if item_ids:
-            # fetch all requests for these items (we need latest + pending info)
             req_resp = supabase.table("request") \
-                .select("request_id,item_id,user_id,request_date,return,status,request_date") \
+                .select("request_id,item_id,user_id,request_date,return,status") \
                 .in_("item_id", item_ids) \
                 .order("request_date", desc=True) \
                 .execute()
@@ -2412,12 +2425,11 @@ def my_items(request):
                     display = u.get("email") or u.get("id")
                 users_map[u.get("id")] = display
 
-        # group requests by item_id (ordered by request_date desc already)
+        # group requests by item_id (already ordered desc)
         reqs_by_item = {}
         for r in reqs:
             iid = r.get("item_id")
             rd = r.get("request_date")
-            # create human date
             try:
                 r_dt = datetime.fromisoformat(rd) if isinstance(rd, str) else rd
                 human = r_dt.strftime("%b %d, %Y · %I:%M %p") if r_dt else rd
@@ -2428,7 +2440,7 @@ def my_items(request):
                 "user_id": r.get("user_id"),
                 "requester_name": users_map.get(r.get("user_id"), r.get("user_id")),
                 "request_date_human": human,
-                "status": r.get("status"),
+                "status": (r.get("status") or "").lower(),
                 "return": bool(r.get("return")),
                 "raw_request_date": r.get("request_date"),
             }
@@ -2441,42 +2453,35 @@ def my_items(request):
             iid = it.get("item_id")
             item_reqs = reqs_by_item.get(iid, [])
 
-            # Determine status label for item based on latest request (list is desc by date)
+            # default
             status_label = "available"
             latest_approved = None
-            latest_req = item_reqs[0] if item_reqs else None
 
-            # if there is an approved request (first approved in list) find it:
+            # find the first approved in descending list
             for r in item_reqs:
-                if r.get("status") == "approved":
+                if (r.get("status") or "").lower() == "approved":
                     latest_approved = r
                     break
 
-            # priority:
-            # 1) if latest approved request exists and return==True -> returned
-            # 2) elif latest approved exists and return==False -> borrowed
-            # 3) elif there's any pending request -> pending
-            # 4) else available
             if latest_approved:
                 if latest_approved.get("return") is True:
                     status_label = "returned"
                 else:
                     status_label = "borrowed"
             else:
-                # check for pending requests
-                has_pending = any(r.get("status") == "pending" for r in item_reqs)
-                if has_pending:
-                    status_label = "pending"
-                else:
-                    status_label = "available"
+                # check pending
+                has_pending = any((r.get("status") or "").lower() == "pending" for r in item_reqs)
+                status_label = "pending" if has_pending else "available"
 
-            # counts for dashboard
+            # counts
             if status_label == "available":
                 total_available += 1
-            if any(r.get("status") == "pending" for r in item_reqs):
-                total_pending += sum(1 for r in item_reqs if r.get("status") == "pending")
+            total_pending += sum(1 for r in item_reqs if (r.get("status") or "").lower() == "pending")
 
             pending_reqs = [r for r in item_reqs if (r.get("status") or "").lower() == "pending"]
+
+            # normalize before rendering
+            status_label = str(status_label or "unknown").strip().lower()
 
             items_with_requests.append({
                 "item_id": iid,
@@ -2487,8 +2492,8 @@ def my_items(request):
                 "condition": it.get("condition") or "",
                 "available": bool(it.get("available")),
                 "status_label": status_label,
-                "requests": item_reqs,            # full request history (optional)
-                "pending_requests": pending_reqs, # only pending ones for the pending UI
+                "requests": item_reqs,
+                "pending_requests": pending_reqs,
             })
     except Exception as e:
         print("Error in my_items:", e)
@@ -2501,10 +2506,8 @@ def my_items(request):
         "pending_count": total_pending,
         "SUPABASE_URL": SUPABASE_URL,
         "SUPABASE_ANON_KEY": SUPABASE_ANON_KEY,
-        # optional: expose user id if chat.js needs it
         "SUPABASE_USER_ID": request.session.get("supabase_user_id", ""),
     })
-
 
 @require_http_methods(["GET", "POST"])
 @supabase_login_required

@@ -1,5 +1,5 @@
 // sharehub/static/js/chat.js
-// Full chat client for ShareHub (improved: selected head + header title + cleaner DOM)
+// Full chat client for ShareHub with emoji picker
 (function () {
   "use strict";
 
@@ -37,7 +37,7 @@
       return;
     }
 
-    // DOM elements (from base.html)
+    // DOM elements
     let chatBtn = document.getElementById("chatBtn");
     const chatOverlay = document.getElementById("chatOverlay");
     const chatPopup = document.getElementById("chatPopup");
@@ -48,7 +48,7 @@
     const chatInput = document.getElementById("chatInput");
     const closeChatBtn = document.getElementById("closeChat");
 
-    // fallback / inject chat button if missing
+    // Fallback / inject chat button if missing
     if (!chatBtn) {
       chatBtn = document.querySelector(".chat-btn") || document.querySelector("[data-chat-btn]") || null;
       if (!chatBtn) {
@@ -63,20 +63,105 @@
           btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"></path></svg>`;
           header.appendChild(btn);
           chatBtn = btn;
-          console.info("No chat button found — injected one into page header. Prefer adding #chatBtn to your header.html for custom placement.");
+          console.info("No chat button found — injected one into page header.");
         }
-      } else {
-        console.warn("chatBtn not found by id. Using fallback element.");
       }
     }
 
     if (!chatPopup || !chatOverlay || !chatList || !chatForm || !chatInput || !messagesEl) {
-      console.warn("Some chat DOM elements are missing. Required: #chatPopup, #chatOverlay, #chatList, #chatForm, #chatInput, #messages.");
+      console.warn("Some chat DOM elements are missing.");
     }
 
     let activeConversation = null;
     let channel = null;
     let headsInterval = null;
+
+    // Initialize emoji picker
+    initEmojiPicker();
+
+    function initEmojiPicker() {
+      if (!chatForm) return;
+
+      // Common emojis
+      const emojis = [
+        '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣',
+        '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰',
+        '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜',
+        '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏',
+        '😒', '😞', '😔', '😟', '😕', '🙁', '😣', '😖',
+        '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡',
+        '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰',
+        '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶',
+        '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮',
+        '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙',
+        '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪',
+        '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠',
+        '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+        '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+        '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️',
+        '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
+        '🎉', '🎊', '🎈', '🎁', '🎀', '🎂', '🍰', '🧁',
+        '🔥', '✨', '💫', '⭐', '🌟', '💥', '💢', '💨'
+      ];
+
+      // Wrap input in a container if not already
+      if (!chatInput.parentElement.classList.contains('chat-input-wrapper')) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chat-input-wrapper';
+        chatInput.parentNode.insertBefore(wrapper, chatInput);
+        wrapper.appendChild(chatInput);
+
+        // Add emoji button
+        const emojiBtn = document.createElement('button');
+        emojiBtn.type = 'button';
+        emojiBtn.className = 'emoji-btn';
+        emojiBtn.innerHTML = '😊';
+        emojiBtn.title = 'Add emoji';
+        wrapper.appendChild(emojiBtn);
+
+        // Create emoji picker
+        const emojiPicker = document.createElement('div');
+        emojiPicker.className = 'emoji-picker';
+        const emojiGrid = document.createElement('div');
+        emojiGrid.className = 'emoji-grid';
+
+        emojis.forEach(emoji => {
+          const emojiItem = document.createElement('button');
+          emojiItem.type = 'button';
+          emojiItem.className = 'emoji-item';
+          emojiItem.textContent = emoji;
+          emojiItem.addEventListener('click', () => {
+            chatInput.value += emoji;
+            chatInput.focus();
+            emojiPicker.classList.remove('active');
+          });
+          emojiGrid.appendChild(emojiItem);
+        });
+
+        emojiPicker.appendChild(emojiGrid);
+        chatForm.appendChild(emojiPicker);
+
+        // Toggle emoji picker
+        emojiBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          emojiPicker.classList.toggle('active');
+        });
+
+        // Close picker when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+            emojiPicker.classList.remove('active');
+          }
+        });
+      }
+
+      // Update submit button to use icon
+      const submitBtn = chatForm.querySelector('button[type="submit"]');
+      if (submitBtn && submitBtn.textContent === 'Send') {
+        submitBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
+        submitBtn.title = 'Send message';
+      }
+    }
 
     function toggleChat(open) {
       if (!chatPopup || !chatOverlay) {
@@ -138,37 +223,61 @@
         chatList.innerHTML = '<div class="empty">No conversations yet.</div>';
         return;
       }
+
       heads.forEach((h) => {
+        const convId = h.conversation_id || "";
+        const otherName = h.other_name || "Unknown";
+        const itemTitle = h.item_title || "";
+        const lastMessage = h.last_message || "";
+        const unread = h.unread_count || 0;
+        const avatar = h.other_avatar || "";
+
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "chat-head";
-        btn.dataset.conv = h.conversation_id || "";
-        // keep minimal markup; unread badge removed
+        btn.dataset.conv = convId;
+
+        let avatarHtml = "";
+        if (avatar) {
+          avatarHtml = `<div class="avatar"><img src="${escapeHtml(avatar)}" alt="${escapeHtml(otherName)}"></div>`;
+        } else {
+          const initials = (otherName.split(" ").map(s => s[0] || "").slice(0,2).join("") || otherName.slice(0,1) || "U").toUpperCase();
+          avatarHtml = `<div class="avatar fallback">${escapeHtml(initials)}</div>`;
+        }
+
         btn.innerHTML = `
-          <div class="head-left">
-            <div class="head-title">${escapeHtml(h.item_title || "Item")}</div>
-            <div class="head-sub">${escapeHtml(h.last_message || "")}</div>
+          ${avatarHtml}
+          <div class="head-main">
+            <div class="head-title">${escapeHtml(otherName)} <span class="dash">—</span> <span class="item-title">${escapeHtml(itemTitle)}</span></div>
+            <div class="head-sub">${escapeHtml(lastMessage)}</div>
           </div>
+          ${unread ? `<div class="head-badge">${unread}</div>` : ""}
         `;
+
         btn.addEventListener("click", () => {
           clearSelectedHeads();
           btn.classList.add("selected");
-          setPopupHeaderTitle(h.item_title || "Conversation");
-          openConversation(h.conversation_id);
+          setPopupHeaderTitle(otherName, itemTitle);
+          openConversation(convId);
         });
+
         chatList.appendChild(btn);
       });
     }
-
-    function setPopupHeaderTitle(title) {
+    
+    function setPopupHeaderTitle(title, subtitle) {
       if (!chatPopup) return;
       const headerTitleEl = chatPopup.querySelector(".chat-header .title");
-      if (headerTitleEl) headerTitleEl.textContent = title || "Chats";
+      if (!headerTitleEl) return;
+      if (subtitle) {
+        headerTitleEl.innerHTML = `${escapeHtml(title || '')} <span class="header-subtitle-sep">—</span> <span class="header-sub">${escapeHtml(subtitle)}</span>`;
+      } else {
+        headerTitleEl.textContent = title || "Chats";
+      }
     }
 
     async function openConversation(convId) {
       activeConversation = convId;
-      // set header title from selected head if present
       const sel = document.querySelector(`.chat-head[data-conv="${convId}"]`);
       const title = sel ? (sel.querySelector(".head-title")?.textContent || "Conversation") : "Conversation";
       setPopupHeaderTitle(title);
@@ -190,7 +299,6 @@
         messagesEl.innerHTML = "<div class='error'>Failed to load messages.</div>";
       }
 
-      // unsubscribe previous channel
       if (channel) {
         try {
           channel.unsubscribe();
@@ -198,7 +306,6 @@
         channel = null;
       }
 
-      // subscribe to messages via Supabase realtime
       try {
         channel = sb
           .channel(`conversation:${convId}`)
@@ -241,9 +348,8 @@
     function appendMessage(senderId, text, when, msgId) {
       if (!messagesEl) return;
 
-      // prevent duplicates from realtime + POST
       if (msgId && messagesEl.querySelector(`[data-msg-id="${msgId}"]`)) {
-        return; // already displayed
+        return;
       }
 
       const row = document.createElement("div");
@@ -276,6 +382,7 @@
         const txt = chatInput.value.trim();
         if (!txt) return;
         chatInput.value = "";
+        
         try {
           const res = await fetch(`/api/chat/${activeConversation}/post/`, {
             method: "POST",
@@ -288,7 +395,6 @@
           const j = await res.json();
           if (!res.ok || !j || !j.success) {
             console.warn("Failed to post message", j);
-            // fallback to show the message locally
             appendMessage(CURRENT_USER_ID, txt, new Date().toISOString(), j && j.message ? j.message.id : undefined);
           }
         } catch (e) {
@@ -316,7 +422,6 @@
         if (res.ok && j && j.conversation_id) {
           toggleChat(true);
           setTimeout(() => {
-            // mark head selected visually if present
             const sel = document.querySelector(`.chat-head[data-conv="${j.conversation_id}"]`);
             if (sel) {
               clearSelectedHeads();
@@ -341,6 +446,7 @@
         }
       }, 20000);
     }
+    
     function stopHeadsPoll() {
       if (headsInterval) {
         clearInterval(headsInterval);
@@ -361,12 +467,11 @@
       stopHeadsPoll();
     });
 
-    // debug info
     console.debug("chat.js initialized", {
       SUPABASE_URL: SUPABASE_URL ? "ok" : "missing",
       SUPABASE_ANON_KEY: SUPABASE_ANON_KEY ? "ok" : "missing",
       CURRENT_USER_ID: CURRENT_USER_ID ? "ok" : "missing",
       elements: { chatBtn: !!chatBtn, chatPopup: !!chatPopup, chatList: !!chatList, chatForm: !!chatForm },
     });
-  }); // DOMContentLoaded end
-})(); // IIFE end
+  });
+})();

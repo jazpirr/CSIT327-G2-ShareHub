@@ -332,7 +332,7 @@
 
 .profile-dropdown {
     position: relative;
-    margin-left: 12px;
+    margin-left: 999;
 }
 
 .profile-trigger {
@@ -549,6 +549,7 @@
 }
 
 .popup-header .title {
+    color: white;
     font-size: 18px;
     font-weight: 600;
 }
@@ -630,6 +631,7 @@
     font-size: 12px;
     color: var(--text-light);
 }
+
 
 /* Mobile Responsive */
 @media (max-width: 1024px) {
