@@ -501,46 +501,24 @@ document.addEventListener('DOMContentLoaded', function () {
       };
     }
 
-    // Position popup BELOW the button (keeps your original logic but defensive)
     function openFilterPopup() {
       if (!filterBtn || !filterPopup) return;
+
+      // Close any open modals first (or at least check)
+      const openModals = document.querySelectorAll('.modal-overlay[style*="display: flex"], .modal-overlay.active');
+      if (openModals.length > 0) {
+        // Don't open filter if modal is open
+        return;
+      }
+
       filterPopup.classList.add('active');
-      filterPopup.style.display = 'flex';
-      filterPopup.style.position = 'fixed';
-
-      const rect = filterBtn.getBoundingClientRect();
-      const margin = 8;
-
-      // Position below the button
-      const desiredTop = rect.bottom + margin;
-      const desiredLeft = rect.left;
-
-      // Measure popup dimensions (use min to avoid overflow)
-      const popupW = Math.min(filterPopup.offsetWidth || 360, window.innerWidth - 40);
-      const popupH = Math.min(filterPopup.offsetHeight || 600, window.innerHeight - desiredTop - 20);
-
-      // Align with button's left edge
-      let left = desiredLeft;
-
-      // If popup would overflow right edge, align to right edge of button
-      if (left + popupW > window.innerWidth - 20) {
-        left = rect.right - popupW;
-      }
-
-      // Ensure it doesn't go off left edge
-      left = Math.max(20, left);
-
-      // Top position (below button), fallback above if not enough space
-      let top = desiredTop;
-      if (top + popupH > window.innerHeight - 20) {
-        top = rect.top - popupH - margin;
-        if (top < 20) top = 20;
-      }
-
-      filterPopup.style.left = `${Math.round(left)}px`;
-      filterPopup.style.top = `${Math.round(top)}px`;
-      filterPopup.style.right = 'auto';
+      filterPopup.style.display = 'block'; // Changed from 'flex' to 'block'
+      filterPopup.style.position = 'absolute'; // Changed from 'fixed'
+      filterPopup.style.top = '100%';
+      filterPopup.style.right = '0';
+      filterPopup.style.left = 'auto';
       filterPopup.style.bottom = 'auto';
+      filterPopup.style.marginTop = '8px';
       filterPopup.setAttribute('aria-hidden', 'false');
     }
 
@@ -554,11 +532,40 @@ document.addEventListener('DOMContentLoaded', function () {
     // wire events
     if (filterBtn) {
       filterBtn.addEventListener('click', function (ev) {
+        // Check if profile dropdown is open
+        const profileDropdown = document.querySelector('.profile-dropdown.active');
+        if (profileDropdown) {
+          ev.stopPropagation();
+          ev.preventDefault();
+          return; // Don't open filter if profile dropdown is open
+        }
+
+        // Check if any modal is open
+        const openModals = document.querySelectorAll('.modal-overlay[style*="display: flex"], .modal-overlay.active');
+        if (openModals.length > 0) {
+          return; // Don't open filter if modal is open
+        }
+
         ev.stopPropagation();
         if (!filterPopup) return;
         const isOpen = filterPopup.classList.contains('active');
         if (isOpen) closeFilterPopup();
         else openFilterPopup();
+      });
+
+      // Add this event listener to close filter when profile opens
+      document.addEventListener('DOMContentLoaded', function () {
+        const profileTrigger = document.getElementById('profileTrigger');
+        if (profileTrigger) {
+          profileTrigger.addEventListener('click', function () {
+            // Close filter popup
+            const filterPopup = document.getElementById('filterPopup');
+            if (filterPopup && filterPopup.classList.contains('active')) {
+              filterPopup.classList.remove('active');
+              filterPopup.style.display = 'none';
+            }
+          });
+        }
       });
     }
     if (filterClose) filterClose.addEventListener('click', function (e) { e.preventDefault(); closeFilterPopup(); });
@@ -585,8 +592,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', function (e) {
       if (!filterPopup) return;
-      if (filterPopup.contains(e.target) || (filterBtn && filterBtn.contains(e.target))) return;
-      closeFilterPopup();
+
+      // Check if click is on filter popup or filter button
+      const isFilterClick = filterPopup.contains(e.target) ||
+        (filterBtn && filterBtn.contains(e.target));
+
+      // Check if click is on profile dropdown or trigger
+      const isProfileClick = e.target.closest('.profile-dropdown') ||
+        e.target.closest('.profile-trigger') ||
+        e.target.closest('.profile-menu');
+
+      // Close filter popup if clicking outside AND not on profile area
+      if (!isFilterClick && !isProfileClick) {
+        closeFilterPopup();
+      }
+
+      // Also close filter if clicking on profile menu items
+      if (isProfileClick && !e.target.closest('.filter-btn-wrapper')) {
+        closeFilterPopup();
+      }
     });
 
     // recalc position when layout changes, but only if popup is open
@@ -610,3 +634,59 @@ document.addEventListener('DOMContentLoaded', function () {
     hideTemplateNoResults(false);
   })();
 });
+
+// Close filter and report when opening modals
+document.querySelectorAll('.request-btn, [data-toggle="modal"]').forEach(btn => {
+  btn.addEventListener('click', function () {
+    // Close any open filter popup
+    const filterPopup = document.getElementById('filterPopup');
+    if (filterPopup && filterPopup.classList.contains('active')) {
+      filterPopup.classList.remove('active');
+      filterPopup.style.display = 'none';
+    }
+
+    // Close any open report dropdowns
+    document.querySelectorAll('.report-dropdown.active').forEach(dd => {
+      dd.classList.remove('active');
+    });
+  });
+});
+
+// Also close when clicking on item box (to open details modal)
+document.querySelectorAll('.item-box').forEach(card => {
+  card.addEventListener('click', function (ev) {
+    // Close filter popup
+    const filterPopup = document.getElementById('filterPopup');
+    if (filterPopup && filterPopup.classList.contains('active')) {
+      filterPopup.classList.remove('active');
+      filterPopup.style.display = 'none';
+    }
+  });
+});
+
+
+
+(function watchProfileDropdown() {
+  const profileDropdown = document.querySelector('.profile-dropdown');
+  
+  if (!profileDropdown) return;
+  
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      if (mutation.attributeName === 'class') {
+        const isActive = profileDropdown.classList.contains('active');
+        
+        if (isActive) {
+          // Close filter popup when profile dropdown opens
+          const filterPopup = document.getElementById('filterPopup');
+          if (filterPopup && filterPopup.classList.contains('active')) {
+            filterPopup.classList.remove('active');
+            filterPopup.style.display = 'none';
+          }
+        }
+      }
+    });
+  });
+  
+  observer.observe(profileDropdown, { attributes: true });
+})();

@@ -2,126 +2,134 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ShareHub{% endblock %}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-    <link rel="stylesheet" href="{% static 'css/header.css' %}?v=3">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ShareHub{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{% static 'css/header.css' %}?v=3">
 </head>
+
 <body>
-<nav class="navbar">
-  <div class="nav-container">
-    <div class="nav-left">
-      <a href="{% url 'home' %}" class="logo">
-        <div class="logo-wrapper">
-          <i class="fas fa-hands-helping logo-icon"></i>
-        </div>
-        <span class="logo-text">
-          <span class="share-text">Share</span>
-          <span class="hub-text">Hub</span>
-        </span>
-      </a>
-    </div>
-
-    <div class="nav-center">
-      <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-        <i class="fas fa-home nav-icon"></i>
-        <span class="nav-text">Home</span>
-      </a>
-      <a href="{% url 'borrow_items' %}" class="nav-link {% if request.resolver_match.url_name == 'borrow_items' %}active{% endif %}">
-        <i class="fas fa-box-open nav-icon"></i>
-        <span class="nav-text">Borrow Items</span>
-      </a>
-      <a href="{% url 'my_items' %}" class="nav-link {% if request.resolver_match.url_name == 'my_items' %}active{% endif %}">
-        <i class="fas fa-clipboard-list nav-icon"></i>
-        <span class="nav-text">My Items</span>
-      </a>
-      <a href="{% url 'return_items' %}" class="nav-link {% if request.resolver_match.url_name == 'return_items' %}active{% endif %}">
-        <i class="fas fa-undo-alt nav-icon"></i>
-        <span class="nav-text">Return Items</span>
-      </a>
-    </div>
-
-    <div class="nav-right">
-      <button class="add-item-btn">
-        <span class="btn-text">Add Item</span>
-      </button>
-
-      <button class="notification-btn" type="button" aria-expanded="false" aria-controls="notificationPopup">
-        <i class="fas fa-bell"></i>
-        {% if unread_count > 0 %}
-          <span id="notificationBadge" class="notification-badge">{{ unread_count }}</span>
-        {% else %}
-          <span id="notificationBadge" class="notification-badge" style="display:none;"></span>
-        {% endif %}
-      </button>
-
-      <button id="chatButton" class="chat-btn" type="button" aria-expanded="false" aria-controls="chatPanel" title="Chats">
-        <i class="fas fa-comments"></i>
-        <span id="chatBadge" class="notification-badge" style="display:none;"></span>
-      </button>
-
-      <div class="profile-dropdown">
-        <button class="profile-trigger" type="button" id="profileTrigger">
-          <div class="profile-avatar">
-            {% if user_info and user_info.profile_picture %}
-              <img src="{{ user_info.profile_picture }}" alt="{{ user_info.first_name }} {{ user_info.last_name }}">
-            {% else %}
-              {% if user_info and user_info.first_name %}
-                {{ user_info.first_name|first|upper }}{% if user_info.last_name %}{{ user_info.last_name|first|upper }}{% endif %}
-              {% else %}
-                {% if user_info and user_info.email %}
-                  {{ user_info.email|first|upper }}
-                {% else %}
-                  <i class="fas fa-user"></i>
-                {% endif %}
-              {% endif %}
-            {% endif %}
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-left">
+        <a href="{% url 'home' %}" class="logo">
+          <div class="logo-wrapper">
+            <i class="fas fa-hands-helping logo-icon"></i>
           </div>
+          <span class="logo-text">
+            <span class="share-text">Share</span>
+            <span class="hub-text">Hub</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="nav-center">
+        <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+          <i class="fas fa-home nav-icon"></i>
+          <span class="nav-text">Home</span>
+        </a>
+        <a href="{% url 'borrow_items' %}"
+          class="nav-link {% if request.resolver_match.url_name == 'borrow_items' %}active{% endif %}">
+          <i class="fas fa-box-open nav-icon"></i>
+          <span class="nav-text">Borrow Items</span>
+        </a>
+        <a href="{% url 'my_items' %}"
+          class="nav-link {% if request.resolver_match.url_name == 'my_items' %}active{% endif %}">
+          <i class="fas fa-clipboard-list nav-icon"></i>
+          <span class="nav-text">My Items</span>
+        </a>
+        <a href="{% url 'return_items' %}"
+          class="nav-link {% if request.resolver_match.url_name == 'return_items' %}active{% endif %}">
+          <i class="fas fa-undo-alt nav-icon"></i>
+          <span class="nav-text">Return Items</span>
+        </a>
+      </div>
+
+      <div class="nav-right">
+        <button class="add-item-btn">
+          <span class="btn-text">Add Item</span>
         </button>
 
-        <div class="profile-menu" id="profileMenu">
-          <div class="profile-info">
-            <div class="profile-name">
-              {% if user_info.first_name or user_info.last_name %}
-                {{ user_info.first_name }} {{ user_info.last_name }}
+        <button class="notification-btn" type="button" aria-expanded="false" aria-controls="notificationPopup">
+          <i class="fas fa-bell"></i>
+          {% if unread_count > 0 %}
+          <span id="notificationBadge" class="notification-badge">{{ unread_count }}</span>
+          {% else %}
+          <span id="notificationBadge" class="notification-badge" style="display:none;"></span>
+          {% endif %}
+        </button>
+
+        <button id="chatButton" class="chat-btn" type="button" aria-expanded="false" aria-controls="chatPanel"
+          title="Chats">
+          <i class="fas fa-comments"></i>
+          <span id="chatBadge" class="notification-badge" style="display:none;"></span>
+        </button>
+
+        <div class="profile-dropdown">
+          <button class="profile-trigger" type="button" id="profileTrigger">
+            <div class="profile-avatar">
+              {% if user_info and user_info.profile_picture %}
+              <img src="{{ user_info.profile_picture }}" alt="{{ user_info.first_name }} {{ user_info.last_name }}">
               {% else %}
-                {{ user_info.email }}
+              {% if user_info and user_info.first_name %}
+              {{ user_info.first_name|first|upper }}{% if user_info.last_name %}{{ user_info.last_name|first|upper }}
+              {%endif %}
+              {% else %}
+              {% if user_info and user_info.email %}
+              {{ user_info.email|first|upper }}
+              {% else %}
+              <i class="fas fa-user"></i>
+              {% endif %}
+              {% endif %}
               {% endif %}
             </div>
-            <div class="profile-email">{{ user_info.email }}</div>
+          </button>
+
+          <div class="profile-menu" id="profileMenu">
+            <div class="profile-info">
+              <div class="profile-name">
+                {% if user_info.first_name or user_info.last_name %}
+                {{ user_info.first_name }} {{ user_info.last_name }}
+                {% else %}
+                {{ user_info.email }}
+                {% endif %}
+              </div>
+              <div class="profile-email">{{ user_info.email }}</div>
+            </div>
+
+            <a href="{% url 'profile' %}" class="profile-menu-item">
+              <i class="fas fa-user"></i>
+              <span>Profile</span>
+            </a>
+
+            <a href="{% url 'settings' %}" class="profile-menu-item">
+              <i class="fas fa-cog"></i>
+              <span>Settings</span>
+            </a>
+
+            <div class="profile-menu-divider"></div>
+
+            <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
+              {% csrf_token %}
+              <button type="submit" class="profile-menu-item logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+              </button>
+            </form>
           </div>
-
-          <a href="{% url 'profile' %}" class="profile-menu-item">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-          </a>
-
-          <a href="{% url 'settings' %}" class="profile-menu-item">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-          </a>
-
-          <div class="profile-menu-divider"></div>
-
-          <form action="{% url 'logout' %}" method="POST" style="margin: 0;">
-            {% csrf_token %}
-            <button type="submit" class="profile-menu-item logout">
-              <i class="fas fa-sign-out-alt"></i>
-              <span>Logout</span>
-            </button>
-          </form>
         </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
 
-<div id="profileOverlay" class="notification-overlay" aria-hidden="true"></div>
-<div id="notificationOverlay" class="notification-overlay" aria-hidden="true"></div>
+  <div id="profileOverlay" class="notification-overlay" aria-hidden="true"></div>
+  <div id="notificationOverlay" class="notification-overlay" aria-hidden="true"></div>
 
+<<<<<<< Updated upstream
 <div id="notificationPopup" class="notification-popup" aria-hidden="true" role="dialog" aria-label="Notifications">
   <div class="popup-header">
     <div class="title">Notifications</div>
@@ -133,148 +141,252 @@
       <button id="closePopup" type="button" aria-label="Close notifications">
         <i class="fas fa-times"></i>
       </button>
+=======
+  <div id="notificationPopup" class="notification-popup" aria-hidden="true" role="dialog" aria-label="Notifications">
+    <div class="popup-header">
+      <div class="title" style="color: white;">Notifications</div>
+      <div class="controls">
+        <button class="mark-read-btn" type="button" id="markAllReadBtn">
+          <i class="fas fa-check-double"></i>
+          <span>Mark all read</span>
+        </button>
+        <button id="closePopup" type="button" aria-label="Close notifications">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+>>>>>>> Stashed changes
     </div>
-  </div>
 
-  <div class="notification-list" role="list" aria-live="polite">
-    {% if notifications %}
+    <div class="notification-list" role="list" aria-live="polite">
+      {% if notifications %}
       {% for n in notifications %}
-      <div class="notification-item {% if not n.is_read %}unread{% endif %}" role="listitem" data-notification-id="{{ n.id }}">
+      <div class="notification-item {% if not n.is_read %}unread{% endif %}" role="listitem"
+        data-notification-id="{{ n.id }}">
         <div class="notification-message">{{ n.message }}</div>
         <div class="notification-meta">{{ n.created_at_human }}</div>
       </div>
       {% endfor %}
-    {% else %}
+      {% else %}
       <div class="notification-item" role="listitem">
         <div class="notification-message">No notifications yet.</div>
       </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
 
-  const profileTrigger = document.getElementById('profileTrigger');
-  const profileDropdown = document.querySelector('.profile-dropdown');
-  const profileMenu = document.getElementById('profileMenu');
-  const profileOverlay = document.getElementById('profileOverlay');
+      const profileTrigger = document.getElementById('profileTrigger');
+      const profileDropdown = document.querySelector('.profile-dropdown');
+      const profileMenu = document.getElementById('profileMenu');
+      const profileOverlay = document.getElementById('profileOverlay');
 
-  function openProfile() {
-    profileDropdown.classList.add('active');
-    profileOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
+      function openProfile() {
+        profileDropdown.classList.add('active');
+        profileOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
 
+<<<<<<< Updated upstream
   function closeProfile() {
     profileDropdown.classList.remove('active');
     profileOverlay.classList.remove('active');
     document.body.style.overflow = '';
   }
-
-  if (profileTrigger) {
-    profileTrigger.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (profileDropdown.classList.contains('active')) {
-        closeProfile();
-      } else {
-        openProfile();
+=======
+        // Close filter popup if it's open
+        const filterPopup = document.getElementById('filterPopup');
+        if (filterPopup && filterPopup.classList.contains('active')) {
+          filterPopup.classList.remove('active');
+          filterPopup.style.display = 'none';
+        }
       }
-    });
-  }
-
-  profileOverlay.addEventListener('click', closeProfile);
-
-  document.addEventListener('click', function(e) {
-    if (!profileDropdown.contains(e.target) && !profileTrigger.contains(e.target)) {
-      closeProfile();
-    }
-  });
 
 
-  const notificationBtn = document.querySelector('.notification-btn');
-  const notificationPopup = document.getElementById('notificationPopup');
-  const notificationOverlay = document.getElementById('notificationOverlay');
-  const closePopupBtn = document.getElementById('closePopup');
-  const markReadBtn = document.getElementById('markAllReadBtn');
+      const profileTriggerBtn = document.getElementById('profileTrigger');
+      const profileMenuEl = document.getElementById('profileMenu');
+>>>>>>> Stashed changes
 
-  function openNotifications() {
-    notificationPopup.classList.add('active');
-    notificationOverlay.classList.add('active');
-    notificationBtn.setAttribute('aria-expanded', 'true');
-    document.body.style.overflow = 'hidden';
-  }
+      function positionProfileMenu() {
+        if (!profileTriggerBtn || !profileMenuEl) return;
 
-  function closeNotifications() {
-    notificationPopup.classList.remove('active');
-    notificationOverlay.classList.remove('active');
-    notificationBtn.setAttribute('aria-expanded', 'false');
-    document.body.style.overflow = '';
-  }
+        profileMenuEl.style.left = '';
+        profileMenuEl.style.right = '';
+        profileMenuEl.style.maxWidth = '';
 
-  if (notificationBtn) {
-    notificationBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      console.log('Notification button clicked');
-      
-      if (notificationPopup.classList.contains('active')) {
-        closeNotifications();
-      } else {
-        openNotifications();
-        
-        setTimeout(() => {
+        const menuRect = profileMenuEl.getBoundingClientRect();
+        const triggerRect = profileTriggerBtn.getBoundingClientRect();
+        const viewportWidth = document.documentElement.clientWidth;
+
+        if (menuRect.right > viewportWidth - 8) {
+          const leftPos = Math.max(8, triggerRect.right - menuRect.width);
+          profileMenuEl.style.left = `${leftPos}px`;
+          profileMenuEl.style.right = 'auto';
+        } else {
+          profileMenuEl.style.right = '0';
+          profileMenuEl.style.left = 'auto';
+        }
+
+        if (menuRect.width > viewportWidth - 24) {
+          profileMenuEl.style.maxWidth = `${viewportWidth - 24}px`;
+          const newRect = profileMenuEl.getBoundingClientRect();
+          if (newRect.right > viewportWidth - 8) {
+            profileMenuEl.style.left = `${Math.max(8, triggerRect.right - newRect.width)}px`;
+            profileMenuEl.style.right = 'auto';
+          }
+        }
+      }
+
+      profileTriggerBtn?.addEventListener('click', function () {
+        setTimeout(positionProfileMenu, 50);
+      });
+
+      window.addEventListener('resize', positionProfileMenu);
+      window.addEventListener('orientationchange', positionProfileMenu);
+      window.addEventListener('scroll', positionProfileMenu, true);
+
+
+      function closeProfile() {
+        profileDropdown.classList.remove('active');
+        profileOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+
+      if (profileTrigger) {
+        profileTrigger.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (profileDropdown.classList.contains('active')) {
+            closeProfile();
+          } else {
+            openProfile();
+          }
+        });
+      }
+
+      profileOverlay.addEventListener('click', closeProfile);
+
+      document.addEventListener('click', function (e) {
+        if (!profileDropdown.contains(e.target) && !profileTrigger.contains(e.target)) {
+          closeProfile();
+        }
+      });
+
+
+      const notificationBtn = document.querySelector('.notification-btn');
+      const notificationPopup = document.getElementById('notificationPopup');
+      const notificationOverlay = document.getElementById('notificationOverlay');
+      const closePopupBtn = document.getElementById('closePopup');
+      const markReadBtn = document.getElementById('markAllReadBtn');
+
+      function openNotifications() {
+        notificationPopup.classList.add('active');
+        notificationOverlay.classList.add('active');
+        notificationBtn.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeNotifications() {
+        notificationPopup.classList.remove('active');
+        notificationOverlay.classList.remove('active');
+        notificationBtn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+
+      if (notificationBtn) {
+        notificationBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('Notification button clicked');
+
+          if (notificationPopup.classList.contains('active')) {
+            closeNotifications();
+          } else {
+            openNotifications();
+
+            setTimeout(() => {
+              const unreadItems = document.querySelectorAll('.notification-item.unread');
+              unreadItems.forEach(item => {
+                item.classList.remove('unread');
+              });
+
+              const badge = document.getElementById('notificationBadge');
+              if (badge) {
+                badge.style.display = 'none';
+              }
+            }, 100);
+          }
+        }, true);
+      }
+
+      if (closePopupBtn) {
+        closePopupBtn.addEventListener('click', closeNotifications);
+      }
+
+      notificationOverlay.addEventListener('click', closeNotifications);
+
+      const notificationItems = document.querySelectorAll('.notification-item');
+      notificationItems.forEach(item => {
+        item.addEventListener('click', function () {
+
+          this.classList.remove('unread');
+
+          const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+          const badge = document.getElementById('notificationBadge');
+          if (badge) {
+            if (unreadCount > 0) {
+              badge.textContent = unreadCount;
+              badge.style.display = 'flex';
+            } else {
+              badge.style.display = 'none';
+            }
+          }
+        });
+      });
+
+      if (markReadBtn) {
+        markReadBtn.addEventListener('click', function () {
           const unreadItems = document.querySelectorAll('.notification-item.unread');
           unreadItems.forEach(item => {
             item.classList.remove('unread');
           });
-        
+
           const badge = document.getElementById('notificationBadge');
           if (badge) {
             badge.style.display = 'none';
           }
-        }, 100);
+        });
       }
-    }, true); 
-  }
 
-  if (closePopupBtn) {
-    closePopupBtn.addEventListener('click', closeNotifications);
-  }
-
-  notificationOverlay.addEventListener('click', closeNotifications);
-
-  const notificationItems = document.querySelectorAll('.notification-item');
-  notificationItems.forEach(item => {
-    item.addEventListener('click', function() {
-
-      this.classList.remove('unread');
-      
-      const unreadCount = document.querySelectorAll('.notification-item.unread').length;
-      const badge = document.getElementById('notificationBadge');
-      if (badge) {
-        if (unreadCount > 0) {
-          badge.textContent = unreadCount;
-          badge.style.display = 'flex';
-        } else {
-          badge.style.display = 'none';
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          closeProfile();
+          closeNotifications();
         }
-      }
-    });
-  });
-
-  if (markReadBtn) {
-    markReadBtn.addEventListener('click', function() {
-      const unreadItems = document.querySelectorAll('.notification-item.unread');
-      unreadItems.forEach(item => {
-        item.classList.remove('unread');
       });
-      
-      const badge = document.getElementById('notificationBadge');
-      if (badge) {
-        badge.style.display = 'none';
+
+      let lastScrollTop = 0;
+      const navbar = document.querySelector('.navbar');
+
+      window.addEventListener('scroll', function () {
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+        if (scrollTop > 50) {
+          navbar.classList.add('scrolled');
+        } else {
+          navbar.classList.remove('scrolled');
+        }
+
+        lastScrollTop = scrollTop;
+      });
+
+      const addItemBtn = document.querySelector('.add-item-btn');
+      if (addItemBtn) {
+        addItemBtn.addEventListener('click', function () {
+          console.log('Add Item clicked');
+        });
       }
     });
+<<<<<<< Updated upstream
   }
 
   document.addEventListener('keydown', function(e) {
@@ -307,3 +419,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+=======
+  </script>
+>>>>>>> Stashed changes
