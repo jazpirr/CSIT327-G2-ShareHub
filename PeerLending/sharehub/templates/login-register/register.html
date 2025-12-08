@@ -18,12 +18,14 @@
 
     <!-- Error Popup -->
     <div id="errorOverlay" class="overlay"></div>
-    <div id="errorPopup" class="error-popup">
+    <div id="errorPopup" class="error-popup" aria-hidden="true">
+    <div class="shared-popup-inner">
         <div class="popup-header">
-            <span>Error</span>
-            <button class="close-btn" onclick="closePopup()">&times;</button>
+        <span id="popupHeader">Error</span>
+        <button class="close-btn" aria-label="Close">&times;</button>
         </div>
         <div class="popup-body" id="popupBody"></div>
+    </div>
     </div>
 
     <div class="container">
@@ -240,6 +242,7 @@
     {% endif %}
 
     <script src="{% static 'js/register.js' %}?v=8"></script>
+    <script src="{% static 'js/popup.js' %}?v=8"></script>
 </body>
 </html>
 

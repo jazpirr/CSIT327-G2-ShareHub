@@ -1,19 +1,22 @@
 {% extends "base.html" %}
 {% load static %}
 {% block content %}
+
+<link rel="stylesheet" href="{% static 'css/my_items.css' %}">
+
 <div class="my-items-page-wrapper page-container">
   <!-- Enhanced Header with Stats -->
   <div class="my-items-header">
     <div class="header-left">
-      <h1 class="page-title">My Items</h1>
-      <p class="page-subtitle">Manage your shared items and approve incoming requests</p>
+      <h1 class="page-title" style="color:#5a0000;">My Items</h1>
+      <p class="page-subtitle" style="color:#5a0000;">Manage your shared items and approve incoming requests</p>
     </div>
   </div>
 
   <!-- Stats Dashboard -->
   <div class="my-items-stats">
     <div class="stat-box">
-      <div class="stat-icon" style="background: rgba(123, 15, 18, 0.1);">
+      <div class="stat-icon" style="background: linear-gradient(135deg, var(--maroon-primary) 0%, var(--maroon-dark) 100%);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
           <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
@@ -26,7 +29,7 @@
     </div>
 
     <div class="stat-box">
-      <div class="stat-icon" style="background: rgba(40, 167, 69, 0.1); color: #28a745;">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10"/>
           <path d="M9 12l2 2 4-4"/>
@@ -39,7 +42,7 @@
     </div>
 
     <div class="stat-box">
-      <div class="stat-icon" style="background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+      <div class="stat-icon" style="background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -54,11 +57,43 @@
     </div>
   </div>
 
-  <!-- Items Grid -->
+  <!-- Filter Toggle Buttons -->
   {% if items %}
+  <div class="filter-toggle-section">
+    <button class="filter-toggle-btn active" data-filter="all">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      </svg>
+      All Items
+    </button>
+    <button class="filter-toggle-btn" data-filter="available">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+      Available
+    </button>
+    <button class="filter-toggle-btn" data-filter="borrowed">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+      </svg>
+      Borrowed
+    </button>
+    <button class="filter-toggle-btn" data-filter="returned">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <polyline points="9 11 12 14 22 4"/>
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+      </svg>
+      Returned
+    </button>
+  </div>
+
+  <!-- Items Grid -->
   <div class="items-grid">
     {% for it in items %}
-    <div class="item-card-enhanced" data-item-id="{{ it.item_id }}" data-status="{{ it.status_label }}">
+    <div class="item-card-enhanced" data-item-id="{{ it.item_id }}" data-status="{{ it.status_label|default:'unknown'|lower }}">
+
       <!-- Item Image with Status Overlay -->
       <div class="item-image-wrapper">
         <div class="item-image">
@@ -75,17 +110,27 @@
           {% endif %}
         </div>
 
-        <span class="status-badge-floating {% if it.status_label == 'available' %}available{% elif it.status_label == 'returned' %}returned{% else %}borrowed{% endif %}">
-            <svg viewBox="0 0 8 8" fill="currentColor">
-                <circle cx="4" cy="4" r="4"/>
-            </svg>
-            {% if it.status_label == 'available' %}
-                Available
-            {% elif it.status_label == 'returned' %}
-                Returned
-            {% else %}
-                Borrowed
-            {% endif %}
+        <span class="status-badge-floating
+          {% if it.status_label == 'available' %}available
+          {% elif it.status_label == 'borrowed' %}borrowed
+          {% elif it.status_label == 'pending' %}pending
+          {% elif it.status_label == 'returned' %}returned
+          {% else %}unknown{% endif %}">
+          <svg viewBox="0 0 8 8" fill="currentColor">
+            <circle cx="4" cy="4" r="4"/>
+          </svg>
+
+          {% if it.status_label == 'available' %}
+            Available
+          {% elif it.status_label == 'borrowed' %}
+            Borrowed
+          {% elif it.status_label == 'pending' %}
+            Pending
+          {% elif it.status_label == 'returned' %}
+            Returned
+          {% else %}
+            Unknown
+          {% endif %}
         </span>
       </div>
 
@@ -116,6 +161,27 @@
 
         <p class="item-description-enhanced">{{ it.description|truncatechars:120 }}</p>
 
+        <!-- Borrowed By Section (only shown when borrowed) -->
+        {% if it.status_label == 'borrowed' and it.requests %}
+          {% for r in it.requests %}
+            {% if r.status == 'approved' %}
+              <div class="borrowed-by-section">
+                <div class="borrowed-by-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </div>
+                <div class="borrowed-by-info">
+                  <span class="borrowed-by-label">Borrowed by</span>
+                  <span class="borrowed-by-name">{{ r.requester_name }}</span>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+ 
         <!-- Action Buttons -->
         <div class="item-actions-row">
           <a href="{% url 'edit_item' it.item_id %}" class="action-btn-primary">
@@ -214,37 +280,6 @@
         </div>
         {% endif %}
 
-        <!-- OPTIONAL: Request History (approved/denied) -->
-        {% if it.requests %}
-          {% with history=it.requests|dictsortreversed:"raw_request_date" %}
-            {% comment %}
-              compute pending_count safely: default to empty string so length returns 0 if missing
-            {% endcomment %}
-            {% with pending_count=it.pending_requests|default:""|length %}
-              {% if history|length > pending_count %}
-                <div class="requests-history">
-                  <h5>Request History</h5>
-                  <div class="history-list">
-                    {% for hr in it.requests %}
-                      {% if hr.status != 'pending' %}
-                        <div class="history-item">
-                          <div class="history-left">
-                            <strong>{{ hr.requester_name }}</strong>
-                            <div class="history-date">{{ hr.request_date_human }}</div>
-                          </div>
-                          <div class="history-right">
-                            <span class="history-status">{{ hr.status|capfirst }}</span>
-                          </div>
-                        </div>
-                      {% endif %}
-                    {% endfor %}
-                  </div>
-                </div>
-              {% endif %}
-            {% endwith %}
-          {% endwith %}
-        {% endif %}
-
       </div>
     </div>
     {% endfor %}
@@ -265,283 +300,6 @@
 </div>
 
 <script src="{% static 'js/report_issue.js' %}"></script>
-
-
-<script>
-  // Helpers
-  function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-      const cookies = document.cookie.split(';');
-      for (let c of cookies) {
-        const cookie = c.trim();
-        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-          break;
-        }
-      }
-    }
-    return cookieValue;
-  }
-  const csrftoken = getCookie('csrftoken');
-
-  function updateStatCount(elId, delta) {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    const current = parseInt(el.textContent) || 0;
-    el.textContent = Math.max(0, current + delta);
-  }
-
-  function findCardByRequest(reqEl) {
-    return reqEl.closest('.item-card-enhanced');
-  }
-
-  async function respondRequest(requestId, action, elButton) {
-    const url = "{% url 'api_respond_request' %}";
-    try {
-      elButton.disabled = true;
-      const originalHTML = elButton.innerHTML;
-      elButton.innerHTML = action === 'approve' ? 'Approving...' : 'Denying...';
-
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrftoken,
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({ request_id: requestId, action: action })
-      });
-
-      const data = await resp.json();
-
-      if (resp.ok && data.success) {
-        // Remove request item visually
-        const reqEl = document.getElementById('req-' + requestId);
-        if (reqEl) {
-          reqEl.style.transition = 'all 0.25s ease';
-          reqEl.style.opacity = '0';
-          reqEl.style.transform = 'translateX(20px)';
-          setTimeout(() => {
-            // Before removing, update counts and UI
-            const card = findCardByRequest(reqEl);
-            const itemId = reqEl.dataset.itemId || (card && card.dataset.itemId);
-            // decrease per-card pending badge
-            if (card) {
-              // update per-card requests-count-badge (if present)
-              const perCardBadge = card.querySelector('.requests-count-badge');
-              if (perCardBadge) {
-                const current = parseInt(perCardBadge.textContent) || 0;
-                const updated = Math.max(0, current - 1);
-                if (updated > 0) {
-                  perCardBadge.textContent = updated;
-                } else {
-                  perCardBadge.remove();
-                }
-              }
-              // update requests-badge (in the requests header)
-              const requestsBadge = card.querySelector('.requests-badge');
-              if (requestsBadge) {
-                const cur = parseInt(requestsBadge.textContent) || 0;
-                const newv = Math.max(0, cur - 1);
-                if (newv > 0) {
-                  requestsBadge.textContent = newv;
-                } else {
-                  // replace requests section with "no pending requests" state
-                  const requestsSection = card.querySelector('.requests-section-enhanced');
-                  if (requestsSection) {
-                    requestsSection.innerHTML = `
-                      <div class="no-requests-state">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <circle cx="12" cy="12" r="10"/>
-                          <path d="M8 15h8M9 9h.01M15 9h.01"/>
-                        </svg>
-                        <p>No pending requests</p>
-                      </div>
-                    `;
-                  }
-                }
-              }
-            }
-
-            // Update global pending stat
-            updateStatCount('pendingCount', -1);
-
-            // If action == approve, the item becomes borrowed => if card previously had data-status "available" decrement availableCount
-            if (action === 'approve' && card) {
-              const prevStatus = (card.dataset.status || '').toLowerCase();
-              if (prevStatus === 'available') {
-                updateStatCount('availableCount', -1);
-              }
-              // set new status to borrowed and update the status badge display
-              card.dataset.status = 'borrowed';
-              const statusBadge = card.querySelector('.status-badge-floating');
-              if (statusBadge) {
-                statusBadge.classList.remove('available','returned');
-                statusBadge.classList.add('borrowed');
-                statusBadge.textContent = ''; // clear so we can insert SVG + text
-                statusBadge.innerHTML = `
-                  <svg viewBox="0 0 8 8" fill="currentColor">
-                    <circle cx="4" cy="4" r="4"/>
-                  </svg>
-                  Borrowed
-                `;
-              }
-            }
-
-            // Finally remove element
-            reqEl.remove();
-          }, 260);
-        } else {
-          // fallback - reload if something is off
-          window.location.reload();
-        }
-      } else {
-        const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
-        // use custom popup instead of alert
-        if (typeof showMessagePopup === 'function') {
-          showMessagePopup('Action failed', msg, { type: 'error', autoCloseMs: 5000 });
-        } else {
-          alert('Failed: ' + msg);
-        }
-        elButton.disabled = false;
-        elButton.innerHTML = originalHTML;
-      }
-    } catch (err) {
-      console.error(err);
-      if (typeof showMessagePopup === 'function') {
-        showMessagePopup('Network error', 'Network error while processing action.', { type: 'error', autoCloseMs: 5000 });
-      } else {
-        alert('Network error');
-      }
-      elButton.disabled = false;
-      elButton.innerHTML = action === 'approve' ? 'Approve' : 'Deny';
-    }
-  }
-
-  // Delegate click for approve / deny buttons
-  document.addEventListener('click', function(e) {
-    const approveBtn = e.target.closest('.btn-approve-new');
-    const denyBtn = e.target.closest('.btn-deny-new');
-
-    if (approveBtn) {
-      const requestId = approveBtn.dataset.requestId;
-      respondRequest(requestId, 'approve', approveBtn);
-    } else if (denyBtn) {
-      const requestId = denyBtn.dataset.requestId;
-      respondRequest(requestId, 'deny', denyBtn);
-    }
-  });
-
-  // View item details helper
-  function viewItemDetails(itemId) {
-    window.location.href = `/item/${itemId}/`;
-  }
-
-  // On DOMContentLoaded: ensure pendingCount is consistent with DOM (defensive)
-  document.addEventListener('DOMContentLoaded', function() {
-    try {
-      // Recalculate pending from badges (if server and template got out of sync)
-      const badges = document.querySelectorAll('.requests-count-badge');
-      let totalPending = 0;
-      badges.forEach(b => { totalPending += parseInt(b.textContent) || 0; });
-      const pendingStat = document.getElementById('pendingCount');
-      if (pendingStat && (!pendingStat.textContent || parseInt(pendingStat.textContent) !== totalPending)) {
-        pendingStat.textContent = totalPending;
-      }
-    } catch (e) {
-      // no-op
-      console.error('Error normalizing pending stat', e);
-    }
-  });
-
-  // Confirm + AJAX delete using shared popup helpers
-  async function deleteItem(itemId, btnEl) {
-    // If popup.js is available, use it. Otherwise fall back to native confirm.
-    let confirmed = false;
-    if (typeof showConfirmPopup === 'function') {
-      try {
-        confirmed = await showConfirmPopup('Delete this item?', 'This action cannot be undone.', 'Delete', 'Cancel');
-      } catch (e) {
-        confirmed = false;
-      }
-    } else {
-      confirmed = confirm('Delete this item? This action cannot be undone.');
-    }
-    if (!confirmed) return;
-
-    try {
-      btnEl.disabled = true;
-      const original = btnEl.innerHTML;
-      btnEl.innerHTML = "Deleting...";
-
-      // use the same pattern you had: template url with placeholder replaced
-      const urlTemplate = "{% url 'delete_item' 'ITEM_ID_PLACEHOLDER' %}";
-      const deleteUrl = urlTemplate.replace('ITEM_ID_PLACEHOLDER', itemId);
-
-      const resp = await fetch(deleteUrl, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': csrftoken,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({})
-      });
-
-      const data = await resp.json().catch(() => ({}));
-      if (resp.ok && data.success) {
-        // Remove card from DOM + update stats
-        const card = document.querySelector(`.item-card-enhanced[data-item-id="${itemId}"]`);
-        if (card) {
-          card.style.transition = 'all 0.25s ease';
-          card.style.opacity = '0';
-          card.style.transform = 'translateY(8px)';
-          setTimeout(() => card.remove(), 260);
-        } else {
-          // fallback - reload
-          window.location.reload();
-        }
-
-        // update counters if present
-        updateStatCount('totalItems', -1);
-        if (data.decrement_available) updateStatCount('availableCount', -1);
-        if (data.decrement_pending) updateStatCount('pendingCount', -data.decrement_pending);
-
-        if (typeof showMessagePopup === 'function') {
-          showMessagePopup('Deleted', 'Item deleted successfully.', { type: 'success', autoCloseMs: 2400 });
-        }
-      } else {
-        const msg = (data && (data.message || data.error)) ? (data.message || data.error) : 'Delete failed';
-        if (typeof showMessagePopup === 'function') {
-          showMessagePopup('Delete failed', msg, { type: 'error', autoCloseMs: 5000 });
-        } else {
-          alert('Delete failed: ' + msg);
-        }
-        btnEl.disabled = false;
-        btnEl.innerHTML = original;
-      }
-    } catch (err) {
-      console.error(err);
-      if (typeof showMessagePopup === 'function') {
-        showMessagePopup('Network error', 'Network error while deleting item', { type: 'error', autoCloseMs: 5000 });
-      } else {
-        alert('Network error while deleting item');
-      }
-      btnEl.disabled = false;
-      btnEl.innerHTML = original;
-    }
-  }
-
-  // delegate clicks to delete buttons
-  document.addEventListener('click', function(e) {
-    const delBtn = e.target.closest('.btn-delete-item');
-    if (!delBtn) return;
-    const itemId = delBtn.dataset.itemId;
-    deleteItem(itemId, delBtn);
-  });
-
-</script>
+<script src="{% static 'js/my_items.js' %}"></script>
 
 {% endblock %}

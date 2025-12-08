@@ -96,15 +96,6 @@
             <span class="validation-message">Please select a condition</span>
           </div>
 
-          <!-- Availability -->
-          <div class="form-group">
-            <label for="available">Availability</label>
-            <select id="available" name="available">
-              <option value="available" {% if item.available %}selected{% endif %}>Available for borrowing</option>
-              <option value="unavailable" {% if not item.available %}selected{% endif %}>Not available</option>
-            </select>
-          </div>
-
           <!-- Description -->
           <div class="form-group">
             <label for="description">Description</label>

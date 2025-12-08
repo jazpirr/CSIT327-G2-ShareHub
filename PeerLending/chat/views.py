@@ -1,5 +1,6 @@
 # PeerLending/chat/views.py
 import json
+import logging
 from functools import wraps
 
 from django.conf import settings
@@ -9,6 +10,7 @@ from supabase import create_client as create_supabase_client
 
 SUPABASE_URL = settings.SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY = getattr(settings, "SUPABASE_SERVICE_ROLE_KEY", None)
+logger = logging.getLogger(__name__)
 
 # server client uses service role key (must be kept server-side)
 server_client = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) if SUPABASE_SERVICE_ROLE_KEY else None
@@ -26,41 +28,103 @@ def supabase_login_required(view_func):
 @supabase_login_required
 def chat_heads(request):
     """
-    GET /api/chat/heads/ -> returns list of conversation heads (conversation id, item title, last message, unread_count, other_id)
+    Robust chat_heads: returns conversation heads along with other participant's name and avatar.
+    Defensive: tolerates different user table names and logs exceptions.
     """
     user_id = request.session.get("supabase_user_id")
+    if not user_id:
+        return JsonResponse({"results": []})
+
+    if not server_client:
+        logger.error("chat_heads: server_client (service role) not configured.")
+        return JsonResponse({"error": "Server chat unavailable (missing service role key)."}, status=500)
+
     try:
+        # get conversation ids where current user is participant
         parts = server_client.from_("conversation_participants").select("conversation_id").eq("user_id", user_id).execute()
-        conv_ids = [p["conversation_id"] for p in (parts.data or [])]
+        conv_ids = [p.get("conversation_id") for p in (getattr(parts, "data", None) or []) if p.get("conversation_id")]
         if not conv_ids:
             return JsonResponse({"results": []})
 
-        convs = server_client.from_("conversations").select("*").in_("id", conv_ids).execute()
+        # load conversations
+        convs_resp = server_client.from_("conversations").select("*").in_("id", conv_ids).execute()
+        convs = getattr(convs_resp, "data", []) or []
+
         results = []
-        for c in (convs.data or []):
-            last_resp = server_client.from_("messages").select("*").eq("conversation_id", c["id"]).order("created_at", desc=True).limit(1).execute()
-            last = (last_resp.data or [None])[0]
 
-            unread_resp = server_client.from_("messages").select("id").eq("conversation_id", c["id"]).eq("is_read", False).neq("sender_id", user_id).execute()
-            unread_count = len(unread_resp.data or [])
+        # prepare candidate user tables to try for fetching user profile
+        candidate_user_tables = ["user", "users", "profiles", "auth.users"]
 
-            parts_resp = server_client.from_("conversation_participants").select("user_id").eq("conversation_id", c["id"]).execute()
-            participants = [p["user_id"] for p in (parts_resp.data or [])]
-            other = next((p for p in participants if p != user_id), None)
+        for c in convs:
+            try:
+                # latest message
+                last_resp = server_client.from_("messages").select("*").eq("conversation_id", c["id"]).order("created_at", desc=True).limit(1).execute()
+                last = (getattr(last_resp, "data", None) or [None])[0]
 
-            results.append({
-                "conversation_id": c["id"],
-                "item_id": c.get("item_id"),
-                "item_title": c.get("item_title"),
-                "other_id": other,
-                "last_message": last.get("content") if last else None,
-                "last_at": last.get("created_at") if last else None,
-                "unread_count": unread_count,
-            })
+                # unread count (messages not from me and not read)
+                unread_resp = server_client.from_("messages").select("id").eq("conversation_id", c["id"]).eq("is_read", False).neq("sender_id", user_id).execute()
+                unread_count = len(getattr(unread_resp, "data", None) or [])
+
+                # participants -> find the other user
+                parts_resp = server_client.from_("conversation_participants").select("user_id").eq("conversation_id", c["id"]).execute()
+                participants = [p.get("user_id") for p in (getattr(parts_resp, "data", None) or []) if p.get("user_id")]
+                other = next((p for p in participants if p != user_id), None)
+
+                other_name = None
+                other_avatar = None
+
+                if other:
+                    # try candidate tables until one returns a profile
+                    profile = None
+                    for tbl in candidate_user_tables:
+                        try:
+                            # request common fields; some tables may not have these fields but it's okay
+                            q = server_client.from_(tbl).select("id, first_name, last_name, avatar_url, email").eq("id", other).maybe_single().execute()
+                            profile = getattr(q, "data", None)
+                            if profile:
+                                break
+                        except Exception:
+                            # ignore and try next table
+                            continue
+
+                    # fallback: if no profile found, try simple select for any available columns
+                    if not profile:
+                        try:
+                            q2 = server_client.from_(candidate_user_tables[0]).select("*").eq("id", other).maybe_single().execute()
+                            profile = getattr(q2, "data", None)
+                        except Exception:
+                            profile = None
+
+                    if profile:
+                        display = ((profile.get("first_name") or "") + " " + (profile.get("last_name") or "")).strip()
+                        if not display:
+                            display = profile.get("email") or profile.get("id") or str(other)
+                        other_name = display
+                        # avatar_url field name may differ; try a few common keys
+                        other_avatar = profile.get("avatar_url") or profile.get("avatar") or profile.get("profile_image") or None
+
+                results.append({
+                    "conversation_id": c.get("id"),
+                    "item_id": c.get("item_id"),
+                    "item_title": c.get("item_title"),
+                    "other_id": other,
+                    "other_name": other_name,
+                    "other_avatar": other_avatar,
+                    "last_message": last.get("content") if last else None,
+                    "last_at": last.get("created_at") if last else None,
+                    "unread_count": unread_count,
+                })
+
+            except Exception as inner_e:
+                logger.exception("chat_heads: error processing conversation id %s: %s", c.get("id"), inner_e)
+                # continue to next conversation instead of failing whole endpoint
+                continue
+
         return JsonResponse({"results": results})
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
-
+        # log full exception so you can see stacktrace in server console
+        logger.exception("chat_heads: unexpected error: %s", e)
+        return JsonResponse({"error": "Internal server error while fetching chat heads."}, status=500)
 
 @supabase_login_required
 def get_messages(request, conversation_id):

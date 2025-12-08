@@ -2,10 +2,20 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from .models import CustomUser
 
+
+
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(required=True)
     last_name = forms.CharField(required=True)
+
+    YEAR_LEVEL_CHOICES = [
+    ('1', '1st Year'),
+    ('2', '2nd Year'),
+    ('3', '3rd Year'),
+    ('4', '4th Year'),
+    ]
+    year_level = forms.ChoiceField(choices=YEAR_LEVEL_CHOICES, required=True)
 
     class Meta:
         model = CustomUser

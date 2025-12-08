@@ -809,6 +809,43 @@ body {
 .close-btn:hover {
     background: rgba(255, 255, 255, 0.3);
 }
+/* Buttons container for confirm dialogs */
+.popup-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* Confirm/Cancel button styles */
+.popup-buttons button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  border: none;
+  min-width: 72px;
+}
+
+/* Primary (action) button */
+.popup-primary {
+  background: linear-gradient(180deg, var(--primary-maroon) 0%, var(--primary-maroon-dark) 100%);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(90,0,0,0.18);
+}
+
+/* Secondary (cancel) button */
+.popup-secondary {
+  background: #fff;
+  color: var(--text-medium);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.06);
+}
+.popup-message-icon {
+    width: 80px;
+    height: 80px;
+    color: var(--primary-maroon);
+}
 
 .overlay {
     position: fixed;

@@ -124,7 +124,7 @@
 
 <div id="notificationPopup" class="notification-popup" aria-hidden="true" role="dialog" aria-label="Notifications">
   <div class="popup-header">
-    <div class="title">Notifications</div>
+    <div class="title" style="color: white;">Notifications</div>
     <div class="controls">
       <button class="mark-read-btn" type="button" id="markAllReadBtn">
         <i class="fas fa-check-double"></i>
@@ -165,6 +165,49 @@ document.addEventListener('DOMContentLoaded', function() {
     profileOverlay.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
+
+
+  const profileTriggerBtn = document.getElementById('profileTrigger');
+  const profileMenuEl = document.getElementById('profileMenu');
+
+  function positionProfileMenu() {
+    if (!profileTriggerBtn || !profileMenuEl) return;
+
+    profileMenuEl.style.left = '';
+    profileMenuEl.style.right = '';
+    profileMenuEl.style.maxWidth = '';
+
+    const menuRect = profileMenuEl.getBoundingClientRect();
+    const triggerRect = profileTriggerBtn.getBoundingClientRect();
+    const viewportWidth = document.documentElement.clientWidth;
+
+    if (menuRect.right > viewportWidth - 8) {
+      const leftPos = Math.max(8, triggerRect.right - menuRect.width);
+      profileMenuEl.style.left = `${leftPos}px`;
+      profileMenuEl.style.right = 'auto';
+    } else {
+      profileMenuEl.style.right = '0';
+      profileMenuEl.style.left = 'auto';
+    }
+
+    if (menuRect.width > viewportWidth - 24) {
+      profileMenuEl.style.maxWidth = `${viewportWidth - 24}px`;
+      const newRect = profileMenuEl.getBoundingClientRect();
+      if (newRect.right > viewportWidth - 8) {
+        profileMenuEl.style.left = `${Math.max(8, triggerRect.right - newRect.width)}px`;
+        profileMenuEl.style.right = 'auto';
+      }
+    }
+  }
+
+  profileTriggerBtn?.addEventListener('click', function () {
+    setTimeout(positionProfileMenu, 50);
+  });
+
+  window.addEventListener('resize', positionProfileMenu);
+  window.addEventListener('orientationchange', positionProfileMenu);
+  window.addEventListener('scroll', positionProfileMenu, true);
+
 
   function closeProfile() {
     profileDropdown.classList.remove('active');
