@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (borrowStartEl && borrowEndEl) {
       const today = new Date();
-      const iso = d => d.toISOString().slice(0,10);
+      const iso = d => d.toISOString().slice(0, 10);
       const future = new Date(today);
       future.setDate(future.getDate() + 7);
       borrowStartEl.value = iso(today);
@@ -183,10 +183,21 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // wire opening interactions
+  // In borrow_items.js, update the click handler:
   document.querySelectorAll('.item-box').forEach(function (card) {
     card.addEventListener('click', function (ev) {
       const t = ev.target;
-      if (t && (t.tagName === 'BUTTON' || t.closest('button'))) return;
+
+      // Don't trigger if clicking on report dots, report dropdown, or report button
+      if (
+        t.closest('.report-dots') ||
+        t.closest('.report-dropdown') ||
+        t.closest('.report-issue-btn') ||
+        t.closest('button')  // Also don't trigger on any button
+      ) {
+        return;
+      }
+
       openBorrowModalFromElement(card, false);
     });
   });
@@ -295,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
               btn.style.background = '#999';
               btn.style.cursor = 'not-allowed';
             }
-          } catch (e) {}
+          } catch (e) { }
 
           closeBorrowModal();
         } else {

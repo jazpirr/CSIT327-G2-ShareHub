@@ -6,6 +6,7 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/borrow_items.css' %}">
 <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
@@ -19,14 +20,14 @@
   <div class="search-container">
     <div class="search-wrapper">
       <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/>
-        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2" />
+        <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
       <input type="text" class="search-input" placeholder="Search for items, categories, or users..." id="searchInput">
       <button class="search-clear" id="searchClear" style="display: none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
         </svg>
       </button>
     </div>
@@ -34,148 +35,145 @@
     <div class="filter-btn-wrapper">
       <button class="search-filter-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46 22,3" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" />
         </svg>
         Filters
       </button>
 
       <!-- Filter Popup -->
       <div class="filter-popup" id="filterPopup">
-        <div class="filter-header">
-          <h3>Filters</h3>
-          <button class="filter-close" id="filterClose">×</button>
-        </div>
+        <div class="filter-popup-inner">
+          <div class="filter-header">
+            <h3>Filters</h3>
+            <button class="filter-close" id="filterClose">×</button>
+          </div>
 
-        <div class="filter-body">
-          <div class="filter-section">
-            <div class="filter-section-title">Sort By</div>
-            <div class="filter-option">
-              <select id="sortSelect" class="form-control" style="width:100%;padding:8px 10px;border-radius:6px;">
-                <option value="recent" selected>Most Recent</option>
-                <option value="oldest">Oldest</option>
-              </select>
+          <div class="filter-body">
+            <div class="filter-section">
+              <div class="filter-section-title">Sort By</div>
+              <div class="filter-option">
+                <select id="sortSelect" class="form-control">
+                  <option value="recent" selected>Most Recent</option>
+                  <option value="oldest">Oldest</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Category</div>
+              <div class="filter-option">
+                <input type="checkbox" id="cat-textbooks" value="textbooks">
+                <label for="cat-textbooks">Textbooks</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cat-calculators" value="calculators">
+                <label for="cat-calculators">Calculators</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cat-lab" value="lab-equipment">
+                <label for="cat-lab">Lab Equipment</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cat-electronics" value="electronics">
+                <label for="cat-electronics">Electronics</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cat-other" value="other">
+                <label for="cat-other">Other</label>
+              </div>
+            </div>
+
+            <div class="filter-section">
+              <div class="filter-section-title">Condition</div>
+              <div class="filter-option">
+                <input type="checkbox" id="cond-new" value="new">
+                <label for="cond-new">New</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cond-like-new" value="like-new">
+                <label for="cond-like-new">Like New</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cond-good" value="good">
+                <label for="cond-good">Good</label>
+              </div>
+              <div class="filter-option">
+                <input type="checkbox" id="cond-fair" value="fair">
+                <label for="cond-fair">Fair</label>
+              </div>
             </div>
           </div>
 
-          <div class="filter-section">
-            <div class="filter-section-title">Category</div>
-            <div class="filter-option">
-              <input type="checkbox" id="cat-textbooks" value="textbooks">
-              <label for="cat-textbooks">Textbooks</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cat-calculators" value="calculators">
-              <label for="cat-calculators">Calculators</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cat-lab" value="lab-equipment">
-              <label for="cat-lab">Lab Equipment</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cat-electronics" value="electronics">
-              <label for="cat-electronics">Electronics</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cat-other" value="other">
-              <label for="cat-other">Other</label>
-            </div>
+          <div class="filter-footer">
+            <button class="filter-clear-btn" id="filterClearBtn">Clear All</button>
+            <button class="filter-apply-btn" id="filterApplyBtn">Apply Filters</button>
           </div>
-
-          <div class="filter-section">
-            <div class="filter-section-title">Condition</div>
-            <div class="filter-option">
-              <input type="checkbox" id="cond-new" value="new">
-              <label for="cond-new">New</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cond-like-new" value="like-new">
-              <label for="cond-like-new">Like New</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cond-good" value="good">
-              <label for="cond-good">Good</label>
-            </div>
-            <div class="filter-option">
-              <input type="checkbox" id="cond-fair" value="fair">
-              <label for="cond-fair">Fair</label>
-            </div>
-          </div>
-        </div>
-
-        <div class="filter-footer">
-          <button class="filter-clear-btn" id="filterClearBtn">Clear All</button>
-          <button class="filter-apply-btn" id="filterApplyBtn">Apply Filters</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="content-layout">
-    <!-- Left Column -->
-    <div class="items-column">
-      <div class="section-header">
-        <h2>Available Items ({{ available_items|length }})</h2>
+  <div class="section-header">
+    <h2>Available Items ({{ available_items|length }})</h2>
+  </div>
+
+  <div class="available-items borrow-grid">
+    {% if available_items %}
+    {% for item in available_items %}
+    <div class="item-box" data-item-id="{{ item.item_id }}" data-title="{{ item.title|escape }}"
+      data-image="{{ item.image_url|default:''|escape }}" data-owner-name="{{ item.owner_display|escape }}"
+      data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
+      data-category="{{ item.category|default:''|escape }}" data-condition="{{ item.condition|default:''|escape }}"
+      data-description="{{ item.description|default:''|escape }}"
+      data-created-at="{{ item.created_at_iso|default:item.created_at|default:'' }}">
+
+      <!-- 3-dots report button -->
+      <div class="report-dots">
+        <i class="fas fa-ellipsis-v"></i>
       </div>
 
-      <div class="available-items borrow-grid">
-        {% if available_items %}
-          {% for item in available_items %}
-            <div
-              class="item-box"
-              data-item-id="{{ item.item_id }}"
-              data-title="{{ item.title|escape }}"
-              data-image="{{ item.image_url|default:''|escape }}"
-              data-owner-name="{{ item.owner_display|escape }}"
-              data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
-              data-category="{{ item.category|default:''|escape }}"
-              data-condition="{{ item.condition|default:''|escape }}"
-              data-description="{{ item.description|default:''|escape }}"
-              data-created-at="{{ item.created_at_iso|default:item.created_at|default:'' }}"
-            >
-              <div class="item-thumb">
-                {% if item.image_url %}
-                  <img src="{{ item.image_url }}" alt="{{ item.title|escape }}">
-                {% else %}
-                  <div style="height:180px;display:flex;align-items:center;justify-content:center;color:#999;">
-                    No image
-                  </div>
-                {% endif %}
-              </div>
+      <!-- Report dropdown -->
+      <div class="report-dropdown">
+        <button type="button" class="report-issue-btn" data-item-id="{{ item.item_id }}"
+          data-item-title="{{ item.title|escape }}"
+          data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
+          data-owner-name="{{ item.owner_display|escape }}">
+          <i class="fas fa-flag"></i>
+          Report Issue
+        </button>
+      </div>
 
-              <div class="item-meta" style="margin-top:8px;">
-                <div class="item-title" style="font-weight:700;">{{ item.title }}</div>
-                <div class="item-cat" style="font-size:12px;color:#666;">{{ item.category }}</div>
-              </div>
+      <div class="item-meta">
+        <div class="item-title">{{ item.title }}</div>
+        <div class="item-cat">{{ item.category }}</div>
+      </div>
 
-              <button
-                class="request-btn"
-                type="button"
-                data-item="{{ item.title|escape }}"
-                data-owner="{{ item.owner_display|escape }}"
-              >Request to Borrow</button>
-              <button
-                type="button"
-                class="message-owner-btn"
-                onclick="startChat('{{ item.item_id }}')"
-              >Message Owner</button>
-
-              <button
-                type="button"
-                class="report-issue-btn"
-                data-item-id="{{ item.item_id }}"
-                data-item-title="{{ item.title|escape }}"
-                data-owner-id="{{ item.owner_id|default:item.user_id|default:''|escape }}"
-                data-owner-name="{{ item.owner_display|escape }}"
-              >Report</button>
-
-            </div>
-          {% endfor %}
+      <div class="item-thumb">
+        {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="{{ item.title|escape }}">
         {% else %}
-          <p id="noResultsTemplate">No available items right now.</p>
+        <div style="display:flex;align-items:center;justify-content:center;color:#999;">
+          <i class="fas fa-box-open" style="font-size:48px;"></i>
+        </div>
         {% endif %}
       </div>
-    </div>
 
+      <div class="item-actions">
+        <button class="request-btn" type="button" data-item="{{ item.title|escape }}"
+          data-owner="{{ item.owner_display|escape }}">
+          Request to Borrow
+        </button>
+
+        <button type="button" class="message-btn" onclick="startChat('{{ item.item_id }}')" aria-label="Message owner">
+          <i class="fas fa-comment-dots"></i>
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <p id="noResultsTemplate">No available items right now.</p>
+    {% endif %}
   </div>
 </main>
 
@@ -270,7 +268,8 @@
       <button type="button" class="btn btn-cancel" id="cancelBorrow">Close</button>
       <button type="button" class="btn btn-request" id="showRequestForm">Request to Borrow</button>
       <button type="button" class="btn btn-back" id="backToDetails" style="display:none;">Back</button>
-      <button type="submit" form="borrowForm" class="btn btn-request" id="sendRequestBtn" style="display:none;">Send Request</button>
+      <button type="submit" form="borrowForm" class="btn btn-request" id="sendRequestBtn" style="display:none;">Send
+        Request</button>
     </div>
   </div>
 </div>
@@ -281,4 +280,6 @@
 <script src="{% static 'js/borrow_items.js' %}"></script>
 <script src="{% static 'js/home-search.js' %}"></script>
 <script src="{% static 'js/report_issue.js' %}"></script>
+<script src="{% static 'js/borrow-dropdown.js' %}"></script>
 {% endblock %}
+
