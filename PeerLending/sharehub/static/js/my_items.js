@@ -280,12 +280,169 @@ document.addEventListener('click', function(e) {
   deleteItem(itemId, delBtn);
 });
 
-// View Return History functionality
+// --- HISTORY MODAL (LOCAL) ---
+// This reads .history-data inside the card (rendered server-side) and shows a modal.
+// Injects modal HTML/CSS once and reuses it.
+
+function createHistoryModalIfNeeded() {
+  if (document.getElementById('local-history-modal')) return; // already created
+
+  const modalHtml = `
+    <div id="local-history-modal" class="local-history-modal" aria-hidden="true" style="display:none;">
+      <div class="local-history-overlay" id="localHistoryOverlay"></div>
+      <div class="local-history-panel" role="dialog" aria-modal="true" aria-labelledby="localHistoryTitle" style="max-width:780px;">
+        <header class="local-history-header">
+          <h2 id="localHistoryTitle">Item history</h2>
+          <button id="localHistoryClose" class="local-history-close" aria-label="Close history">&times;</button>
+        </header>
+        <div class="local-history-body" id="localHistoryBody">
+          <div class="history-list-empty" style="text-align:center; padding:24px;">
+            <p>No history recorded for this item.</p>
+          </div>
+        </div>
+        <footer class="local-history-footer">
+          <button id="localHistoryCloseFooter" class="btn secondary">Close</button>
+        </footer>
+      </div>
+    </div>
+  `;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = modalHtml;
+  document.body.appendChild(wrapper.firstElementChild);
+
+  // only add styles once
+  if (!document.getElementById('local-history-styles')) {
+    const styleEl = document.createElement('style');
+    styleEl.id = 'local-history-styles';
+    styleEl.textContent = `
+      .local-history-modal { position: fixed; inset: 0; z-index: 12000; display:flex; align-items:center; justify-content:center; }
+      .local-history-overlay { position:absolute; inset:0; background: rgba(0,0,0,0.45); }
+      .local-history-panel { position:relative; background:#fff; border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,0.25); padding:0; z-index:12001; width:calc(100% - 40px); max-height:80vh; overflow:hidden; }
+      .local-history-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #eee; }
+      .local-history-header h2 { margin:0; color:#5a0000; font-size:1.25rem; }
+      .local-history-close { background:transparent; border:0; font-size:22px; cursor:pointer; }
+      .local-history-body { max-height:60vh; overflow:auto; padding:16px 20px; }
+      .local-history-footer { display:flex; justify-content:flex-end; padding:12px 20px; border-top:1px solid #eee; }
+      .history-entry-row { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px dashed #eee; }
+      .history-entry-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#f0f0f0; font-weight:600; }
+      .history-entry-content { flex:1; }
+      .history-entry-meta { font-size:13px; color:#666; margin-bottom:6px; }
+      .history-entry-status { display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px; background:#f3f3f3; }
+    `;
+    document.head.appendChild(styleEl);
+  }
+
+  // wire close handlers
+  const overlay = document.getElementById('localHistoryOverlay');
+  const closeBtn = document.getElementById('localHistoryClose');
+  const closeFooter = document.getElementById('localHistoryCloseFooter');
+  const modalRoot = document.getElementById('local-history-modal');
+
+  overlay && overlay.addEventListener('click', () => closeLocalHistoryModal());
+  closeBtn && closeBtn.addEventListener('click', () => closeLocalHistoryModal());
+  closeFooter && closeFooter.addEventListener('click', () => closeLocalHistoryModal());
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLocalHistoryModal(); });
+}
+
+function openLocalHistoryModal() {
+  createHistoryModalIfNeeded();
+  const m = document.getElementById('local-history-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  m.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLocalHistoryModal() {
+  const m = document.getElementById('local-history-modal');
+  if (!m) return;
+  m.style.display = 'none';
+  m.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
+
+function populateLocalHistoryModalFromCard(cardEl) {
+  createHistoryModalIfNeeded();
+  const modalBody = document.getElementById('localHistoryBody');
+  if (!modalBody) return;
+
+  modalBody.innerHTML = ''; // clear previous
+
+  const historyEntries = cardEl.querySelectorAll('.history-data .history-entry');
+  const title = cardEl.querySelector('.item-title-enhanced') ? cardEl.querySelector('.item-title-enhanced').textContent.trim() : '';
+  document.getElementById('localHistoryTitle').textContent = title ? `History — ${title}` : 'Item history';
+
+  if (!historyEntries || historyEntries.length === 0) {
+    modalBody.innerHTML = '<div class="history-list-empty" style="text-align:center; padding:24px;"><p>No history recorded for this item.</p></div>';
+    openLocalHistoryModal();
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'history-list';
+
+  historyEntries.forEach((entryEl) => {
+    const requester = entryEl.getAttribute('data-requester') || 'Unknown';
+    const reqDate = entryEl.getAttribute('data-request-date') || '';
+    const status = (entryEl.getAttribute('data-status') || '').toLowerCase();
+    const returned = entryEl.getAttribute('data-return') === 'true';
+    const notesText = (entryEl.querySelector('.history-notes') || {}).textContent || '';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'history-entry-avatar';
+    const initials = requester.split(' ').map(s => s[0] || '').slice(0,2).join('').toUpperCase() || '?';
+    avatar.textContent = initials;
+
+    const content = document.createElement('div');
+    content.className = 'history-entry-content';
+
+    const meta = document.createElement('div');
+    meta.className = 'history-entry-meta';
+    meta.innerHTML = `<strong>${escapeHtml(requester)}</strong> &middot; ${escapeHtml(reqDate)}`;
+
+    const statusBadge = document.createElement('div');
+    statusBadge.className = 'history-entry-status';
+    statusBadge.textContent = returned ? 'Returned' : (status || 'Approved');
+
+    content.appendChild(meta);
+    content.appendChild(statusBadge);
+
+    if (notesText) {
+      const notes = document.createElement('div');
+      notes.style.marginTop = '8px';
+      notes.style.fontSize = '14px';
+      notes.style.color = '#333';
+      notes.textContent = notesText;
+      content.appendChild(notes);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'history-entry-row';
+    row.appendChild(avatar);
+    row.appendChild(content);
+
+    list.appendChild(row);
+  });
+
+  modalBody.appendChild(list);
+  openLocalHistoryModal();
+}
+
+// event delegation for local history button (reads hidden DOM)
 document.addEventListener('click', function(e) {
-  const historyBtn = e.target.closest('.view-history-btn');
+  const historyBtn = e.target.closest('.btn-history');
   if (!historyBtn) return;
+  const card = historyBtn.closest('.item-card-enhanced');
+  if (!card) return;
+  populateLocalHistoryModalFromCard(card);
+});
+
+// View Return History functionality (remote fetch)
+document.addEventListener('click', function(e) {
+  const historyBtnFetch = e.target.closest('.view-history-btn');
+  if (!historyBtnFetch) return;
   
-  const itemId = historyBtn.dataset.itemId;
+  const itemId = historyBtnFetch.dataset.itemId;
   showReturnHistory(itemId);
 });
 
