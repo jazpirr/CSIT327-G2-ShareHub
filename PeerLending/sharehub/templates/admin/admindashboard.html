@@ -2,6 +2,11 @@
 {% load static %}
 {% block title %}Admin Dashboard · ShareHub{% endblock %}
 
+{% block head_extra %}
+<!-- Include dashboard CSS only for dashboard content -->
+<link rel="stylesheet" href="{% static 'css/admindashboard.css' %}" />
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
   <!-- Page Header -->
@@ -84,49 +89,6 @@
           <span class="count overdue">{{ overdue|default:"8 overdue, 3 flagged" }}</span>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Quick Actions -->
-  <div class="actions-section">
-    <h2 class="section-title">Quick Actions</h2>
-    <div class="actions-grid">
-      <a href="{% url 'approve_requests' %}" class="action-card approve">
-        <div class="action-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="action-content">
-          <h3>Approve Requests</h3>
-          <p>Review and approve pending borrowing requests</p>
-        </div>
-        <div class="action-badge">{{ pending_requests|default:"12" }}</div>
-      </a>
-
-      <a href="{% url 'manage_users' %}" class="action-card manage">
-        <div class="action-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="action-content">
-          <h3>Manage Users</h3>
-          <p>View and manage user accounts and permissions</p>
-        </div>
-      </a>
-
-      <a href="{% url 'admin_reports' %}" class="action-card reports">
-        <div class="action-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="action-content">
-          <h3>View Reports</h3>
-          <p>Access detailed analytics and system reports</p>
-        </div>
-      </a>
     </div>
   </div>
 
@@ -215,6 +177,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const BORROWING_CHART = (function(){
     try { return JSON.parse('{{ borrowing_chart|safe|escapejs }}'); } catch(e){ return { labels: ['Total Lent','Currently Borrowed'], values: [0,0] }; }
