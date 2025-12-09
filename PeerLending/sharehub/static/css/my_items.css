@@ -1,4 +1,3 @@
-/* ===== MY ITEMS PAGE - MATCHING HOME.CSS STYLING ===== */
 :root {
   --maroon-primary: #5a0000;
   --maroon-dark: #3a0000;
@@ -860,4 +859,75 @@
   white-space: normal;      /* allow label text to wrap */
   text-align: center;
   justify-content: center;
+}
+
+/* Font Awesome icon adjustments */
+.filter-toggle-btn i,
+.meta-chip i,
+.action-btn-primary i,
+.action-btn-secondary i,
+.borrowed-by-icon i,
+.requests-header h4 i,
+.request-time i,
+.btn-approve-new i,
+.btn-deny-new i,
+.no-requests-state i,
+.empty-icon-large i,
+.status-badge-floating i {
+  font-size: inherit;
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  text-align: center;
+}
+
+/* Specific icon sizing adjustments */
+.filter-toggle-btn i {
+  font-size: 1.2em;
+  width: 1.2em;
+}
+
+.meta-chip i {
+  font-size: 0.9em;
+}
+
+.action-btn-primary i,
+.action-btn-secondary i {
+  font-size: 1.1em;
+}
+
+.borrowed-by-icon i {
+  font-size: 1.3em;
+}
+
+.requests-header h4 i {
+  font-size: 1.1em;
+}
+
+.request-time i {
+  font-size: 0.9em;
+}
+
+.btn-approve-new i,
+.btn-deny-new i {
+  font-size: 1.1em;
+}
+
+.no-requests-state i {
+  font-size: 3em;
+  margin-bottom: 12px;
+}
+
+.empty-icon-large i {
+  font-size: 4.5em;
+  color: var(--maroon-primary);
+}
+
+.status-badge-floating i {
+  font-size: 0.5em;
+}
+
+.placeholder-image i {
+  font-size: 4.5em;
+  color: #adb5bd;
 }
