@@ -5,7 +5,8 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/add-item-modal.css' %}">
-<link rel="stylesheet" href="{% static 'css/return_items.css' %}">
+<link rel="stylesheet" href="{% static 'css/return_item.css' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
@@ -32,7 +33,17 @@
       <div id="borrowedItemsList" style="display:none; transition: all 0.3s ease;">
         {% if borrowed_items %}
           {% for b in borrowed_items %}
-            <div class="borrowed-item" role="listitem" data-borrow-id="{{ b.request_id }}">
+            <div class="borrowed-item clickable-item" role="listitem" data-borrow-id="{{ b.request_id }}"
+                 data-item-id="{{ b.item_id }}"
+                 data-item-title="{{ b.item_title|escape }}"
+                 data-item-image="{{ b.item_image|default:''|escape }}"
+                 data-item-owner="{{ b.owner_display|escape }}"
+                 data-description="{{ b.item_description|default:''|escape }}"
+                 data-borrow-date="{{ b.borrow_date|default:''|escape }}"
+                 data-borrow-date-human="{{ b.borrow_date_human|default:''|escape }}"
+                 data-return-date="{{ b.return_date|default:''|escape }}"
+                 data-return-date-human="{{ b.return_date_human|default:''|escape }}"
+                 data-status="{{ b.status|default:'Borrowed'|escape }}">
               {% if b.item_image %}
                 <div class="borrowed-item-thumb">
                   <img src="{{ b.item_image }}" alt="{{ b.item_title|escape }}"
@@ -74,10 +85,10 @@
               </div>
 
               <div class="return-item-actions">
-                <button class="btn btn-secondary mark-returned-btn" data-borrow-id="{{ b.request_id }}">
+                <button class="btn btn-secondary mark-returned-btn" data-borrow-id="{{ b.request_id }}" onclick="event.stopPropagation()">
                   Mark as Returned
                 </button>
-                <button class="btn btn-outline report-issue-btn" data-request-id="{{ b.request_id }}" data-item-id="{{ b.item_id|default:'' }}">
+                <button class="btn btn-outline report-issue-btn" data-request-id="{{ b.request_id }}" data-item-id="{{ b.item_id|default:'' }}" onclick="event.stopPropagation()">
                   Report Issue
                 </button>
               </div>
@@ -106,7 +117,17 @@
       <div id="returnedItemsList" style="display:none; transition: all 0.3s ease;">
         {% if returned_items %}
           {% for r in returned_items %}
-            <div class="borrowed-item" role="listitem">
+            <div class="borrowed-item clickable-item" role="listitem"
+                 data-item-id="{{ r.item_id }}"
+                 data-item-title="{{ r.item_title|escape }}"
+                 data-item-image="{{ r.item_image|default:''|escape }}"
+                 data-item-owner="{{ r.owner_display|default:''|escape }}"
+                 data-description="{{ r.item_description|default:''|escape }}"
+                 data-borrow-date="{{ r.borrow_date|default:''|escape }}"
+                 data-borrow-date-human="{{ r.borrow_date_human|default:''|escape }}"
+                 data-return-date="{{ r.return_date|default:''|escape }}"
+                 data-return-date-human="{{ r.return_date_human|default:''|escape }}"
+                 data-status="{{ r.status|default:'Returned'|escape }}">
               {% if r.item_image %}
                 <div class="borrowed-item-thumb">
                   <img src="{{ r.item_image }}" alt="{{ r.item_title|escape }}"
@@ -141,7 +162,7 @@
                 </div>
               </div>
 
-              <div class="return-item-actions" style="justify-content:center;">
+              <div class="return-item-actions">
                 <span style="display:inline-block; padding:8px 16px; border-radius:8px; background:#e8f5e9; color:#2e7d32; font-size:13px; font-weight:600; text-transform:capitalize;">
                   {{ r.status|capfirst }}
                 </span>
@@ -158,9 +179,62 @@
 
   </section>
 
-
-
 </main>
+
+<!-- Borrowed Item Details Modal -->
+<div class="modal-overlay" id="borrowedItemModal" style="display:none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Borrowed Item Details</h2>
+      <p>Information about your borrowed item</p>
+    </div>
+
+    <div class="modal-body">
+      <div id="borrowedModalThumb" style="margin-bottom:12px;">
+        <img id="borrowedModalImage" src="" alt="Item image" style="display:none; width:100%; max-height:240px; object-fit:cover; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.08);">
+        <div id="borrowedModalImagePlaceholder" style="display:none; padding:28px; background:#fafafa; border-radius:6px; text-align:center; color:#999;">
+          No image available
+        </div>
+      </div>
+
+      <div class="modal-description-section">
+        <label>Description</label>
+        <div id="borrowedModalDescription">No description provided</div>
+      </div>
+
+      <div class="modal-info-grid">
+        <div class="form-group">
+          <label>Item</label>
+          <div class="form-display" id="borrowedModalItemName">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Owner</label>
+          <div class="form-display" id="borrowedModalOwner">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Borrowed On</label>
+          <div class="form-display" id="borrowedModalBorrowDate">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Return Date</label>
+          <div class="form-display" id="borrowedModalReturnDate">—</div>
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <div class="form-display" id="borrowedModalStatus">Borrowed</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-cancel" id="closeBorrowedModal">Close</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -210,6 +284,85 @@
       returnedList.style.display = "block";
       returnedIcon.style.transform = "rotate(180deg)";
     }
+
+    // Modal functionality for borrowed items
+    const modal = document.getElementById('borrowedItemModal');
+    const closeBtn = document.getElementById('closeBorrowedModal');
+
+    function openBorrowedModal(itemData) {
+      // Set image
+      const modalImage = document.getElementById('borrowedModalImage');
+      const modalImagePlaceholder = document.getElementById('borrowedModalImagePlaceholder');
+      
+      if (itemData.image) {
+        modalImage.src = itemData.image;
+        modalImage.style.display = 'block';
+        modalImagePlaceholder.style.display = 'none';
+      } else {
+        modalImage.style.display = 'none';
+        modalImagePlaceholder.style.display = 'block';
+      }
+
+      // Set description
+      document.getElementById('borrowedModalDescription').textContent = 
+        itemData.description || 'No description provided';
+
+      // Set item details
+      document.getElementById('borrowedModalItemName').textContent = itemData.title || '—';
+      document.getElementById('borrowedModalOwner').textContent = itemData.owner || '—';
+      document.getElementById('borrowedModalBorrowDate').textContent = itemData.borrowDate || '—';
+      document.getElementById('borrowedModalReturnDate').textContent = itemData.returnDate || '—';
+      document.getElementById('borrowedModalStatus').textContent = itemData.status || 'Borrowed';
+
+      // Show modal
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeBorrowedModal() {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    // Close button handler
+    closeBtn.addEventListener('click', closeBorrowedModal);
+
+    // Close on overlay click
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        closeBorrowedModal();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeBorrowedModal();
+      }
+    });
+
+    // Make borrowed items clickable
+    document.querySelectorAll('.clickable-item').forEach(item => {
+      item.style.cursor = 'pointer';
+      item.addEventListener('click', function(e) {
+        // Don't trigger if clicking on buttons
+        if (e.target.closest('button')) {
+          return;
+        }
+
+        const itemData = {
+          title: this.dataset.itemTitle,
+          image: this.dataset.itemImage,
+          owner: this.dataset.itemOwner,
+          description: this.dataset.description,
+          borrowDate: this.dataset.borrowDateHuman,
+          returnDate: this.dataset.returnDateHuman,
+          status: this.dataset.status
+        };
+
+        openBorrowedModal(itemData);
+      });
+    });
   });
 </script>
 
