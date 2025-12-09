@@ -218,8 +218,8 @@ async function deleteItem(itemId, btnEl) {
     btnEl.innerHTML = "Deleting...";
 
     // This should match your Django URL pattern
-    const deleteUrl = `/items/delete/${itemId}/`; // Update this to match your actual URL
-
+    const deleteUrl = btnEl.dataset.deleteUrl || `/my-items/${itemId}/delete/`;
+    
     const resp = await fetch(deleteUrl, {
       method: 'POST',
       headers: {

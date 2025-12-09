@@ -142,7 +142,13 @@
           {% endif %}
 
           <!-- Delete button -->
-          <button class="action-btn-secondary btn-delete-item" data-item-id="{{ it.item_id }}" title="Delete item" type="button">
+          <button
+            class="action-btn-secondary btn-delete-item"
+            data-item-id="{{ it.item_id }}"
+            data-delete-url="{% url 'delete_item' it.item_id %}"
+            title="Delete item"
+            type="button"
+          >
             <i class="fas fa-trash-alt"></i>
           </button>
         </div>

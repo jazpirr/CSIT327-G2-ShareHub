@@ -66,25 +66,7 @@
   stroke: var(--maroon-dark);
 }
 
-#chatBadge {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  background: linear-gradient(135deg, var(--maroon-primary) 0%, var(--maroon-dark) 100%);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 5px;
-  border-radius: var(--radius-full);
-  min-width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 8px rgba(90, 0, 0, 0.4);
-  line-height: 1;
-  animation: pulse 2s ease-in-out infinite;
-}
+
 
 @keyframes pulse {
   0%, 100% {
@@ -774,4 +756,72 @@
   to {
     opacity: 1;
   }
+}
+
+/* Chat Button Styling in Header - Matches notification button exactly */
+.chat-btn {
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  padding: 0;
+}
+
+.chat-btn i {
+  font-size: 22px;
+  color: var(--text-medium);
+  transition: color 0.3s ease;
+}
+
+.chat-btn:hover {
+  background: rgba(90, 0, 0, 0.1);
+  border-color: rgba(90, 0, 0, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 20px rgba(90, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.chat-btn:hover i {
+  color: var(--maroon-primary);
+}
+
+.chat-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.chat-btn.active {
+  background: rgba(90, 0, 0, 0.15);
+  border-color: rgba(90, 0, 0, 0.4);
+}
+
+/* Chat badge - matches notification badge exactly */
+.chat-btn .notification-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--header-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }

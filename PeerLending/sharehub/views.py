@@ -2633,3 +2633,4 @@ def delete_item(request, item_id):
         })
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
+
