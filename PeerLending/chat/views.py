@@ -126,6 +126,20 @@ def chat_heads(request):
         logger.exception("chat_heads: unexpected error: %s", e)
         return JsonResponse({"error": "Internal server error while fetching chat heads."}, status=500)
 
+
+@supabase_login_required
+def unread_count(request):
+    user_id = request.session.get("supabase_user_id")
+    try:
+        q = server_client.from_("messages").select("id").eq("is_read", False).neq("sender_id", user_id).execute()
+        cnt = len(getattr(q, "data", None) or [])
+        return JsonResponse({"unread": cnt})
+    except Exception as e:
+        logger.exception("unread_count error: %s", e)
+        return JsonResponse({"unread": 0})
+
+
+
 @supabase_login_required
 def get_messages(request, conversation_id):
     """
@@ -222,3 +236,43 @@ def post_message(request, conversation_id):
 
     return JsonResponse({"success": True, "message": ins.data[0]})
 
+@require_POST
+@supabase_login_required
+def delete_conversation(request, conversation_id):
+    """
+    POST /api/chat/<conversation_id>/delete/
+    Deletes the conversation, its participants, and messages.
+    Only a participant may delete the conversation.
+    """
+    user_id = request.session.get("supabase_user_id")
+    if not server_client:
+        logger.error("delete_conversation: server_client not configured")
+        return JsonResponse({"error": "Server unavailable"}, status=500)
+
+    # verify user is a participant
+    check = server_client.from_("conversation_participants").select("*").eq("conversation_id", conversation_id).eq("user_id", user_id).maybe_single().execute()
+    if getattr(check, "error", None) or not check.data:
+        return HttpResponseForbidden("No access")
+
+    try:
+        # delete messages for conversation
+        msg_del = server_client.from_("messages").delete().eq("conversation_id", conversation_id).execute()
+        if getattr(msg_del, "error", None):
+            logger.exception("delete_conversation: failed to delete messages: %s", getattr(msg_del, "error", None))
+            # continue — attempt to delete participants and conversation anyway
+
+        # delete participants
+        parts_del = server_client.from_("conversation_participants").delete().eq("conversation_id", conversation_id).execute()
+        if getattr(parts_del, "error", None):
+            logger.exception("delete_conversation: failed to delete participants: %s", getattr(parts_del, "error", None))
+
+        # delete conversation row
+        conv_del = server_client.from_("conversations").delete().eq("id", conversation_id).execute()
+        if getattr(conv_del, "error", None):
+            logger.exception("delete_conversation: failed to delete conversation: %s", getattr(conv_del, "error", None))
+            return JsonResponse({"error": "Failed to delete conversation"}, status=500)
+
+        return JsonResponse({"success": True})
+    except Exception as e:
+        logger.exception("delete_conversation: unexpected error: %s", e)
+        return JsonResponse({"error": "Internal server error while deleting conversation."}, status=500)

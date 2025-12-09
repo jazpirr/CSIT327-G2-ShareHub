@@ -1,5 +1,4 @@
-// sharehub/static/js/chat.js
-// Full chat client for ShareHub with emoji picker
+// Full chat client for ShareHub with emoji picker + delete conversation
 (function () {
   "use strict";
 
@@ -184,7 +183,8 @@
     }
 
     if (chatBtn) {
-      chatBtn.addEventListener("click", () => {
+      chatBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const currentlyOpen = chatPopup && chatPopup.style.display === "block";
         toggleChat(!currentlyOpen);
       });
@@ -192,6 +192,26 @@
 
     if (chatOverlay) chatOverlay.addEventListener("click", () => toggleChat(false));
     if (closeChatBtn) closeChatBtn.addEventListener("click", () => toggleChat(false));
+
+    // Close chat when clicking outside the popup
+    document.addEventListener("click", (e) => {
+      if (!chatPopup || !chatBtn) return;
+      
+      const isPopupOpen = chatPopup.style.display === "block";
+      if (!isPopupOpen) return;
+      
+      // Check if click is outside both the popup and the chat button
+      if (!chatPopup.contains(e.target) && !chatBtn.contains(e.target)) {
+        toggleChat(false);
+      }
+    });
+
+    // Prevent clicks inside the popup from closing it
+    if (chatPopup) {
+      chatPopup.addEventListener("click", (e) => {
+        e.stopPropagation();
+      });
+    }
 
     function setChatListLoading() {
       if (!chatList) return;
@@ -248,7 +268,8 @@
         btn.innerHTML = `
           ${avatarHtml}
           <div class="head-main">
-            <div class="head-title">${escapeHtml(otherName)} <span class="dash">—</span> <span class="item-title">${escapeHtml(itemTitle)}</span></div>
+            <div class="head-title">${escapeHtml(otherName)}</div>
+            <div class="head-item-title">${escapeHtml(itemTitle)}</div>
             <div class="head-sub">${escapeHtml(lastMessage)}</div>
           </div>
           ${unread ? `<div class="head-badge">${unread}</div>` : ""}
@@ -264,7 +285,7 @@
         chatList.appendChild(btn);
       });
     }
-    
+
     function setPopupHeaderTitle(title, subtitle) {
       if (!chatPopup) return;
       const headerTitleEl = chatPopup.querySelector(".chat-header .title");
@@ -276,8 +297,72 @@
       }
     }
 
+    // inject delete button into chat header (if not present)
+    function ensureDeleteButton() {
+      if (!chatPopup) return;
+      const header = chatPopup.querySelector(".chat-header");
+      if (!header) return;
+      if (header.querySelector("#deleteChatBtn")) return;
+
+      const controlsDiv = document.createElement("div");
+      controlsDiv.className = "chat-header-controls";
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.id = "deleteChatBtn";
+      delBtn.title = "Delete conversation";
+      delBtn.className = "delete-chat-btn";
+      delBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg>`;
+      
+      const closeBtn = header.querySelector("#closeChat");
+      
+      controlsDiv.appendChild(delBtn);
+      if (closeBtn) {
+        controlsDiv.appendChild(closeBtn);
+      }
+      
+      header.appendChild(controlsDiv);
+
+      delBtn.addEventListener("click", async () => {
+        if (!activeConversation) {
+          alert("No conversation selected to delete.");
+          return;
+        }
+        const confirmDelete = confirm("Delete this conversation? This will remove all messages and cannot be undone.");
+        if (!confirmDelete) return;
+
+        try {
+          const res = await fetch(`/api/chat/${activeConversation}/delete/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify({}),
+          });
+          const j = await res.json();
+          if (res.ok && j && j.success) {
+            // remove head element from list
+            const headEl = document.querySelector(`.chat-head[data-conv="${activeConversation}"]`);
+            if (headEl && headEl.parentNode) headEl.parentNode.removeChild(headEl);
+            closeConversation();
+            // reload heads to refresh list as well
+            loadChatHeads();
+          } else {
+            console.warn("delete conversation failed", j);
+            alert((j && j.error) || "Failed to delete conversation");
+          }
+        } catch (e) {
+          console.error("delete conversation error", e);
+          alert("Error deleting conversation");
+        }
+      });
+    }
+
     async function openConversation(convId) {
       activeConversation = convId;
+      ensureDeleteButton();
+
       const sel = document.querySelector(`.chat-head[data-conv="${convId}"]`);
       const title = sel ? (sel.querySelector(".head-title")?.textContent || "Conversation") : "Conversation";
       setPopupHeaderTitle(title);
@@ -343,6 +428,12 @@
       }
       clearSelectedHeads();
       setPopupHeaderTitle("Chats");
+      
+      // Remove delete button when closing
+      const delBtn = document.querySelector("#deleteChatBtn");
+      if (delBtn && delBtn.parentElement) {
+        delBtn.parentElement.remove();
+      }
     }
 
     function appendMessage(senderId, text, when, msgId) {
@@ -382,7 +473,7 @@
         const txt = chatInput.value.trim();
         if (!txt) return;
         chatInput.value = "";
-        
+
         try {
           const res = await fetch(`/api/chat/${activeConversation}/post/`, {
             method: "POST",
@@ -404,11 +495,13 @@
       });
     }
 
+    // Improved startChat: opens chat, waits for head to be rendered, selects it and opens conversation
     window.startChat = async function (itemId) {
       if (!itemId) {
         console.warn("startChat called without itemId");
         return;
       }
+
       try {
         const res = await fetch(`/api/chat/start/${itemId}/`, {
           method: "POST",
@@ -420,16 +513,44 @@
         });
         const j = await res.json();
         if (res.ok && j && j.conversation_id) {
+          // open the chat popup and make sure heads are loaded
           toggleChat(true);
-          setTimeout(() => {
-            const sel = document.querySelector(`.chat-head[data-conv="${j.conversation_id}"]`);
+
+          const convId = j.conversation_id;
+
+          // wait for the chat head element to appear, up to maxWait ms
+          const maxWait = 3000; // ms
+          const interval = 100; // ms
+          let waited = 0;
+
+          const findAndSelectHead = () => {
+            const sel = document.querySelector(`.chat-head[data-conv="${convId}"]`);
             if (sel) {
               clearSelectedHeads();
               sel.classList.add("selected");
-              setPopupHeaderTitle(sel.querySelector(".head-title")?.textContent || "Conversation");
+              const otherName = sel.querySelector(".head-title")?.textContent || "Conversation";
+              // set header title and open conversation
+              setPopupHeaderTitle(otherName);
+              openConversation(convId);
+              return true;
             }
-            openConversation(j.conversation_id);
-          }, 150);
+            return false;
+          };
+
+          // immediate attempt (in case heads already loaded)
+          if (findAndSelectHead()) return;
+
+          // poll until found or timeout
+          const poll = setInterval(() => {
+            waited += interval;
+            if (findAndSelectHead()) {
+              clearInterval(poll);
+            } else if (waited >= maxWait) {
+              clearInterval(poll);
+              // fallback: still open conversation even if head is not in DOM
+              openConversation(convId);
+            }
+          }, interval);
         } else {
           console.warn("startChat failed", j);
         }
@@ -446,7 +567,7 @@
         }
       }, 20000);
     }
-    
+
     function stopHeadsPoll() {
       if (headsInterval) {
         clearInterval(headsInterval);
