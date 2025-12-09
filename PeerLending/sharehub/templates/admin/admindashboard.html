@@ -5,22 +5,22 @@
 {% block head_extra %}
 <!-- Include dashboard CSS only for dashboard content -->
 <link rel="stylesheet" href="{% static 'css/admindashboard.css' %}" />
+<!-- Font Awesome for filled (solid) icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
+<div class="admin-page-containerr">
   <!-- Page Header -->
-  <div class="dashboard-header">
-    <div class="header-content">
-      <h1 class="page-title">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="title-icon">
-          <path d="M12 2l7 3v5c0 5-3.58 9.74-7 11-3.42-1.26-7-6-7-11V5l7-3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-        </svg>
+  <div class="admin-page-header">
+    <div class="admin-header-content">
+      <h1 class="admin-page-title">
+        <i class="fas fa-shield-alt title-icon"></i>
         Admin Dashboard
       </h1>
       <p class="page-subtitle">Comprehensive system management and monitoring</p>
     </div>
-    <div class="header-actions">
+    <div class="admin-header-actions">
       <div class="last-updated">
         <span class="update-indicator"></span>
         Updated just now
@@ -32,9 +32,7 @@
   <div class="stats-grid">
     <div class="stat-card users-stat">
       <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" fill="currentColor"/>
-        </svg>
+        <i class="fas fa-users"></i>
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ total_users|default:"245" }}</div>
@@ -48,9 +46,7 @@
 
     <div class="stat-card items-stat">
       <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i class="fas fa-boxes"></i>
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ total_items|default:"387" }}</div>
@@ -63,9 +59,7 @@
 
     <div class="stat-card requests-stat">
       <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i class="fas fa-handshake"></i>
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ active_requests|default:"45" }}</div>
@@ -78,9 +72,7 @@
 
     <div class="stat-card issues-stat">
       <div class="stat-icon">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <i class="fas fa-exclamation-triangle"></i>
       </div>
       <div class="stat-content">
         <div class="stat-value">{{ issues_count|default:"11" }}</div>
@@ -96,7 +88,7 @@
   <div class="charts-section">
     <div class="chart-card">
       <div class="chart-header">
-        <h3>Borrowing Overview</h3>
+        <h3><i class="fas fa-chart-line"></i> Borrowing Overview</h3>
         <p>Total items lent vs currently borrowed</p>
       </div>
       <div class="chart-container">
@@ -106,7 +98,7 @@
 
     <div class="chart-card">
       <div class="chart-header">
-        <h3>Return Performance</h3>
+        <h3><i class="fas fa-chart-pie"></i> Return Performance</h3>
         <p>Status of returned items</p>
       </div>
       <div class="chart-container">
@@ -119,7 +111,7 @@
   <div class="table-section">
     <div class="table-header">
       <div class="table-title">
-        <h3>Items Currently Borrowed</h3>
+        <h3><i class="fas fa-list-alt"></i> Items Currently Borrowed</h3>
         <span class="item-count">{{ current_borrowed_count|default:"6" }} Items</span>
       </div>
       <p>Track all active borrowing transactions</p>
@@ -129,11 +121,11 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Item Name</th>
-            <th>Item Owner</th>
-            <th>Borrower</th>
-            <th>Return Due Date</th>
-            <th>Status</th>
+            <th><i class="fas fa-cube"></i> Item Name</th>
+            <th><i class="fas fa-user-tie"></i> Item Owner</th>
+            <th><i class="fas fa-user"></i> Borrower</th>
+            <th><i class="fas fa-calendar-alt"></i> Return Due Date</th>
+            <th><i class="fas fa-tag"></i> Status</th>
           </tr>
         </thead>
         <tbody>
@@ -153,17 +145,23 @@
               </div>
             </td>
             <td>
-              <span class="status-tag {{ row.status_class }}">{{ row.status_label }}</span>
+              <span class="status-tag {{ row.status_class }}">
+                {% if row.status_class == 'late' %}
+                  <i class="fas fa-exclamation-circle"></i>
+                {% elif row.status_class == 'on-time' %}
+                  <i class="fas fa-check-circle"></i>
+                {% elif row.status_class == 'returned' %}
+                  <i class="fas fa-check-double"></i>
+                {% endif %}
+                {{ row.status_label }}
+              </span>
             </td>
           </tr>
           {% empty %}
           <tr>
             <td colspan="5" class="empty-state">
               <div class="empty-content">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-                  <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
-                </svg>
+                <i class="fas fa-check-circle" style="font-size: 48px;"></i>
                 <p>No items currently borrowed</p>
               </div>
             </td>
@@ -179,24 +177,148 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Chart configuration remains dynamic
+document.addEventListener('DOMContentLoaded', function() {
+  // Dynamically get data from Django context
   const BORROWING_CHART = (function(){
-    try { return JSON.parse('{{ borrowing_chart|safe|escapejs }}'); } catch(e){ return { labels: ['Total Lent','Currently Borrowed'], values: [0,0] }; }
+    try { 
+      return JSON.parse('{{ borrowing_chart|safe|escapejs }}'); 
+    } catch(e){ 
+      return { 
+        labels: ['Total Lent','Currently Borrowed'], 
+        values: [250, 150] 
+      }; 
+    }
   })();
 
   const RETURN_CHART = (function(){
-    try { return JSON.parse('{{ return_chart|safe|escapejs }}'); } catch(e){ return { labels: ['On Time','Late','Missing/Lost'], values: [100,0,0] }; }
+    try { 
+      return JSON.parse('{{ return_chart|safe|escapejs }}'); 
+    } catch(e){ 
+      return { 
+        labels: ['On Time','Late','Missing/Lost'], 
+        values: [70, 20, 10] 
+      }; 
+    }
   })();
 
-  const BORROWED_ITEMS = (function(){
-    try { return JSON.parse('{{ borrowed_items_json|safe|escapejs }}'); } catch(e){ return []; }
-  })();
+  // Chart 1: Borrowing Overview
+  const borrowingCtx = document.getElementById('borrowingChart').getContext('2d');
+  const borrowingChart = new Chart(borrowingCtx, {
+    type: 'bar',
+    data: {
+      labels: BORROWING_CHART.labels,
+      datasets: [{
+        label: 'Items',
+        data: BORROWING_CHART.values,
+        backgroundColor: [
+          'rgba(123, 30, 30, 0.8)',  // Maroon
+          'rgba(246, 199, 0, 0.8)'   // Gold
+        ],
+        borderColor: [
+          'rgba(123, 30, 30, 1)',
+          'rgba(246, 199, 0, 1)'
+        ],
+        borderWidth: 1,
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleFont: { size: 14, family: 'Inter' },
+          bodyFont: { size: 14, family: 'Inter' },
+          padding: 12,
+          cornerRadius: 8
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0, 0, 0, 0.05)', drawBorder: false },
+          ticks: {
+            font: { family: 'Inter', size: 12 },
+            color: '#6B7280'
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { family: 'Inter', size: 12, weight: '600' },
+            color: '#374151'
+          }
+        }
+      }
+    }
+  });
 
-  const ADMIN_URLS = {
-    overview: "{% url 'admin_dashboard' %}",
-    approveRequests: "{% url 'approve_requests' %}",
-    manageUsers: "{% url 'manage_users' %}",
-    viewReports: "{% url 'admin_reports' %}"
-  };
+  // Chart 2: Return Performance (Doughnut)
+  const returnCtx = document.getElementById('returnChart').getContext('2d');
+  const returnChart = new Chart(returnCtx, {
+    type: 'doughnut',
+    data: {
+      labels: RETURN_CHART.labels,
+      datasets: [{
+        data: RETURN_CHART.values,
+        backgroundColor: [
+          'rgba(39, 174, 96, 0.8)',  // Success green
+          'rgba(246, 199, 0, 0.8)',   // Warning yellow
+          'rgba(255, 84, 89, 0.8)'    // Error red
+        ],
+        borderColor: [
+          'rgba(39, 174, 96, 1)',
+          'rgba(246, 199, 0, 1)',
+          'rgba(255, 84, 89, 1)'
+        ],
+        borderWidth: 1,
+        hoverOffset: 15
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: 'circle',
+            font: { family: 'Inter', size: 12 },
+            color: '#374151'
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleFont: { size: 14, family: 'Inter' },
+          bodyFont: { size: 14, family: 'Inter' },
+          padding: 12,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              return `${context.label}: ${context.raw}%`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Handle window resize for better responsiveness
+  let resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      borrowingChart.resize();
+      returnChart.resize();
+    }, 250);
+  });
+});
 </script>
-<script src="{% static 'js/admindashboard.js' %}"></script>
 {% endblock %}
