@@ -38,6 +38,8 @@ urlpatterns = [
     path('toggle-user-admin/', views.toggle_user_admin, name='toggle_user_admin'),
     path('toggle-block/', views.toggle_block_user, name='toggle_user_block'),
     path("api/user-details/", views.admin_user_details_api, name="admin_user_details_api"),
+    path('items/', views.admin_all_items, name='admin_all_items'),
+    path('item/delete/<uuid:item_id>/', views.admin_delete_item, name='admin_delete_item'),
     
 ]
  

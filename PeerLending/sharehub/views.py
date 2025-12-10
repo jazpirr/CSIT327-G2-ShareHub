@@ -2713,3 +2713,114 @@ def delete_item(request, item_id):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+@require_POST
+def admin_delete_item(request, item_id):
+    """
+    Admin endpoint to delete any item by item_id. Uses service-role key.
+    Returns JSON { success: True, decrement_available: 1|0, decrement_pending: n }
+    """
+    if not SUPABASE_SERVICE_ROLE_KEY:
+        return JsonResponse({"error": "Server misconfigured"}, status=500)
+
+    # fetch item to know owner/available, and to verify exists
+    try:
+        r = supabase.table('item').select('item_id,available').eq('item_id', item_id).maybe_single().execute()
+        if getattr(r, 'error', None) or not r.data:
+            return JsonResponse({"error": "Item not found"}, status=404)
+        item = r.data
+    except Exception as e:
+        return JsonResponse({"error": "Failed to fetch item"}, status=500)
+
+    admin = create_supabase_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    try:
+        # delete requests referencing item
+        try:
+            admin.table('request').delete().eq('item_id', item_id).execute()
+        except Exception:
+            pass
+
+        # delete item row
+        del_resp = admin.table('item').delete().eq('item_id', item_id).execute()
+        if getattr(del_resp, 'error', None):
+            return JsonResponse({"error": "Failed to delete item"}, status=500)
+
+        dec_available = bool(item.get('available'))
+        pending_count_resp = supabase.table('request').select('request_id').eq('item_id', item_id).eq('status','pending').execute()
+        pending_num = len(pending_count_resp.data or []) if getattr(pending_count_resp, 'data', None) else 0
+
+        return JsonResponse({
+            "success": True,
+            "decrement_available": 1 if dec_available else 0,
+            "decrement_pending": pending_num
+        })
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+def admin_all_items(request):
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # 1. Fetch RAW items from Supabase
+    try:
+        resp = supabase.table("item").select(
+            "item_id,title,description,category,user_id,image_url,available,created_at"
+        ).order("created_at", desc=True).execute()
+
+        items = resp.data or []
+        logger.debug("Fetched items: %s", items)
+
+    except Exception as exc:
+        logger.exception("Failed retrieving items: %s", exc)
+        items = []
+
+    # 2. Fetch owners (users table)
+    owner_ids = sorted({it["user_id"] for it in items if it.get("user_id")})
+    owner_map = {}
+
+    if owner_ids:
+        try:
+            owners_resp = supabase.table("user").select(
+                "id,first_name,last_name,email"
+            ).in_("id", owner_ids).execute()
+
+            for u in owners_resp.data or []:
+                full = f"{u.get('first_name','').strip()} {u.get('last_name','').strip()}".strip()
+                if not full:
+                    full = u.get("email") or u.get("id")
+                owner_map[u["id"]] = full
+
+        except Exception:
+            for oid in owner_ids:
+                owner_map[oid] = oid[:8] + "..."
+
+    # 3. ENRICH items
+    enriched = []
+
+    for it in items:
+        owner_display = owner_map.get(it["user_id"], it["user_id"][:8] + "...")
+
+        # image fallback: ONLY image_url exists in your DB
+        thumbnail = it.get("image_url") or ""
+
+        # available → status text
+        status_label = "available" if it.get("available") else "borrowed"
+
+        enriched.append({
+            **it,
+            "owner_name": owner_display,
+            "thumbnail_url": thumbnail,
+            "status": status_label,
+            "status_label": status_label,
+        })
+
+    # 4. counts
+    available_count = sum(1 for x in enriched if x["status"] == "available")
+    borrowed_count = sum(1 for x in enriched if x["status"] == "borrowed")
+    pending_count = 0  # item table has no pending
+
+    return render(request, "admin/all_items.html", {
+        "items": enriched,
+        "available_count": available_count,
+        "borrowed_count": borrowed_count,
+        "pending_count": pending_count
+    })

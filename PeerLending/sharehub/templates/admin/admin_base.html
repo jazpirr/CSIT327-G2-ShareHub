@@ -52,6 +52,12 @@
             <i class="fas fa-chart-bar nav-icon"></i>
             <span class="nav-text">View Reports</span>
           </a>
+
+          <a href="{% url 'admin_all_items' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'admin_all_items' %}active{% endif %}">
+              <i class="fas fa-boxes nav-icon"></i>
+              <span class="nav-text">All Items</span>
+          </a>
         </div>
 
         <div class="nav-right">
@@ -268,6 +274,193 @@
   </script>
 
   {% block scripts %}{% endblock %}
+  <div id="errorOverlay" class="popup-overlay" aria-hidden="true"></div>
+
+<div id="errorPopup" class="shared-popup" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="shared-popup-inner" tabindex="-1">
+    
+    <h2 id="popupHeader">Message</h2>
+    <div id="popupBody"></div>
+  </div>
+</div>
+
+  <script>
+(function () {
+  // Safe element references
+  const popup = document.getElementById('errorPopup');
+  const overlay = document.getElementById('errorOverlay');
+  const header = document.getElementById('popupHeader');
+  const body = document.getElementById('popupBody');
+  const closeBtn = popup && popup.querySelector('.close-btn');
+  let autoCloseTimer = null;
+  let _confirmResolve = null;
+  let _lastTrigger = null;
+
+  // Inline SVG icons
+  const icons = {
+    success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>',
+    error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+    warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+  };
+
+  function showOverlay() {
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.style.pointerEvents = 'auto';
+  }
+  function hideOverlay() {
+    if (!overlay) return;
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.pointerEvents = 'none';
+    setTimeout(()=> { if (overlay) overlay.style.display = 'none'; }, 220);
+  }
+
+  function showPopupContainer(typeClass) {
+    if (!popup) return;
+    popup.style.display = 'flex';
+    popup.classList.add('show');
+    if (typeClass) popup.classList.add(`popup-${typeClass}`);
+    popup.setAttribute('aria-hidden', 'false');
+    popup.style.pointerEvents = 'auto';
+    // focus the popup content for accessibility
+    const inner = popup.querySelector('.shared-popup-inner');
+    if (inner && typeof inner.focus === 'function') inner.focus();
+  }
+
+  function hidePopupContainer() {
+    if (!popup) return;
+    // clear type classes
+    popup.classList.remove('popup-success','popup-error','popup-warning','popup-info');
+    popup.classList.remove('show');
+    popup.setAttribute('aria-hidden', 'true');
+    popup.style.pointerEvents = 'none';
+    setTimeout(() => {
+      if (popup) popup.style.display = 'none';
+      if (body) body.innerHTML = '';
+    }, 220);
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  // Public: show message popup
+  window.showMessagePopup = function (title, message, opts = {}) {
+    const { autoCloseMs = 3000, type = 'info' } = opts || {};
+    // clear previous
+    if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+    // remove previous classes
+    if (popup) popup.classList.remove('popup-success','popup-error','popup-warning','popup-info');
+    // set title
+    if (header) header.textContent = title || 'Message';
+    // create body
+    const icon = icons[type] || icons.info;
+    if (body) {
+      body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;">
+          <div class="popup-message-icon">${icon}</div>
+          <div class="popup-message">${escapeHtml(String(message))}</div>
+        </div>
+      `;
+    }
+    // show
+    showOverlay();
+    showPopupContainer(type);
+    // auto close
+    if (autoCloseMs && autoCloseMs > 0) {
+      autoCloseTimer = setTimeout(()=> {
+        hidePopupContainer();
+        hideOverlay();
+      }, autoCloseMs);
+      // return focus after auto close
+      setTimeout(()=> { if (_lastTrigger && typeof _lastTrigger.focus === 'function') _lastTrigger.focus(); _lastTrigger = null; }, autoCloseMs + 50);
+    }
+  };
+
+  // Public: confirm popup returns Promise<boolean>
+  window.showConfirmPopup = function (title, message, yesLabel = 'Yes', noLabel = 'Cancel') {
+    return new Promise((resolve) => {
+      // cleanup any previous
+      if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+      if (!body || !header) {
+        // fallback
+        const ok = confirm(message);
+        resolve(ok);
+        return;
+      }
+      header.textContent = title || 'Confirm';
+      body.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;">
+          <div class="popup-message">${escapeHtml(String(message))}</div>
+          <div class="popup-buttons">
+            <button id="__popupNoBtn" class="popup-secondary">${escapeHtml(noLabel)}</button>
+            <button id="__popupYesBtn" class="popup-primary">${escapeHtml(yesLabel)}</button>
+          </div>
+        </div>
+      `;
+      showOverlay();
+      showPopupContainer();
+      // attach listeners
+      const yesBtn = document.getElementById('__popupYesBtn');
+      const noBtn = document.getElementById('__popupNoBtn');
+
+      function cleanup(result) {
+        if (yesBtn) yesBtn.removeEventListener('click', onYes);
+        if (noBtn) noBtn.removeEventListener('click', onNo);
+        hidePopupContainer();
+        hideOverlay();
+        resolve(result);
+        // return focus
+        if (_lastTrigger && typeof _lastTrigger.focus === 'function') _lastTrigger.focus();
+        _lastTrigger = null;
+      }
+      function onYes() { cleanup(true); }
+      function onNo() { cleanup(false); }
+
+      if (yesBtn) yesBtn.addEventListener('click', onYes);
+      if (noBtn) noBtn.addEventListener('click', onNo);
+
+      // focus yes after short delay
+      setTimeout(()=> { if (yesBtn) yesBtn.focus(); }, 60);
+      // save opener
+      try { _lastTrigger = document.activeElement; } catch(e) { _lastTrigger = null; }
+    });
+  };
+
+  // Close handlers
+  function globalHide() {
+    if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+    hidePopupContainer();
+    hideOverlay();
+  }
+
+  if (overlay) overlay.addEventListener('click', globalHide);
+  if (closeBtn) closeBtn.addEventListener('click', globalHide);
+
+  // ESC handling
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      globalHide();
+    }
+  });
+
+  // Helpful init log (debug)
+  console.log('[inline-popup] initialized', {
+    popup: !!popup, overlay: !!overlay, header: !!header, body: !!body, closeBtn: !!closeBtn
+  });
+
+})();
+</script>
 </body>
 
 </html>
