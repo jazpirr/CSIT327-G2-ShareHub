@@ -1,11 +1,14 @@
-// Helpers
+/* ================================
+   Helpers
+================================ */
+
 function getCookie(name) {
   let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
     for (let c of cookies) {
       const cookie = c.trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+      if (cookie.substring(0, name.length + 1) === name + "=") {
         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
         break;
       }
@@ -13,7 +16,15 @@ function getCookie(name) {
   }
   return cookieValue;
 }
-const csrftoken = getCookie('csrftoken');
+
+const csrftoken = getCookie("csrftoken");
+
+// Prevent duplicate requests firing twice
+const inflight = new Set();
+
+/* ================================
+   UI Helpers
+================================ */
 
 function updateStatCount(elId, delta) {
   const el = document.getElementById(elId);
@@ -22,766 +33,255 @@ function updateStatCount(elId, delta) {
   el.textContent = Math.max(0, current + delta);
 }
 
-function findCardByRequest(reqEl) {
-  return reqEl.closest('.item-card-enhanced');
+function removeRequestElement(reqId) {
+  const el = document.querySelector(`#req-${reqId}`);
+  if (!el) return;
+
+  el.style.transition = "opacity 220ms ease, transform 220ms ease, height 220ms ease";
+  el.style.opacity = "0";
+  el.style.transform = "translateX(20px)";
+  el.style.height = el.offsetHeight + "px";
+
+  requestAnimationFrame(() => {
+    el.style.height = "0px";
+  });
+
+  setTimeout(() => el.remove(), 260);
 }
 
-// Filter functionality
-document.addEventListener('DOMContentLoaded', function() {
-  const filterButtons = document.querySelectorAll('.filter-toggle-btn');
-  const itemCards = document.querySelectorAll('.item-card-enhanced');
+function adjustCardRequestCount(reqEl) {
+  const card = reqEl.closest(".item-card-enhanced");
+  if (!card) return;
 
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', function() {
-      const filter = this.dataset.filter;
-      
-      // Update active button
-      filterButtons.forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
+  const badge = card.querySelector(".requests-badge, .requests-count-badge");
+  if (badge) {
+    let count = parseInt(badge.textContent) || 0;
+    count = Math.max(0, count - 1);
+    if (count > 0) {
+      badge.textContent = count;
+    } else {
+      badge.remove();
+      const reqSection = card.querySelector(".requests-section-enhanced");
+      if (reqSection) {
+        reqSection.innerHTML = `
+          <div class="no-requests-state">
+            <i class="fas fa-comment-alt-smile"></i>
+            <p>No pending requests</p>
+          </div>
+        `;
+      }
+    }
+  }
+}
 
-      // Filter items
-      itemCards.forEach(card => {
-        const raw = card.getAttribute('data-status') || '';
-        const status = String(raw).replace(/\s+/g, ' ').trim().toLowerCase();
+/* ================================
+   Respond Request (Approve/Deny)
+================================ */
 
-        if (filter === 'all') {
-          card.style.display = 'block';
-        } else if (filter === status) {
-          card.style.display = 'block';
-        } else {
-          card.style.display = 'none';
-        }
+async function respondRequest(requestId, action, btn) {
+  if (!requestId) return;
+
+  // Prevent same request firing twice
+  if (inflight.has(requestId)) return;
+  inflight.add(requestId);
+
+  const oldHTML = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML =
+    action === "approve"
+      ? '<i class="fas fa-spinner fa-spin"></i> Approving...'
+      : '<i class="fas fa-spinner fa-spin"></i> Denying...';
+
+  try {
+    const resp = await fetch("/api/request/respond/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken,
+        Accept: "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ request_id: requestId, action }),
+    });
+
+    const text = await resp.text();
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
+    }
+
+    if (!resp.ok || !data.success) {
+      const msg =
+        data.message ||
+        (data.errors ? JSON.stringify(data.errors) : "Failed to update request.");
+
+      if (window.showMessagePopup) {
+        showMessagePopup("Action failed", msg, { type: "error", autoCloseMs: 4500 });
+      } else {
+        alert("Failed: " + msg);
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = oldHTML;
+      inflight.delete(requestId);
+      return;
+    }
+
+    // SUCCESS
+    const reqEl = document.querySelector(`#req-${requestId}`);
+    if (reqEl) {
+      adjustCardRequestCount(reqEl);
+      removeRequestElement(requestId);
+    }
+
+    updateStatCount("pendingCount", -1);
+
+    if (window.showMessagePopup) {
+      showMessagePopup(
+        "Success",
+        action === "approve" ? "Request approved." : "Request denied.",
+        { type: "success", autoCloseMs: 3000 }
+      );
+    }
+
+  } catch (err) {
+    console.error(err);
+    if (window.showMessagePopup) {
+      showMessagePopup("Network error", "Network error while processing action.", {
+        type: "error",
+        autoCloseMs: 4500,
+      });
+    } else {
+      alert("Network error.");
+    }
+  }
+
+  inflight.delete(requestId);
+}
+
+/* ================================
+   Delegated Button Click Handler
+================================ */
+
+document.addEventListener("click", (e) => {
+  const approve = e.target.closest(".btn-approve-new");
+  const deny = e.target.closest(".btn-deny-new");
+
+  if (approve) {
+    respondRequest(approve.dataset.requestId, "approve", approve);
+  } else if (deny) {
+    respondRequest(deny.dataset.requestId, "deny", deny);
+  }
+});
+
+/* ================================
+   Filtering (All, Available, Borrowed, Returned)
+================================ */
+
+document.addEventListener("DOMContentLoaded", function () {
+  const filterBtns = document.querySelectorAll(".filter-toggle-btn");
+  const cards = document.querySelectorAll(".item-card-enhanced");
+
+  filterBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      filterBtns.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const filter = btn.dataset.filter;
+
+      cards.forEach((card) => {
+        const status = (card.dataset.status || "").trim().toLowerCase();
+        card.style.display =
+          filter === "all" || filter === status ? "block" : "none";
       });
     });
   });
-
-  // Initialize pending count from DOM
-  try {
-    const badges = document.querySelectorAll('.requests-count-badge');
-    let totalPending = 0;
-    badges.forEach(b => { totalPending += parseInt(b.textContent) || 0; });
-    const pendingStat = document.getElementById('pendingCount');
-    if (pendingStat && (!pendingStat.textContent || parseInt(pendingStat.textContent) !== totalPending)) {
-      pendingStat.textContent = totalPending;
-    }
-  } catch (e) {
-    console.error('Error normalizing pending stat', e);
-  }
 });
 
-// Respond to request (approve/deny)
-async function respondRequest(requestId, action, elButton) {
-  // This should match your Django URL pattern
-  const url = "/api/respond-request/"; // Update this to match your actual URL
-  
-  try {
-    elButton.disabled = true;
-    const originalHTML = elButton.innerHTML;
-    elButton.innerHTML = action === 'approve' ? 'Approving...' : 'Denying...';
+/* ================================
+   Delete Item
+================================ */
 
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrftoken,
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ request_id: requestId, action: action })
-    });
-
-    const data = await resp.json();
-
-    if (resp.ok && data.success) {
-      const reqEl = document.getElementById('req-' + requestId);
-      if (reqEl) {
-        reqEl.style.transition = 'all 0.25s ease';
-        reqEl.style.opacity = '0';
-        reqEl.style.transform = 'translateX(20px)';
-        setTimeout(() => {
-          const card = findCardByRequest(reqEl);
-          const itemId = reqEl.dataset.itemId || (card && card.dataset.itemId);
-          
-          if (card) {
-            const perCardBadge = card.querySelector('.requests-count-badge');
-            if (perCardBadge) {
-              const current = parseInt(perCardBadge.textContent) || 0;
-              const updated = Math.max(0, current - 1);
-              if (updated > 0) {
-                perCardBadge.textContent = updated;
-              } else {
-                perCardBadge.remove();
-              }
-            }
-            
-            const requestsBadge = card.querySelector('.requests-badge');
-            if (requestsBadge) {
-              const cur = parseInt(requestsBadge.textContent) || 0;
-              const newv = Math.max(0, cur - 1);
-              if (newv > 0) {
-                requestsBadge.textContent = newv;
-              } else {
-                const requestsSection = card.querySelector('.requests-section-enhanced');
-                if (requestsSection) {
-                  requestsSection.innerHTML = `
-                    <div class="no-requests-state">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M8 15h8M9 9h.01M15 9h.01"/>
-                      </svg>
-                      <p>No pending requests</p>
-                    </div>
-                  `;
-                }
-              }
-            }
-          }
-
-          updateStatCount('pendingCount', -1);
-
-          if (action === 'approve' && card) {
-            const prevStatus = (card.dataset.status || '').toLowerCase();
-            if (prevStatus === 'available') {
-              updateStatCount('availableCount', -1);
-            }
-            card.dataset.status = 'borrowed';
-            const statusBadge = card.querySelector('.status-badge-floating');
-            if (statusBadge) {
-              statusBadge.classList.remove('available','returned');
-              statusBadge.classList.add('borrowed');
-              statusBadge.innerHTML = `
-                <svg viewBox="0 0 8 8" fill="currentColor">
-                  <circle cx="4" cy="4" r="4"/>
-                </svg>
-                Borrowed
-              `;
-            }
-          }
-
-          reqEl.remove();
-        }, 260);
-      } else {
-        window.location.reload();
-      }
-    } else {
-      const msg = (data && data.errors) ? JSON.stringify(data.errors) : (data.message || 'Action failed');
-      if (typeof showMessagePopup === 'function') {
-        showMessagePopup('Action failed', msg, { type: 'error', autoCloseMs: 5000 });
-      } else {
-        alert('Failed: ' + msg);
-      }
-      elButton.disabled = false;
-      elButton.innerHTML = originalHTML;
-    }
-  } catch (err) {
-    console.error(err);
-    if (typeof showMessagePopup === 'function') {
-      showMessagePopup('Network error', 'Network error while processing action.', { type: 'error', autoCloseMs: 5000 });
-    } else {
-      alert('Network error');
-    }
-    elButton.disabled = false;
-    elButton.innerHTML = action === 'approve' ? 'Approve' : 'Deny';
-  }
-}
-
-// Delegate click for approve / deny buttons
-document.addEventListener('click', function(e) {
-  const approveBtn = e.target.closest('.btn-approve-new');
-  const denyBtn = e.target.closest('.btn-deny-new');
-
-  if (approveBtn) {
-    const requestId = approveBtn.dataset.requestId;
-    respondRequest(requestId, 'approve', approveBtn);
-  } else if (denyBtn) {
-    const requestId = denyBtn.dataset.requestId;
-    respondRequest(requestId, 'deny', denyBtn);
-  }
-});
-
-// Delete item functionality
 async function deleteItem(itemId, btnEl) {
-  let confirmed = false;
-  if (typeof showConfirmPopup === 'function') {
-    try {
-      confirmed = await showConfirmPopup('Delete this item?', 'This action cannot be undone.', 'Delete', 'Cancel');
-    } catch (e) {
-      confirmed = false;
-    }
+  let ok = false;
+
+  if (window.showConfirmPopup) {
+    ok = await showConfirmPopup(
+      "Delete this item?",
+      "This action cannot be undone.",
+      "Delete",
+      "Cancel"
+    );
   } else {
-    confirmed = confirm('Delete this item? This action cannot be undone.');
+    ok = confirm("Delete this item? This action cannot be undone.");
   }
-  if (!confirmed) return;
+
+  if (!ok) return;
+
+  const oldText = btnEl.innerHTML;
+  btnEl.disabled = true;
+  btnEl.innerHTML = "Deleting...";
 
   try {
-    btnEl.disabled = true;
-    const original = btnEl.innerHTML;
-    btnEl.innerHTML = "Deleting...";
-
-    // This should match your Django URL pattern
-    const deleteUrl = btnEl.dataset.deleteUrl || `/my-items/${itemId}/delete/`;
-    
-    const resp = await fetch(deleteUrl, {
-      method: 'POST',
+    const resp = await fetch(btnEl.dataset.deleteUrl, {
+      method: "POST",
       headers: {
-        'X-CSRFToken': csrftoken,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        "X-CSRFToken": csrftoken,
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
-      credentials: 'same-origin',
-      body: JSON.stringify({})
+      credentials: "same-origin",
+      body: JSON.stringify({}),
     });
 
     const data = await resp.json().catch(() => ({}));
+
     if (resp.ok && data.success) {
-      const card = document.querySelector(`.item-card-enhanced[data-item-id="${itemId}"]`);
+      const card = document.querySelector(
+        `.item-card-enhanced[data-item-id="${itemId}"]`
+      );
       if (card) {
-        card.style.transition = 'all 0.25s ease';
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(8px)';
-        setTimeout(() => card.remove(), 260);
-      } else {
-        window.location.reload();
+        card.style.transition = "opacity 240ms ease, transform 240ms ease";
+        card.style.opacity = "0";
+        card.style.transform = "translateY(12px)";
+        setTimeout(() => card.remove(), 240);
       }
 
-      updateStatCount('totalItems', -1);
-      if (data.decrement_available) updateStatCount('availableCount', -1);
-      if (data.decrement_pending) updateStatCount('pendingCount', -data.decrement_pending);
-
-      if (typeof showMessagePopup === 'function') {
-        showMessagePopup('Deleted', 'Item deleted successfully.', { type: 'success', autoCloseMs: 2400 });
+      if (window.showMessagePopup) {
+        showMessagePopup("Deleted", "Item deleted successfully", {
+          type: "success",
+          autoCloseMs: 2500,
+        });
       }
+
     } else {
-      const msg = (data && (data.message || data.error)) ? (data.message || data.error) : 'Delete failed';
-      if (typeof showMessagePopup === 'function') {
-        showMessagePopup('Delete failed', msg, { type: 'error', autoCloseMs: 5000 });
-      } else {
-        alert('Delete failed: ' + msg);
-      }
+      const msg = data.message || "Delete failed.";
+      if (window.showMessagePopup)
+        showMessagePopup("Delete failed", msg, { type: "error" });
+      else alert("Delete failed: " + msg);
+
       btnEl.disabled = false;
-      btnEl.innerHTML = original;
+      btnEl.innerHTML = oldText;
     }
   } catch (err) {
     console.error(err);
-    if (typeof showMessagePopup === 'function') {
-      showMessagePopup('Network error', 'Network error while deleting item', { type: 'error', autoCloseMs: 5000 });
-    } else {
-      alert('Network error while deleting item');
-    }
+    if (window.showMessagePopup)
+      showMessagePopup("Network error", "Failed to delete item", {
+        type: "error",
+      });
+    else alert("Network error");
+
     btnEl.disabled = false;
-    btnEl.innerHTML = original;
+    btnEl.innerHTML = oldText;
   }
 }
 
-// Delegate clicks to delete buttons
-document.addEventListener('click', function(e) {
-  const delBtn = e.target.closest('.btn-delete-item');
+document.addEventListener("click", (e) => {
+  const delBtn = e.target.closest(".btn-delete-item");
   if (!delBtn) return;
-  const itemId = delBtn.dataset.itemId;
-  deleteItem(itemId, delBtn);
+
+  const id = delBtn.dataset.itemId;
+  deleteItem(id, delBtn);
 });
-
-// --- HISTORY MODAL (LOCAL) ---
-// This reads .history-data inside the card (rendered server-side) and shows a modal.
-// Injects modal HTML/CSS once and reuses it.
-
-function createHistoryModalIfNeeded() {
-  if (document.getElementById('local-history-modal')) return; // already created
-
-  const modalHtml = `
-    <div id="local-history-modal" class="local-history-modal" aria-hidden="true" style="display:none;">
-      <div class="local-history-overlay" id="localHistoryOverlay"></div>
-      <div class="local-history-panel" role="dialog" aria-modal="true" aria-labelledby="localHistoryTitle" style="max-width:780px;">
-        <header class="local-history-header">
-          <h2 id="localHistoryTitle">Item history</h2>
-          <button id="localHistoryClose" class="local-history-close" aria-label="Close history">&times;</button>
-        </header>
-        <div class="local-history-body" id="localHistoryBody">
-          <div class="history-list-empty" style="text-align:center; padding:24px;">
-            <p>No history recorded for this item.</p>
-          </div>
-        </div>
-        <footer class="local-history-footer">
-          <button id="localHistoryCloseFooter" class="btn secondary">Close</button>
-        </footer>
-      </div>
-    </div>
-  `;
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = modalHtml;
-  document.body.appendChild(wrapper.firstElementChild);
-
-  // only add styles once
-  if (!document.getElementById('local-history-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'local-history-styles';
-    styleEl.textContent = `
-      .local-history-modal { position: fixed; inset: 0; z-index: 12000; display:flex; align-items:center; justify-content:center; }
-      .local-history-overlay { position:absolute; inset:0; background: rgba(0,0,0,0.45); }
-      .local-history-panel { position:relative; background:#fff; border-radius:10px; box-shadow:0 12px 40px rgba(0,0,0,0.25); padding:0; z-index:12001; width:calc(100% - 40px); max-height:80vh; overflow:hidden; }
-      .local-history-header { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #eee; }
-      .local-history-header h2 { margin:0; color:#5a0000; font-size:1.25rem; }
-      .local-history-close { background:transparent; border:0; font-size:22px; cursor:pointer; }
-      .local-history-body { max-height:60vh; overflow:auto; padding:16px 20px; }
-      .local-history-footer { display:flex; justify-content:flex-end; padding:12px 20px; border-top:1px solid #eee; }
-      .history-entry-row { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px dashed #eee; }
-      .history-entry-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:#f0f0f0; font-weight:600; }
-      .history-entry-content { flex:1; }
-      .history-entry-meta { font-size:13px; color:#666; margin-bottom:6px; }
-      .history-entry-status { display:inline-block; font-size:12px; padding:4px 8px; border-radius:999px; background:#f3f3f3; }
-    `;
-    document.head.appendChild(styleEl);
-  }
-
-  // wire close handlers
-  const overlay = document.getElementById('localHistoryOverlay');
-  const closeBtn = document.getElementById('localHistoryClose');
-  const closeFooter = document.getElementById('localHistoryCloseFooter');
-  const modalRoot = document.getElementById('local-history-modal');
-
-  overlay && overlay.addEventListener('click', () => closeLocalHistoryModal());
-  closeBtn && closeBtn.addEventListener('click', () => closeLocalHistoryModal());
-  closeFooter && closeFooter.addEventListener('click', () => closeLocalHistoryModal());
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLocalHistoryModal(); });
-}
-
-function openLocalHistoryModal() {
-  createHistoryModalIfNeeded();
-  const m = document.getElementById('local-history-modal');
-  if (!m) return;
-  m.style.display = 'flex';
-  m.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeLocalHistoryModal() {
-  const m = document.getElementById('local-history-modal');
-  if (!m) return;
-  m.style.display = 'none';
-  m.setAttribute('aria-hidden', 'true');
-  document.body.style.overflow = '';
-}
-
-function populateLocalHistoryModalFromCard(cardEl) {
-  createHistoryModalIfNeeded();
-  const modalBody = document.getElementById('localHistoryBody');
-  if (!modalBody) return;
-
-  modalBody.innerHTML = ''; // clear previous
-
-  const historyEntries = cardEl.querySelectorAll('.history-data .history-entry');
-  const title = cardEl.querySelector('.item-title-enhanced') ? cardEl.querySelector('.item-title-enhanced').textContent.trim() : '';
-  document.getElementById('localHistoryTitle').textContent = title ? `History — ${title}` : 'Item history';
-
-  if (!historyEntries || historyEntries.length === 0) {
-    modalBody.innerHTML = '<div class="history-list-empty" style="text-align:center; padding:24px;"><p>No history recorded for this item.</p></div>';
-    openLocalHistoryModal();
-    return;
-  }
-
-  const list = document.createElement('div');
-  list.className = 'history-list';
-
-  historyEntries.forEach((entryEl) => {
-    const requester = entryEl.getAttribute('data-requester') || 'Unknown';
-    const reqDate = entryEl.getAttribute('data-request-date') || '';
-    const status = (entryEl.getAttribute('data-status') || '').toLowerCase();
-    const returned = entryEl.getAttribute('data-return') === 'true';
-    const notesText = (entryEl.querySelector('.history-notes') || {}).textContent || '';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'history-entry-avatar';
-    const initials = requester.split(' ').map(s => s[0] || '').slice(0,2).join('').toUpperCase() || '?';
-    avatar.textContent = initials;
-
-    const content = document.createElement('div');
-    content.className = 'history-entry-content';
-
-    const meta = document.createElement('div');
-    meta.className = 'history-entry-meta';
-    meta.innerHTML = `<strong>${escapeHtml(requester)}</strong> &middot; ${escapeHtml(reqDate)}`;
-
-    const statusBadge = document.createElement('div');
-    statusBadge.className = 'history-entry-status';
-    statusBadge.textContent = returned ? 'Returned' : (status || 'Approved');
-
-    content.appendChild(meta);
-    content.appendChild(statusBadge);
-
-    if (notesText) {
-      const notes = document.createElement('div');
-      notes.style.marginTop = '8px';
-      notes.style.fontSize = '14px';
-      notes.style.color = '#333';
-      notes.textContent = notesText;
-      content.appendChild(notes);
-    }
-
-    const row = document.createElement('div');
-    row.className = 'history-entry-row';
-    row.appendChild(avatar);
-    row.appendChild(content);
-
-    list.appendChild(row);
-  });
-
-  modalBody.appendChild(list);
-  openLocalHistoryModal();
-}
-
-// event delegation for local history button (reads hidden DOM)
-document.addEventListener('click', function(e) {
-  const historyBtn = e.target.closest('.btn-history');
-  if (!historyBtn) return;
-  const card = historyBtn.closest('.item-card-enhanced');
-  if (!card) return;
-  populateLocalHistoryModalFromCard(card);
-});
-
-// View Return History functionality (remote fetch)
-document.addEventListener('click', function(e) {
-  const historyBtnFetch = e.target.closest('.view-history-btn');
-  if (!historyBtnFetch) return;
-  
-  const itemId = historyBtnFetch.dataset.itemId;
-  showReturnHistory(itemId);
-});
-
-async function showReturnHistory(itemId) {
-  try {
-    // This should match your Django URL pattern for fetching return history
-    const url = `/api/return-history/${itemId}/`; // Update this to match your actual URL
-    
-    const resp = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      },
-      credentials: 'same-origin'
-    });
-
-    const data = await resp.json();
-    
-    if (resp.ok && data.success) {
-      displayReturnHistoryModal(data.history, data.item_title);
-    } else {
-      if (typeof showMessagePopup === 'function') {
-        showMessagePopup('Error', data.message || 'Failed to load return history', { type: 'error', autoCloseMs: 3000 });
-      } else {
-        alert('Failed to load return history');
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    if (typeof showMessagePopup === 'function') {
-      showMessagePopup('Network error', 'Failed to fetch return history', { type: 'error', autoCloseMs: 3000 });
-    } else {
-      alert('Network error');
-    }
-  }
-}
-
-function displayReturnHistoryModal(history, itemTitle) {
-  // Create modal overlay
-  const overlay = document.createElement('div');
-  overlay.className = 'history-modal-overlay';
-  overlay.innerHTML = `
-    <div class="history-modal">
-      <div class="history-modal-header">
-        <h2>Return History: ${escapeHtml(itemTitle)}</h2>
-        <button class="history-modal-close" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-      <div class="history-modal-body">
-        ${history.length > 0 ? history.map(record => `
-          <div class="history-record">
-            <div class="history-record-header">
-              <div class="history-record-borrower">
-                <div class="history-avatar">${escapeHtml(record.borrower_name.charAt(0).toUpperCase())}</div>
-                <div class="history-borrower-info">
-                  <div class="history-borrower-name">${escapeHtml(record.borrower_name)}</div>
-                  <div class="history-status ${record.status}">${escapeHtml(record.status_display)}</div>
-                </div>
-              </div>
-            </div>
-            <div class="history-record-timeline">
-              <div class="history-timeline-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <div>
-                  <div class="history-label">Borrowed</div>
-                  <div class="history-date">${escapeHtml(record.borrowed_date)}</div>
-                </div>
-              </div>
-              ${record.returned_date ? `
-                <div class="history-timeline-item">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <polyline points="9 11 12 14 22 4"/>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                  </svg>
-                  <div>
-                    <div class="history-label">Returned</div>
-                    <div class="history-date">${escapeHtml(record.returned_date)}</div>
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-            ${record.issue_reported ? `
-              <div class="history-issue-tag">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <circle cx="12" cy="12" r="10"/>
-                  <line x1="12" y1="8" x2="12" y2="12"/>
-                  <line x1="12" y1="16" x2="12.01" y2="16"/>
-                </svg>
-                Issue Reported
-              </div>
-            ` : ''}
-          </div>
-        `).join('') : '<div class="history-empty">No return history available</div>'}
-      </div>
-    </div>
-  `;
-  
-  document.body.appendChild(overlay);
-  
-  // Add styles if not already present
-  if (!document.getElementById('history-modal-styles')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'history-modal-styles';
-    styleEl.textContent = `
-      .history-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(8px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        padding: 20px;
-        animation: fadeIn 0.2s ease;
-      }
-      
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      
-      .history-modal {
-        background: white;
-        border-radius: 16px;
-        max-width: 700px;
-        width: 100%;
-        max-height: 80vh;
-        display: flex;
-        flex-direction: column;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        animation: slideUp 0.3s ease;
-      }
-      
-      @keyframes slideUp {
-        from { transform: translateY(20px); opacity: 0; }
-        to { transform: translateY(0); opacity: 1; }
-      }
-      
-      .history-modal-header {
-        padding: 24px 32px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .history-modal-header h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        color: #5a0000;
-      }
-      
-      .history-modal-close {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-      }
-      
-      .history-modal-close:hover {
-        background: rgba(90, 0, 0, 0.1);
-      }
-      
-      .history-modal-close svg {
-        width: 24px;
-        height: 24px;
-        stroke-width: 2;
-        color: #666;
-      }
-      
-      .history-modal-body {
-        padding: 24px 32px;
-        overflow-y: auto;
-        flex: 1;
-      }
-      
-      .history-record {
-        background: rgba(0, 0, 0, 0.02);
-        border: 1px solid rgba(0, 0, 0, 0.08);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 16px;
-      }
-      
-      .history-record:last-child {
-        margin-bottom: 0;
-      }
-      
-      .history-record-header {
-        margin-bottom: 16px;
-      }
-      
-      .history-record-borrower {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      
-      .history-avatar {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #5a0000, #3a0000);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 20px;
-      }
-      
-      .history-borrower-name {
-        font-weight: 600;
-        color: #1a1a1a;
-        font-size: 1.1rem;
-      }
-      
-      .history-status {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-top: 4px;
-      }
-      
-      .history-status.approved {
-        background: rgba(255, 189, 0, 0.2);
-        color: #cc9600;
-      }
-      
-      .history-status.returned {
-        background: rgba(96, 125, 139, 0.2);
-        color: #607d8b;
-      }
-      
-      .history-record-timeline {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-left: 12px;
-        padding-left: 24px;
-        border-left: 2px solid rgba(90, 0, 0, 0.15);
-      }
-      
-      .history-timeline-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-      }
-      
-      .history-timeline-item svg {
-        width: 20px;
-        height: 20px;
-        stroke-width: 2;
-        color: #5a0000;
-        flex-shrink: 0;
-        margin-top: 2px;
-      }
-      
-      .history-label {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      
-      .history-date {
-        font-size: 0.95rem;
-        color: #1a1a1a;
-        margin-top: 2px;
-      }
-      
-      .history-issue-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 12px;
-        background: rgba(220, 53, 69, 0.1);
-        border: 1px solid rgba(220, 53, 69, 0.3);
-        border-radius: 8px;
-        color: #dc3545;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-top: 12px;
-      }
-      
-      .history-issue-tag svg {
-        width: 16px;
-        height: 16px;
-        stroke-width: 2;
-      }
-      
-      .history-empty {
-        text-align: center;
-        padding: 48px 24px;
-        color: #999;
-        font-size: 1rem;
-      }
-    `;
-    document.head.appendChild(styleEl);
-  }
-  
-  // Close modal handlers
-  const closeBtn = overlay.querySelector('.history-modal-close');
-  closeBtn.addEventListener('click', () => overlay.remove());
-  
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) overlay.remove();
-  });
-  
-  document.addEventListener('keydown', function closeOnEsc(e) {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      document.removeEventListener('keydown', closeOnEsc);
-    }
-  });
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
