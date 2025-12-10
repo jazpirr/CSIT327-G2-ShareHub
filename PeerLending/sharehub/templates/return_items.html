@@ -85,9 +85,10 @@
               </div>
 
               <div class="return-item-actions">
-                <button class="btn btn-secondary mark-returned-btn" data-borrow-id="{{ b.request_id }}" onclick="event.stopPropagation()">
+                <button class="btn btn-secondary mark-returned-btn" data-borrow-id="{{ b.request_id }}">
                   Mark as Returned
                 </button>
+
                 <button class="btn btn-outline report-issue-btn" data-request-id="{{ b.request_id }}" data-item-id="{{ b.item_id|default:'' }}" onclick="event.stopPropagation()">
                   Report Issue
                 </button>

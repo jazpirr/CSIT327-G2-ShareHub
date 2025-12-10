@@ -1,6 +1,5 @@
 // static/js/popup.js
 // Enhanced ShareHub popup with beautiful animations and icons
-
 (function () {
   function _ready(fn) {
     if (document.readyState === "loading") {
@@ -72,6 +71,10 @@
       `
     };
 
+    // expose a global pointer for confirm cleanup (null when no confirm pending)
+    window.__popup_confirm_cleanup = null;
+    let __popup_autoclose_timer = null;
+
     function showOverlay() {
       if (!overlay) return;
       overlay.style.display = "flex";
@@ -93,6 +96,9 @@
     }
 
     function showPopup() {
+      // Clear any existing auto-close timer when showing a popup
+      if (__popup_autoclose_timer) { clearTimeout(__popup_autoclose_timer); __popup_autoclose_timer = null; }
+
       popup.style.display = "flex";
       setTimeout(() => {
         popup.classList.add("show");
@@ -103,6 +109,15 @@
     }
 
     function hidePopup() {
+      // If a confirm is pending, cancel it (resolve false) so awaiting callers don't hang
+      if (window.__popup_confirm_cleanup) {
+        try { window.__popup_confirm_cleanup(false); } catch (e) { /* ignore */ }
+        window.__popup_confirm_cleanup = null;
+      }
+
+      // clear any auto-close timer
+      if (__popup_autoclose_timer) { clearTimeout(__popup_autoclose_timer); __popup_autoclose_timer = null; }
+
       popup.classList.remove("show");
       popup.setAttribute("aria-hidden", "true");
       popup.style.pointerEvents = "none";
@@ -130,6 +145,12 @@
       autoCloseMs = 3000, 
       type = 'info' // 'success', 'error', 'warning', 'info'
     } = {}) {
+      // If a confirm is pending, cancel it — showing a message replaces confirm UI.
+      if (window.__popup_confirm_cleanup) {
+        try { window.__popup_confirm_cleanup(false); } catch(e) {}
+        window.__popup_confirm_cleanup = null;
+      }
+
       // Remove previous type classes from popup and its wrapper
       popup.classList.remove("popup-success", "popup-error", "popup-warning", "popup-info");
       const popupInner = popup.querySelector('.shared-popup-inner');
@@ -161,7 +182,7 @@
       showPopup();
       
       if (autoCloseMs && autoCloseMs > 0) {
-        setTimeout(() => {
+        __popup_autoclose_timer = setTimeout(() => {
           hidePopup();
         }, autoCloseMs);
       }
@@ -170,6 +191,12 @@
     // Enhanced confirm popup
     window.showConfirmPopup = function (title, message, yesLabel = "Yes", noLabel = "Cancel") {
       return new Promise((resolve) => {
+        // If a previous confirm is pending, cancel it first (resolve false)
+        if (window.__popup_confirm_cleanup) {
+          try { window.__popup_confirm_cleanup(false); } catch(e) {}
+          window.__popup_confirm_cleanup = null;
+        }
+
         // Remove type classes for confirm dialogs
         popup.classList.remove("popup-success", "popup-error", "popup-warning", "popup-info");
         
@@ -193,9 +220,16 @@
         const yesBtn = document.getElementById("__popupYesBtn");
         const noBtn = document.getElementById("__popupNoBtn");
 
+        // cleanup resolves the pending confirm and removes listeners
         function cleanup(result) {
-          if (yesBtn) yesBtn.removeEventListener("click", onYes);
-          if (noBtn) noBtn.removeEventListener("click", onNo);
+          try {
+            if (yesBtn) yesBtn.removeEventListener("click", onYes);
+            if (noBtn) noBtn.removeEventListener("click", onNo);
+          } catch (e) { /* ignore */ }
+
+          // clear global ref if still pointing to this cleanup
+          if (window.__popup_confirm_cleanup === cleanup) window.__popup_confirm_cleanup = null;
+
           hidePopup();
           resolve(result);
         }
@@ -212,6 +246,9 @@
           }
         }
         document.addEventListener("keydown", onKey, { once: true });
+
+        // expose cleanup so other code (e.g. hidePopup) can cancel this pending confirm
+        window.__popup_confirm_cleanup = cleanup;
       });
     };
 
@@ -229,10 +266,8 @@
       document.head.appendChild(style);
     }
 
+    // small init log
+    console.log('[popup.js] initialized', { popup: !!popup, overlay: !!overlay, header: !!header, body: !!body, closeBtn: !!closeBtn });
+
   }); // _ready
 })();
-
-// Example usage:
-// showMessagePopup('Success!', 'Item borrowed successfully', { type: 'success', autoCloseMs: 3000 });
-// showMessagePopup('Error!', 'Failed to process request', { type: 'error', autoCloseMs: 4000 });
-// showConfirmPopup('Delete Item', 'Are you sure you want to delete this item?', 'Delete', 'Cancel').then(confirmed => { ... });

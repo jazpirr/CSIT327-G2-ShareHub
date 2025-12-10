@@ -1,0 +1,383 @@
+/* ===== REPORT ISSUE MODAL - SHAREHUB STYLED ===== */
+
+/* Modal Overlay */
+#reportIssueModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#reportIssueModal[style*="display: flex"],
+#reportIssueModal.show {
+  display: flex !important;
+}
+
+/* Backdrop */
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+ 
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Panel */
+.modal-panel {
+  position: relative;
+  width: 520px;
+  max-width: 95%;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 2;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Modal Header */
+.modal-panel > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #5a0000 0%, #3a0000 100%);
+  color: white;
+  position: relative;
+}
+
+.modal-panel > header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(255, 189, 0, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+  opacity: 0.5;
+}
+
+.modal-panel > header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-panel > header h3::before {
+  content: "⚠️";
+  font-size: 22px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Close Button */
+#reportModalClose {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+
+#reportModalClose:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: rotate(90deg);
+}
+
+/* Form Container */
+#reportIssueForm {
+  margin-top: 0;
+  padding: 28px;
+  background: white;
+}
+
+/* Form Groups */
+#reportIssueForm > div {
+  margin-bottom: 20px;
+}
+
+#reportIssueForm > div:last-of-type {
+  margin-bottom: 0;
+}
+
+/* Labels */
+#reportIssueForm label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  letter-spacing: -0.1px;
+}
+
+/* Input Fields */
+#report_title,
+#report_issue_type,
+#report_desc {
+  width: 100%;
+  padding: 14px 16px;
+  margin-top: 0;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1a1a1a;
+  transition: all 0.3s ease;
+  
+}
+
+#report_title:focus,
+#report_issue_type:focus,
+#report_desc:focus {
+  outline: none;
+  border-color: #5a0000;
+  box-shadow: 
+    0 0 0 4px rgba(90, 0, 0, 0.08),
+    inset 0 0 0 1px rgba(90, 0, 0, 0.1);
+  background: white;
+}
+
+#report_title::placeholder,
+#report_desc::placeholder {
+  color: #999;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+/* Select Dropdown */
+#report_issue_type {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 44px;
+  cursor: pointer;
+  background-color: white;
+}
+
+#report_issue_type option {
+  padding: 12px;
+  background: white;
+  color: #333;
+}
+
+/* Textarea */
+#report_desc {
+  min-height: 120px;
+  resize: vertical;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+}
+
+
+
+
+/* Buttons */
+#reportCancelBtn,
+#reportSubmitBtn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.3px;
+  border: none;
+}
+
+/* Cancel Button */
+#reportCancelBtn,
+.btn-outline {
+  background: white;
+  color: #333;
+  border: 2px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+#reportCancelBtn:hover,
+.btn-outline:hover {
+  background: rgba(90, 0, 0, 0.05);
+  border-color: #5a0000 !important;
+  color: #5a0000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(90, 0, 0, 0.1);
+}
+
+/* Submit Button */
+#reportSubmitBtn,
+.btn-primary {
+  background: linear-gradient(135deg, #5a0000 0%, #3a0000 100%);
+  color: white;
+  box-shadow: 
+    0 4px 12px rgba(90, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+#reportSubmitBtn:hover,
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 24px rgba(90, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+#reportSubmitBtn:active,
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Loading State */
+#reportSubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Status Message */
+#reportStatus {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  display: none;
+}
+
+#reportStatus.show {
+  display: block;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#reportStatus.success {
+  background: rgba(39, 174, 96, 0.1);
+  color: #006100;
+  border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+#reportStatus.error {
+  background: rgba(255, 84, 89, 0.1);
+  color: #7a0000;
+  border: 1px solid rgba(255, 84, 89, 0.2);
+}
+
+/* Hidden Inputs */
+#report_request_id,
+#report_item_id {
+  display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .modal-panel {
+    width: calc(100vw - 32px);
+    max-width: 100%;
+  }
+
+  .modal-panel > header {
+    padding: 20px 24px;
+  }
+
+  .modal-panel > header h3 {
+    font-size: 18px;
+  }
+
+  #reportIssueForm {
+    padding: 24px;
+  }
+
+  #reportCancelBtn,
+  #reportSubmitBtn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  #report_desc {
+    min-height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-panel > header {
+    padding: 18px 20px;
+  }
+
+  .modal-panel > header h3 {
+    font-size: 17px;
+  }
+
+  #reportIssueForm {
+    padding: 20px;
+  }
+
+  #report_title,
+  #report_issue_type,
+  #report_desc {
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  #reportCancelBtn,
+  #reportSubmitBtn {
+    padding: 11px 24px;
+    font-size: 13px;
+  }
+}
+
+.modal-actions-row {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
