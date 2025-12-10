@@ -234,3 +234,304 @@ body {
     gap: var(--space-4);
   }
 }
+
+/* ---------- Clean ShareHub Popup Styling ---------- */
+
+/* Overlay - dark with NO blur */
+.shared-popup-overlay,
+#errorOverlay,
+#addItemOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: none;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9998 !important;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s ease;
+}
+
+.shared-popup-overlay.show,
+#errorOverlay.show,
+#addItemOverlay.show {
+  display: flex !important;
+  animation: overlay-fade-in 0.25s ease;
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Popup container - clean and simple */
+.shared-popup,
+#addItemPopup,
+#errorPopup {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) scale(0.95) !important;
+  display: none !important;
+  pointer-events: none;
+  z-index: 9999 !important;
+  width: min(420px, calc(100% - 40px));
+  max-width: 420px;
+  border-radius: var(--radius, 10px);
+  background: var(--card, #ffffff);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  color: var(--text, #333);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  transition: all 0.25s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+
+.shared-popup-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Header - solid maroon background */
+.shared-popup .shared-popup-header,
+.shared-popup-header,
+#addItemPopup .modal-header,
+#errorPopup .shared-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--maroon, #7a0019);
+  border-bottom: none;
+  position: relative;
+  color: black;
+}
+
+/* Header title - white text */
+#popupHeader,
+#addItemPopup .modal-header > span,
+.shared-popup .shared-popup-header h3,
+.shared-popup-header h3 {
+  color: white;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 1.3;
+  margin: 0;
+  text-align: center;
+  flex: 1;
+  background: var(--maroon, #7a0019);
+  padding: 15px;
+}
+
+/* Body content - clean white background */
+.shared-popup-body,
+#popupBody,
+#addItemPopup .modal-body {
+  color: var(--text, #333);
+  font-size: 15px;
+  line-height: 1.5;
+  padding: 32px 24px;
+  background: var(--card, #ffffff);
+  text-align: center;
+}
+
+.popup-message {
+  color: var(--text, #333) !important;
+  font-size: 15px;
+  line-height: 1.5;
+  margin-bottom: 0;
+  opacity: 1 !important;
+  text-align: center;
+}
+
+/* Success state */
+.popup-success .shared-popup-header {
+  background: var(--success, #2e7d32) !important;
+}
+
+/* Error state */
+.popup-error .shared-popup-header {
+  background: var(--error, #b00020) !important;
+}
+
+/* Warning state */
+.popup-warning .shared-popup-header {
+  background: var(--warning, #ed6c02) !important;
+}
+
+/* Icon styling - remove for confirm dialogs */
+.popup-message-icon {
+  display: none;
+}
+
+/* Button container */
+.popup-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+/* Close button - white circle on maroon */
+.shared-popup .close-btn,
+#addItemPopup .close-btn,
+#errorPopup .close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 400;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shared-popup .close-btn:hover,
+#addItemPopup .close-btn:hover,
+#errorPopup .close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: rotate(90deg);
+}
+
+/* Action buttons */
+.popup-message + div button,
+#__popupYesBtn,
+#__popupNoBtn,
+#addItemCloseBtn,
+.popup-btn {
+  padding: 12px 32px;
+  border-radius: var(--radius, 10px);
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 100px;
+}
+
+/* Primary button - solid maroon */
+#__popupYesBtn,
+#addItemCloseBtn.btn-primary,
+.popup-primary {
+  background: var(--maroon, #7a0019);
+  color: #ffffff;
+  border: none;
+}
+
+#__popupYesBtn:hover,
+#addItemCloseBtn.btn-primary:hover,
+.popup-primary:hover {
+  background: #660015;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(122, 0, 25, 0.3);
+}
+
+#__popupYesBtn:active,
+#addItemCloseBtn.btn-primary:active,
+.popup-primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary button - white with border */
+#__popupNoBtn,
+.popup-secondary {
+  background: #ffffff;
+  color: var(--text, #333);
+  border: 2px solid var(--border, #ddd);
+}
+
+#__popupNoBtn:hover,
+.popup-secondary:hover {
+  background: var(--bg, #f5f5f5);
+  border-color: var(--maroon, #7a0019);
+  color: var(--maroon, #7a0019);
+  transform: translateY(-1px);
+}
+
+#__popupNoBtn:active,
+.popup-secondary:active {
+  transform: translateY(0);
+}
+
+/* Show animation */
+.shared-popup.show,
+#errorPopup.show,
+#addItemPopup.show {
+  display: flex !important;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1) !important;
+  animation: popup-entrance 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- Defensive overlay / popup interaction fix ---------- */
+/* Apply only to the known overlay/popup elements by ID/class you use */
+
+#addItemOverlay,
+#errorOverlay,
+.shared-popup-overlay,
+.shared-popup,
+#addItemPopup,
+#errorPopup {
+  /* Hidden by default: make absolutely sure they do not block clicks */
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* When you actually show them you should add .show or set aria-hidden="false".
+   Either case we make them visible and interactive. */
+#addItemOverlay.show,
+#errorOverlay.show,
+.shared-popup-overlay.show,
+.shared-popup.show,
+#addItemPopup.show,
+#errorPopup.show,
+#addItemOverlay[aria-hidden="false"],
+#errorOverlay[aria-hidden="false"],
+.shared-popup-overlay[aria-hidden="false"],
+.shared-popup[aria-hidden="false"],
+#addItemPopup[aria-hidden="false"],
+#errorPopup[aria-hidden="false"] {
+  display: flex !important;         /* overlay uses flex in your code */
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;  /* only interactive when displayed */
+}
+
+/* Popups themselves (centered dialog) should be visible when show is present */
+.shared-popup.show,
+#addItemPopup.show,
+#errorPopup.show {
+  display: block !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Defensive: if some other code sets display:block but forgets .show,
+   don't let those elements catch pointer events unless aria-hidden="false" */
+#addItemOverlay,
+#errorOverlay,
+.shared-popup-overlay,
+.shared-popup,
+#addItemPopup,
+#errorPopup {
+  pointer-events: none !important;
+}
+#addItemOverlay[aria-hidden="false"],
+#errorOverlay[aria-hidden="false"],
+.shared-popup-overlay[aria-hidden="false"],
+.shared-popup[aria-hidden="false"],
+#addItemPopup[aria-hidden="false"],
+#errorPopup[aria-hidden="false"] {
+  pointer-events: auto !important;
+}
