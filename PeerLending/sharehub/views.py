@@ -1964,30 +1964,69 @@ def create_request(request):
 
 
 
-
-@require_POST 
+@require_POST
 @supabase_login_required
 def respond_request(request):
     """
     Accepts JSON POST: { request_id, action } where action is 'approve' or 'deny'.
-    Returns JSON: { success: True, status: 'approved'|'denied', item_id, requester_id }
+    Regular item owners can approve/deny pending requests.
+    Admins can always change the status and overwrite previous decisions.
+    Returns JSON: { success: True, status: 'approved'|'denied', item_id, requester_id, overwritten: bool }
     """
-    user_id = request.session.get('supabase_user_id')
-    if not user_id:
-        return JsonResponse({'errors': {'general': [{'message': 'Not authenticated'}]}}, status=401)
 
+    # DEBUG: temporarily print session, user and raw body for troubleshooting. REMOVE in production.
+    try:
+        print("=== DEBUG respond_request START ===")
+        print("SESSION KEYS:", dict(request.session.items()))
+        django_user = getattr(request, "user", None)
+        if django_user:
+            print(
+                "DJANGO USER - is_authenticated:", getattr(django_user, "is_authenticated", False),
+                "is_staff:", getattr(django_user, "is_staff", False),
+                "is_superuser:", getattr(django_user, "is_superuser", False),
+                "id:", getattr(django_user, "id", None)
+            )
+        else:
+            print("DJANGO USER: None")
+        raw_body_preview = request.body.decode('utf-8') if request.body else ''
+        print("RAW BODY:", raw_body_preview)
+        print("=== DEBUG respond_request END ===")
+    except Exception as _e:
+        print("DEBUG: respond_request print failed:", _e)
+
+    # parse JSON body or fallback to POST form values
     try:
         payload = json.loads(request.body.decode('utf-8')) if request.body else {}
     except Exception:
         payload = {}
 
+    # request id and action (defined early so debug blocks can reference reliably)
     req_id = payload.get('request_id') or request.POST.get('request_id')
     action = (payload.get('action') or request.POST.get('action') or '').lower()
 
     if not req_id or action not in ('approve', 'deny'):
         return JsonResponse({'errors': {'general': [{'message': 'Invalid parameters'}]}}, status=400)
 
+    # Acting user (supabase id if available)
+    acting_supabase_user_id = request.session.get('supabase_user_id')
 
+    # Is caller an admin?
+    is_admin = False
+    if request.session.get('is_admin'):
+        is_admin = True
+    else:
+        try:
+            user = getattr(request, "user", None)
+            if user and (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)):
+                is_admin = True
+        except Exception:
+            is_admin = False
+
+    # If not supabase user and not admin -> unauthorized
+    if not acting_supabase_user_id and not is_admin:
+        return JsonResponse({'errors': {'general': [{'message': 'Not authenticated'}]}}, status=401)
+
+    # fetch the request row
     rresp = supabase.table('request').select('*').eq('request_id', req_id).single().execute()
     if getattr(rresp, 'error', None) or not rresp.data:
         return JsonResponse({'errors': {'general': [{'message': 'Request not found'}]}}, status=404)
@@ -1997,40 +2036,79 @@ def respond_request(request):
     requester_id = req.get('user_id')
     current_status = (req.get('status') or '').lower()
 
+    # Determine new status
+    new_status = 'approved' if action == 'approve' else 'denied'
 
-    if current_status in ('approved', 'denied'):
-        return JsonResponse({'success': False, 'status': current_status, 'message': 'Request already processed.'}, status=409)
-
-
+    # --- Permission rules ---
+    # Regular user (non-admin) must be the item owner and request must be pending
+    # Admin may act regardless of current_status (overwrite)
     item_resp = supabase.table('item').select('item_id,title,user_id,available').eq('item_id', item_id).single().execute()
     if getattr(item_resp, 'error', None) or not item_resp.data:
         return JsonResponse({'errors': {'general': [{'message': 'Item not found'}]}}, status=404)
     item = item_resp.data
+    item_owner_supabase_id = item.get('user_id')
 
+    if not is_admin:
+        # caller must be the item owner
+        if item_owner_supabase_id != acting_supabase_user_id:
+            return JsonResponse({'errors': {'general': [{'message': 'Permission denied'}]}}, status=403)
+        # and request must be pending (cannot re-process an already processed request)
+        if current_status in ('approved', 'denied'):
+            return JsonResponse({'success': False, 'status': current_status, 'message': 'Request already processed.'}, status=409)
 
-    if item.get('user_id') != user_id:
-        return JsonResponse({'errors': {'general': [{'message': 'Permission denied'}]}}, status=403)
+    # At this point: either admin, or item-owner with pending request
+    overwritten = False
+    previous_status = current_status if current_status in ('approved', 'denied') else None
+    if previous_status and is_admin:
+        overwritten = True
 
-    new_status = 'approved' if action == 'approve' else 'denied'
+    # Prepare payload for update (Option A: do NOT include processed_by)
+    upd_payload = {'status': new_status}
 
+    # Update the request status (with debug logging)
     try:
-        upd_resp = supabase.table('request').update({'status': new_status}).eq('request_id', req_id).execute()
+        request_identifier = req_id
+        print("DEBUG: attempting to update request", request_identifier, "with payload:", upd_payload)
+
+        upd_resp = supabase.table('request').update(upd_payload).eq('request_id', request_identifier).execute()
+        print("DEBUG: update response:", getattr(upd_resp, "__dict__", repr(upd_resp)))
+        print("DEBUG: upd_resp.error:", getattr(upd_resp, "error", None))
+        print("DEBUG: upd_resp.data:", getattr(upd_resp, "data", None))
+
         if getattr(upd_resp, 'error', None):
-            return JsonResponse({'errors': {'general': [{'message': 'Failed to update request status'}]}}, status=500)
+            server_err = getattr(upd_resp, 'error', None)
+            print("ERROR: update error:", server_err)
+            try:
+                err_msg = server_err.get('message') if isinstance(server_err, dict) and server_err.get('message') else str(server_err)
+            except Exception:
+                err_msg = str(server_err)
+            return JsonResponse({'errors': {'general': [{'message': f'Failed to update request status: {err_msg}'}]}}, status=500)
+
     except Exception:
-        return JsonResponse({'errors': {'general': [{'message': 'Failed to update request status'}]}}, status=500)
+        import traceback
+        print("TRACEBACK during update attempt:")
+        traceback.print_exc()
+        return JsonResponse({'errors': {'general': [{'message': 'Failed to update request status (exception)'}]}}, status=500)
 
-
+    # If approved, mark item unavailable
     if new_status == 'approved':
         try:
             supabase.table('item').update({'available': False}).eq('item_id', item_id).execute()
-
         except Exception:
             pass
 
-
+    # Send notification to the requester. If admin overwrote a previous decision, mention it.
     try:
-        msg = f'Your request for "{item.get("title")}" was {new_status}.'
+        title = item.get('title') or ''
+        if not isinstance(title, str):
+            title = str(title)
+        safe_title = title.replace('"', "'")
+
+        if overwritten:
+            msg = f'An admin changed the status of your request for "{safe_title}" to {new_status}.'
+        else:
+            msg = f'Your request for "{safe_title}" was {new_status}.'
+
         notif_payload = {
             'notification_id': str(uuid.uuid4()),
             'user_id': requester_id,
@@ -2048,10 +2126,11 @@ def respond_request(request):
         'status': new_status,
         'item_id': item_id,
         'requester_id': requester_id,
+        'overwritten': overwritten,
+        'previous_status': previous_status
     })
 
-
-@supabase_login_required
+@supabase_login_required 
 def return_items(request):
     """
     Page that lists all items the current user has borrowed (approved requests)

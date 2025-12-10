@@ -3,23 +3,73 @@ from django.shortcuts import redirect
 from django.views.decorators.cache import never_cache
 from .models import CustomUser
 from django.utils.dateparse import parse_date
+from django.http import JsonResponse
+
  
+def _is_json_or_ajax_request(request):
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return True
+    accept = request.headers.get('Accept', '')
+    if 'application/json' in accept:
+        return True
+    content_type = request.headers.get('Content-Type') or request.content_type or ''
+    if 'application/json' in content_type:
+        return True
+    return False
+
 def supabase_login_required(view_func):
     @wraps(view_func)
     @never_cache
     def _wrapped(request, *args, **kwargs):
-        if not request.session.get("supabase_user_id"):
-            return redirect("login")
-        resp = view_func(request, *args, **kwargs)
-       
-        resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        resp["Pragma"] = "no-cache"
-        resp["Expires"] = "0"
-        return resp
+        # Allow if supabase session exists
+        if request.session.get("supabase_user_id"):
+            resp = view_func(request, *args, **kwargs)
+            try:
+                resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                resp["Pragma"] = "no-cache"
+                resp["Expires"] = "0"
+            except Exception:
+                pass
+            return resp
+
+        # Allow if session admin flag set
+        if request.session.get("is_admin"):
+            resp = view_func(request, *args, **kwargs)
+            try:
+                resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                resp["Pragma"] = "no-cache"
+                resp["Expires"] = "0"
+            except Exception:
+                pass
+            return resp
+
+        # Allow if Django user is staff/superuser
+        try:
+            user = getattr(request, "user", None)
+            if user and (getattr(user, "is_staff", False) or getattr(user, "is_superuser", False)):
+                resp = view_func(request, *args, **kwargs)
+                try:
+                    resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                    resp["Pragma"] = "no-cache"
+                    resp["Expires"] = "0"
+                except Exception:
+                    pass
+                return resp
+        except Exception:
+            pass
+
+        # Not authenticated: respond appropriately depending on request type
+        if _is_json_or_ajax_request(request):
+            return JsonResponse(
+                {'errors': {'general': [{'message': 'Not authenticated'}]}},
+                status=401
+            )
+
+        # Fallback: redirect to login for normal page requests
+        return redirect("login")
+
     return _wrapped
-
-
-
+    
 def sync_user_to_orm(supabase_user_id, profile_dict):
     """
     Ensure a CustomUser row exists for supabase_user_id and update fields.

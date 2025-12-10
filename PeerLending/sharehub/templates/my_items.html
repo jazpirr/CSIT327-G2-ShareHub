@@ -270,5 +270,178 @@
 
 <script src="{% static 'js/report_issue.js' %}"></script>
 <script src="{% static 'js/my_items.js' %}"></script>
+<script>
+(function(){
+  const RESPOND_URL = window.RESPOND_URL || "{% url 'api_respond_request' %}";
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie('csrftoken');
+
+  // Guard set: prevents double-processing of the same request id
+  window.__respond_inflight = window.__respond_inflight || new Set();
+
+  function decrementIncomingCardCount(listItemEl) {
+    const card = listItemEl.closest('.item-card-enhanced') || listItemEl.closest('.content-card') || listItemEl.closest('.card');
+    if (!card) return;
+    const badge = card.querySelector('.requests-badge, .requests-count-badge');
+    if (!badge) return;
+    badge.textContent = Math.max(0, (parseInt(badge.textContent) || 0) - 1);
+  }
+
+  function removeRequestElementById(requestId){
+    const el = document.querySelector(`#req-${requestId}`) || document.querySelector(`[data-request-id="${requestId}"]`);
+    if (!el) return;
+    try {
+      el.style.transition = 'opacity 220ms ease, height 220ms ease, transform 220ms ease';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(12px)';
+      el.style.height = el.offsetHeight + 'px';
+      requestAnimationFrame(()=> {
+        el.style.height = '0px';
+      });
+      setTimeout(()=> {
+        const container = el.parentElement;
+        el.remove();
+        if (container && container.children.length === 0) {
+          const parentCard = container.closest('.requests-section-enhanced') || container.closest('.requests-list-enhanced') || container;
+          if (parentCard) {
+            parentCard.innerHTML = `<div class="no-requests-state"><i class="fas fa-comment-alt-smile"></i><p>No pending requests</p></div>`;
+          }
+        }
+      }, 280);
+    } catch(e){
+      try { el.remove(); } catch(_) {}
+    }
+  }
+
+  async function respondRequest(requestId, action, btn) {
+    if (!requestId || !btn) return;
+
+    // If already processing this request id, don't run again
+    if (window.__respond_inflight.has(requestId)) {
+      return;
+    }
+    window.__respond_inflight.add(requestId);
+
+    btn.disabled = true;
+    const prevHtml = btn.innerHTML;
+    btn.innerHTML = action === 'approve' ? '<i class="fas fa-spinner fa-spin"></i> Approving...' : '<i class="fas fa-spinner fa-spin"></i> Denying...';
+
+    try {
+      const res = await fetch(RESPOND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ request_id: requestId, action: action })
+      });
+
+      let data = {};
+      try {
+        const text = await res.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (_) {
+        data = {};
+      }
+
+      if (!res.ok) {
+        const serverMessage = (data && data.errors && data.errors.general && data.errors.general[0] && data.errors.general[0].message)
+          || (data && data.message) || `Server error (${res.status})`;
+
+        if (window.showMessagePopup) {
+          window.showMessagePopup('Error', serverMessage, { autoCloseMs: 5000 });
+        } else {
+          alert('Failed: ' + serverMessage);
+        }
+        btn.disabled = false;
+        btn.innerHTML = prevHtml;
+        return;
+      }
+
+      if (data && data.success) {
+        // success UI
+        removeRequestElementById(requestId);
+        const reqEl = document.querySelector(`#req-${requestId}`) || document.querySelector(`[data-request-id="${requestId}"]`);
+        if (reqEl) decrementIncomingCardCount(reqEl);
+
+        if (window.showMessagePopup) {
+          window.showMessagePopup('Success', action === 'approve' ? 'Request approved.' : 'Request denied.', { autoCloseMs: 3000 });
+        } else {
+          alert(action === 'approve' ? 'Request approved.' : 'Request denied.');
+        }
+        return;
+      }
+
+      // fallback: server returned ok but not success
+      const serverMessage = (data && data.message) || 'Failed to process request.';
+      if (window.showMessagePopup) {
+        window.showMessagePopup('Error', serverMessage, { autoCloseMs: 5000 });
+      } else {
+        alert(serverMessage);
+      }
+      btn.disabled = false;
+      btn.innerHTML = prevHtml;
+    } catch (err) {
+      console.error('respondRequest network error', err);
+      if (window.showMessagePopup) {
+        window.showMessagePopup('Network error', 'Network error while processing action.', { autoCloseMs: 5000 });
+      } else {
+        alert('Network error while processing action.');
+      }
+      btn.disabled = false;
+      btn.innerHTML = prevHtml;
+    } finally {
+      // Clear the inflight guard so same requestId can be processed again later
+      window.__respond_inflight.delete(requestId);
+    }
+  }
+
+  // delegated click listener
+  document.addEventListener('click', function(e){
+    // stopImmediatePropagation to reduce chance of other handlers firing for same element
+    const approveBtn = e.target.closest && e.target.closest('.btn-approve-new');
+    const denyBtn = e.target.closest && e.target.closest('.btn-deny-new');
+
+    if (approveBtn) {
+      // prevent other listeners from receiving this click (if those listeners call stopImmediatePropagation as well)
+      try { e.stopImmediatePropagation(); } catch(_) {}
+      const requestId = approveBtn.getAttribute('data-request-id') || approveBtn.dataset.requestId;
+      respondRequest(requestId, 'approve', approveBtn);
+    } else if (denyBtn) {
+      try { e.stopImmediatePropagation(); } catch(_) {}
+      const requestId = denyBtn.getAttribute('data-request-id') || denyBtn.dataset.requestId;
+      respondRequest(requestId, 'deny', denyBtn);
+    }
+  });
+
+  // normalize counts on load
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      document.querySelectorAll('.requests-section-enhanced').forEach(section => {
+        const badge = section.querySelector('.requests-badge');
+        const count = section.querySelectorAll('.request-item').length;
+        if (badge) badge.textContent = count;
+      });
+    } catch(e){ /* ignore */ }
+  });
+})();
+</script>
 
 {% endblock %}

@@ -128,120 +128,162 @@
 <div id="notificationContainer"></div>
 {% endblock %}
 
+
 {% block scripts %}
+
+
+
+<!-- FULL postRespond SCRIPT -->
 <script>
+/* Approve Requests page - unified AJAX handler for admin actions
+   Works with your current markup (.approve-btn/.deny-btn and data-action) 
+   and also supports .btn-approve/.btn-deny if you choose to reuse external JS later.
+*/
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const CSRF_TOKEN = getCookie('csrftoken') || '{{ csrf_token }}';
+
 async function postRespond(request_id, action) {
   try {
     const card = document.querySelector(`.request-card[data-request-id="${request_id}"]`);
-    
+    if (!card) {
+      console.warn("postRespond: card not found for", request_id);
+      return;
+    }
+
     card.classList.add('processing');
-    card.querySelectorAll('.action-btn').forEach(btn => btn.disabled = true);
-    
-    const resp = await fetch("{% url 'api_respond_request' %}", {
+    card.querySelectorAll('.action-btn, .btn-approve, .btn-deny').forEach(btn => btn.disabled = true);
+
+    const url = "{% url 'api_respond_request' %}";
+    const payload = { request_id: request_id, action: action };
+
+    const resp = await fetch(url, {
       method: 'POST',
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': window.APP?.CSRF_TOKEN || '{{ csrf_token }}'
+        'X-CSRFToken': CSRF_TOKEN,
+        'X-Requested-With': 'XMLHttpRequest'
       },
-      body: JSON.stringify({request_id: request_id, action: action})
+      body: JSON.stringify(payload)
     });
-    
-    const data = await resp.json();
-    
-    if (data.success) {
+
+    // read raw response first (safe if server returned HTML)
+    let text = null;
+    let data = null;
+    try {
+      text = await resp.text();
+      data = text ? JSON.parse(text) : null;
+    } catch (err) {
+      data = null;
+    }
+
+    console.groupCollapsed(`respond_request ${request_id} -> ${action} (status ${resp.status})`);
+    console.log('REQUEST PAYLOAD:', payload);
+    console.log('RESPONSE RAW:', text);
+    console.log('RESPONSE JSON:', data);
+    console.groupEnd();
+
+    // unauthorized or forbidden
+    if (resp.status === 401) {
+      showNotification((data?.errors?.general?.[0]?.message) || 'Not authenticated', 'error');
+      resetCard(card);
+      return;
+    }
+    if (resp.status === 403) {
+      showNotification((data?.errors?.general?.[0]?.message) || 'Permission denied', 'error');
+      resetCard(card);
+      return;
+    }
+
+    if (!resp.ok) {
+      const serverMessage = (data?.message) || (data?.errors?.general?.[0]?.message) || text || `Server error (${resp.status})`;
+      showNotification('Failed: ' + serverMessage, 'error');
+      resetCard(card);
+      return;
+    }
+
+    if (data && data.success) {
       card.classList.add('completed');
       setTimeout(() => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(-20px)';
         setTimeout(() => card.remove(), 300);
-        
         updatePendingCount();
-        showNotification(action === 'approve' ? 'Request approved successfully!' : 'Request denied successfully!', 'success');
-      }, 500);
-    } else {
-      card.classList.remove('processing');
-      card.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
-      showNotification('Failed: ' + (data.message || 'Unknown error'), 'error');
+        if (data.overwritten) {
+          showNotification('Admin overwrote previous decision — status changed.', 'success');
+        } else {
+          showNotification(action === 'approve' ? 'Request approved!' : 'Request denied!', 'success');
+        }
+      }, 400);
+      return;
     }
+
+    // fallback: server returned 200 but success is false / no JSON
+    resetCard(card);
+    showNotification('Failed: ' + ((data && (data.message || (data.errors && data.errors.general && data.errors.general[0].message))) || 'Unknown error'), 'error');
+
   } catch (e) {
-    console.error(e);
+    console.error('postRespond exception:', e);
     showNotification('Network error occurred', 'error');
   }
 }
 
+function resetCard(card) {
+  card.classList.remove('processing');
+  card.querySelectorAll('.action-btn, .btn-approve, .btn-deny').forEach(btn => btn.disabled = false);
+}
+
 function updatePendingCount() {
   const remainingCards = document.querySelectorAll('.request-card').length;
-  const countElements = document.querySelectorAll('.stat-value, .count-badge');
-  countElements.forEach(el => {
-    if (el.classList.contains('stat-value')) {
-      el.textContent = remainingCards;
-    } else {
-      el.textContent = remainingCards;
-    }
-  });
+  document.querySelectorAll('.stat-value, .count-badge').forEach(el => { el.textContent = remainingCards; });
 }
 
+// Lightweight notification helper (keeps your existing behavior)
 function showNotification(message, type = 'info') {
-  const notification = document.createElement('div');
-  notification.className = `notification ${type}`;
-  notification.innerHTML = `
-    <span>${message}</span>
-    <button class="close-notification">&times;</button>
-  `;
-  
-  const container = document.getElementById('notificationContainer') || document.body;
-  container.appendChild(notification);
-
-  setTimeout(() => notification.classList.add('show'), 100);
-  
-  setTimeout(() => {
-    notification.classList.remove('show');
-    setTimeout(() => notification.remove(), 300);
-  }, 5000);
-  
-
-  notification.querySelector('.close-notification').addEventListener('click', () => {
-    notification.classList.remove('show');
-    setTimeout(() => notification.remove(), 300);
-  });
+  const n = document.createElement('div');
+  n.className = `notification ${type}`;
+  n.innerHTML = `<span>${message}</span><button class="close-notification">&times;</button>`;
+  (document.getElementById('notificationContainer') || document.body).appendChild(n);
+  setTimeout(() => n.classList.add('show'), 50);
+  setTimeout(() => { n.classList.remove('show'); setTimeout(()=>n.remove(), 250); }, 5000);
+  n.querySelector('.close-notification').addEventListener('click', () => { n.remove(); });
 }
 
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-  // Action buttons
-  document.querySelectorAll('.approve-btn, .deny-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
+// Wire up clicks for your admin page. This supports both class naming conventions.
+document.addEventListener('DOMContentLoaded', () => {
+  // existing admin classes: .approve-btn / .deny-btn
+  document.querySelectorAll('.approve-btn, .deny-btn, .btn-approve, .btn-deny').forEach(btn => {
+    btn.addEventListener('click', (e) => {
       e.preventDefault();
-      const card = e.target.closest('.request-card');
-      const request_id = card.getAttribute('data-request-id');
-      const action = e.target.closest('button').dataset.action;
-      
-      postRespond(request_id, action);
-    });
-  });
-  
-  // Filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      
-      // Filter logic can be added here
-      const filter = this.dataset.filter;
-      // Implement filtering based on your needs
-    });
-  });
-  
-  // Add hover effects to cards
-  document.querySelectorAll('.request-card').forEach(card => {
-    card.addEventListener('mouseenter', function() {
-      this.style.transform = 'translateY(-4px)';
-    });
-    
-    card.addEventListener('mouseleave', function() {
-      this.style.transform = 'translateY(0)';
+      const button = e.currentTarget;
+      // get request id either from data-request-id attribute on button OR from the containing card
+      const card = button.closest('.request-card');
+      const requestId = button.dataset.requestId || (card && card.getAttribute('data-request-id'));
+      const action = button.dataset.action || (button.classList.contains('approve-btn') || button.classList.contains('btn-approve') ? 'approve' : 'deny');
+      if (!requestId) {
+        console.warn('No request id found for action button', button);
+        return;
+      }
+      postRespond(requestId, action);
     });
   });
 });
 </script>
+
+
+
 {% endblock %}
