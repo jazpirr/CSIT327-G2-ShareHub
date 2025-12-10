@@ -91,7 +91,7 @@ ASGI_APPLICATION = 'PeerLending.asgi.application'
 DATABASES = {
     'default': dj_database_url.config(
         default=os.getenv('DATABASE_URL', 'sqlite:///db.sqlite3'),  # fallback to SQLite if DATABASE_URL is not found
-        conn_max_age=600, 
+        conn_max_age=0, 
         ssl_require=True    # Enforce SSL for secure connection
     )
 }
