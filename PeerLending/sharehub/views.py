@@ -1332,7 +1332,35 @@ def approve_requests_view(request):
         "unread_count": unread_count,
     })
 
+def _get_public_or_signed_url(path):
+    """
+    Your DB already stores the full public URL for the image.
+    So we simply return it unchanged.
+    """
+    if not path:
+        return ""
 
+    # If already a full URL (Supabase public object URL), return it as-is
+    if path.startswith("http://") or path.startswith("https://"):
+        return path
+
+    # Otherwise, treat it as a relative path inside the bucket
+    path = path.lstrip("/")
+    try:
+        public = supabase.storage.from_(SUPABASE_STORAGE_BUCKET).get_public_url(path)
+        if isinstance(public, dict):
+            return (
+                public.get("publicURL")
+                or public.get("publicUrl")
+                or public.get("public_url")
+                or (public.get("data") or {}).get("publicURL")
+                or ""
+            )
+    except Exception as e:
+        print("get_public_url error:", e)
+
+    return ""
+    
 @never_cache
 @supabase_login_required
 def manage_users_view(request):
@@ -1370,70 +1398,59 @@ def manage_users_view(request):
         "unread_count": unread_count,
     })
 
+
 STORAGE_BUCKET = getattr(settings, "SUPABASE_STORAGE_BUCKET", "item-images")
 
-def _get_public_or_signed_url(path):
-    if not path:
+def _ensure_get_public_or_signed_url():
+    # prefer existing helper if present
+    if "_get_public_or_signed_url" in globals():
+        return globals()["_get_public_or_signed_url"]
+
+    # otherwise provide a conservative fallback that returns empty string (or placeholder)
+    def _fallback_get_public_or_signed_url(path):
+        return ""  # we let view replace with placeholder later
+    return _fallback_get_public_or_signed_url
+
+
+_get_url = _ensure_get_public_or_signed_url()
+TEST_PLACEHOLDER_IMAGE = getattr(settings, "TEST_PLACEHOLDER_IMAGE", "https://via.placeholder.com/150")
+SUPABASE_STORAGE_BUCKET = getattr(settings, "SUPABASE_STORAGE_BUCKET", "item-images")
+
+def _pick_title_from_raw(raw):
+    if not raw:
         return ""
-    # if DB already stores a full URL, return as-is
-    if isinstance(path, str) and (path.startswith("http://") or path.startswith("https://") or path.startswith("data:")):
-        return path
-
-    # normalize
-    path = path.lstrip("/")
-
-    try:
-        public = supabase.storage.from_(SUPABASE_STORAGE_BUCKET).get_public_url(path)
-        # try common response shapes
-        if isinstance(public, dict):
-            url = public.get("publicURL") or public.get("publicUrl") or public.get("publicurl")
-            if url:
-                return url
-        # sometimes .get_public_url returns { "data": {"publicURL": "..." } }
-        if getattr(public, "get", None) and isinstance(public.get("data"), dict):
-            url = public.get("data").get("publicURL") or public.get("data").get("publicUrl")
-            if url:
-                return url
-    except Exception as e:
-        # ignore and try signed url
-        print("DEBUG: get_public_url error:", e)
-
-    # fallback: create signed url (1 hour)
-    try:
-        signed = supabase.storage.from_(SUPABASE_STORAGE_BUCKET).create_signed_url(path, 3600)
-        if isinstance(signed, dict):
-            signed_url = signed.get("signedURL") or signed.get("signedUrl") or (signed.get("data") or {}).get("signedURL")
-            if signed_url:
-                return signed_url
-        if getattr(signed, "get", None) and signed.get("data") and signed["data"].get("signedURL"):
-            return signed["data"]["signedURL"]
-    except Exception as e:
-        print("DEBUG: create_signed_url error:", e)
-
+    # check many possible fields
+    for key in ("title", "item_title", "_title", "name", "display_name", "item_name"):
+        v = raw.get(key)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    # sometimes nested shapes exist
+    nested = raw.get("raw") if isinstance(raw.get("raw"), dict) else None
+    if nested:
+        return _pick_title_from_raw(nested)
     return ""
-
 
 @require_POST
 @supabase_login_required
 def admin_user_details_api(request):
     """
     POST JSON: { "user_id": "<uuid>" }
-    Returns:
-        {
-          success: True,
-          items_owned: [...],
-          items_borrowed: [...],
-          counts: { total_owned, total_borrowed }
-        }
+
+    Response:
+    {
+      "success": True,
+      "items_owned": [ { item_id, title, thumbnail_url, ... } ],
+      "items_borrowed": [ { <request row + _item: { item_id, title, thumbnail_url }>, display_title, ... } ],
+      "counts": { total_owned, total_borrowed }
+    }
     """
     try:
-        # parse JSON
         try:
-            payload = json.loads(request.body.decode("utf-8"))
+            payload = json.loads(request.body.decode("utf-8") or "{}")
         except Exception:
             return HttpResponseBadRequest(
                 json.dumps({"success": False, "error": "invalid json"}),
-                content_type="application/json"
+                content_type="application/json",
             )
 
         user_id = payload.get("user_id")
@@ -1443,42 +1460,47 @@ def admin_user_details_api(request):
         # ------------------------
         # 1) ITEMS OWNED
         # ------------------------
-        items_owned = []
+        items_owned_raw = []
         try:
-            # your item table uses columns: item_id (pk), user_id (owner FK), image_url (path)
             owned_resp = supabase.table("item").select("*").eq("user_id", user_id).execute()
-            items_owned = owned_resp.data or []
+            items_owned_raw = owned_resp.data or []
         except Exception as e:
             print("Supabase OWNED error:", e)
-            items_owned = []
+            items_owned_raw = []
 
-        # normalize and attach thumbnail_url
-        for it in items_owned:
-            # prefer whatever column holds the storage path
-            raw_path = it.get("image_url") or it.get("image") or it.get("image_path") or ""
-            thumbnail_url = _get_public_or_signed_url(raw_path) if raw_path else ""
-            # fallback to test placeholder if you want quick visual testing
+        normalized_owned = []
+        for it in items_owned_raw:
+            raw_path = (it.get("image_url") or it.get("image") or it.get("image_path") or "") if isinstance(it, dict) else ""
+            thumbnail_url = ""
+            try:
+                thumbnail_url = _get_url(raw_path) if raw_path else ""
+            except Exception as e:
+                print("DEBUG: _get_url failed for owned:", e)
+                thumbnail_url = ""
+
             if not thumbnail_url:
-                # comment out next line in production; it's just a dev/testing convenience
                 thumbnail_url = TEST_PLACEHOLDER_IMAGE
-            it["thumbnail_url"] = thumbnail_url
-            # convenience fields for front-end
-            it["_thumbnail"] = thumbnail_url
-            it["_title"] = it.get("title") or it.get("item_title") or ""
 
-        if items_owned:
-            # debug one example to server logs
-            sample = items_owned[0]
-            print("DEBUG owned sample:", {
-                "item_id": sample.get("item_id"),
-                "raw_image": sample.get("image_url"),
-                "thumbnail_url": sample.get("thumbnail_url")[:200] if sample.get("thumbnail_url") else None
-            })
+            item_id = it.get("item_id") or it.get("id") or it.get("itemId") or None
+            # attempt to determine title from common fields
+            title = (it.get("title") or it.get("item_title") or "").strip() if isinstance(it, dict) else ""
+            if not title:
+                # try nested/raw fields
+                title = _pick_title_from_raw(it) if isinstance(it, dict) else ""
+
+            normalized = {
+                "item_id": item_id,
+                "title": title,
+                "thumbnail_url": thumbnail_url,
+            }
+            # attach raw only in DEBUG to help troubleshooting
+            if getattr(settings, "DEBUG", False):
+                normalized["raw"] = it
+            normalized_owned.append(normalized)
 
         # ------------------------
         # 2) ITEMS BORROWED / REQUESTS (requests created by this user)
         # ------------------------
-        items_borrowed = []
         borrowed_raw = []
         try:
             borrowed_resp = supabase.table("request").select("*").eq("user_id", user_id).execute()
@@ -1488,51 +1510,84 @@ def admin_user_details_api(request):
             borrowed_raw = []
 
         # ------------------------
-        # 3) Enrich borrowed with item details
+        # 3) Enrich borrowed with item details (batch fetch)
         # ------------------------
+        items_borrowed = []
         if borrowed_raw:
-            # gather item ids from requests (column name in your schema is item_id)
-            ids = [r.get("item_id") for r in borrowed_raw if r.get("item_id")]
+            ids = [r.get("item_id") for r in borrowed_raw if r.get("item_id") is not None]
             items_map = {}
             if ids:
                 try:
-                    # select item rows where item_id in ids
                     items_resp = supabase.table("item").select("*").in_("item_id", ids).execute()
                     for itm in items_resp.data or []:
-                        items_map[str(itm.get("item_id"))] = itm
+                        key = str(itm.get("item_id") or itm.get("id") or itm.get("itemId"))
+                        items_map[key] = itm
                 except Exception as e:
                     print("Supabase BORROWED lookup error:", e)
 
             for req in borrowed_raw:
-                req_copy = dict(req)
+                req_copy = dict(req) if isinstance(req, dict) else {"raw": req}
                 item_id = req.get("item_id")
-                itm = items_map.get(str(item_id))
+                itm = None
+                if item_id is not None:
+                    itm = items_map.get(str(item_id))
                 if itm:
                     raw_path = itm.get("image_url") or itm.get("image") or itm.get("image_path") or ""
-                    thumbnail = _get_public_or_signed_url(raw_path) if raw_path else ""
+                    thumbnail = ""
+                    try:
+                        thumbnail = _get_url(raw_path) if raw_path else ""
+                    except Exception as e:
+                        print("DEBUG: _get_url failed for borrowed item:", e)
+                        thumbnail = ""
                     if not thumbnail:
-                        # optional dev fallback - remove in production
                         thumbnail = TEST_PLACEHOLDER_IMAGE
-                    req_copy["_item"] = {
-                        "raw": itm,
+
+                    enriched = {
+                        "item_id": itm.get("item_id") or itm.get("id"),
+                        "title": (itm.get("title") or itm.get("item_title") or "").strip(),
                         "thumbnail_url": thumbnail,
-                        "title": itm.get("title") or itm.get("item_title") or ""
                     }
+                    if getattr(settings, "DEBUG", False):
+                        enriched["raw"] = itm
+                    req_copy["_item"] = enriched
                 else:
                     req_copy["_item"] = None
                 items_borrowed.append(req_copy)
 
         # ------------------------
-        # 4) COUNTS
+        # 4) Normalize titles (ensure something usable)
+        # ------------------------
+        for it in normalized_owned:
+            if not it.get("title"):
+                raw = it.get("raw") or {}
+                it["title"] = _pick_title_from_raw(raw) or f"Item {it.get('item_id') or ''}".strip()
+
+        for req in items_borrowed:
+            itm = req.get("_item")
+            if itm:
+                if not itm.get("title"):
+                    raw = itm.get("raw") or {}
+                    itm["title"] = _pick_title_from_raw(raw) or f"Item {itm.get('item_id') or ''}".strip()
+            # top-level display title for the request (use request-specific name if any, otherwise item)
+            if not req.get("display_title"):
+                req["display_title"] = (
+                    (req.get("title") or "").strip()
+                    or (itm and itm.get("title"))
+                    or _pick_title_from_raw(req.get("raw") or {})
+                    or f"Request {req.get('id') or req.get('request_id') or ''}".strip()
+                )
+
+        # ------------------------
+        # 5) COUNTS
         # ------------------------
         counts = {
-            "total_owned": len(items_owned),
+            "total_owned": len(normalized_owned),
             "total_borrowed": len(items_borrowed),
         }
 
         return JsonResponse({
             "success": True,
-            "items_owned": items_owned,
+            "items_owned": normalized_owned,
             "items_borrowed": items_borrowed,
             "counts": counts
         })
@@ -1540,7 +1595,6 @@ def admin_user_details_api(request):
     except Exception as exc:
         traceback.print_exc()
         return JsonResponse({"success": False, "error": str(exc)}, status=500)
-
 
 # Toggle user admin status - used via AJAX POST
 @require_POST
