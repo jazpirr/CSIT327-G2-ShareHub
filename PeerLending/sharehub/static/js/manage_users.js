@@ -10,7 +10,7 @@
   const CSRF_TOKEN = g("CSRF_TOKEN", "");
   const TOGGLE_ADMIN_URL = g("TOGGLE_ADMIN_URL", "/toggle-user-admin/");
   const TOGGLE_BLOCK_URL = g("TOGGLE_BLOCK_URL", "/toggle-user-block/");
-  const ADMIN_USER_DETAILS_URL = g("ADMIN_USER_DETAILS_URL", "/admin/api/user-details/");
+  const ADMIN_USER_DETAILS_URL = g("ADMIN_USER_DETAILS_URL", "/api/user-details/");
 
   function loadUsersData() {
     const el = document.getElementById("users-data");
@@ -44,8 +44,8 @@
         body: JSON.stringify(bodyObj),
       });
       let data = null;
-      try { data = await resp.json(); } catch (_) { /* ignore */ }
-      return { ok: resp.ok, status: resp.status, data };
+      try { data = await resp.json(); } catch (_) { /* ignore non-json */ }
+      return { ok: resp.ok, status: resp.status, data, rawText: await resp.text().catch(()=>"") };
     } catch (err) {
       console.error("manage_users.js network error", err);
       return { ok: false, error: err };
@@ -57,13 +57,19 @@
     if (!box) return;
     const msgEl = document.createElement("div");
     msgEl.className = `user-msg user-msg-${kind}`;
-    msgEl.innerHTML = `<span>${msg}</span>`;
+    msgEl.innerHTML = `<span>${escapeHtml(String(msg))}</span>`;
     box.appendChild(msgEl);
     setTimeout(() => {
       msgEl.style.opacity = "0";
       msgEl.style.transform = "translateX(100%)";
       setTimeout(() => msgEl.remove(), 300);
     }, 4000);
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, function (m) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m];
+    });
   }
 
   function updateCountersFromCards() {
@@ -93,7 +99,7 @@
     return !!card.querySelector(".blocked-badge");
   }
 
-  // Main filter logic: shows/hides .user-card elements based on select + search
+  // Main filter logic
   function applyFiltersAndSearch() {
     const roleSelect = document.getElementById("role-filter");
     const statusSelect = document.getElementById("status-filter");
@@ -106,7 +112,6 @@
     const cards = Array.from(document.querySelectorAll(".user-card"));
 
     cards.forEach(card => {
-      // derive properties from DOM
       const isAdmin = elementIsAdmin(card);
       const isBlocked = elementIsBlocked(card);
       const name = (card.querySelector(".user-name")?.textContent || "").toLowerCase();
@@ -121,19 +126,16 @@
       if (status === "blocked") statusMatch = !!isBlocked;
 
       let searchMatch = true;
-      if (search) {
-        searchMatch = name.includes(search) || email.includes(search);
-      }
+      if (search) searchMatch = name.includes(search) || email.includes(search);
 
       const show = roleMatch && statusMatch && searchMatch;
       card.style.display = show ? "" : "none";
     });
 
-    // update counters to reflect visible set
     updateCountersFromCards();
   }
 
-  // Simple debounce
+  // debounce
   function debounce(fn, ms = 200) {
     let t = null;
     return function (...args) {
@@ -142,7 +144,7 @@
     };
   }
 
-  // Toggle admin / block functions (unchanged logic but calling updateCounters when done)
+  // Toggle admin
   async function toggleAdmin(userId, card) {
     if (!userId || !card) return;
     const btn = card.querySelector(".admin-toggle-btn");
@@ -166,7 +168,6 @@
       return;
     }
 
-    // Update DOM badges + button
     const isAdminNow = !!res.data.is_admin;
     const badges = card.querySelector(".user-badges");
     const adminBadge = card.querySelector(".admin-badge");
@@ -185,9 +186,10 @@
     btn.disabled = false;
 
     showMessage(isAdminNow ? "User promoted to admin" : "User demoted from admin", "info");
-    applyFiltersAndSearch(); // update visible counts
+    applyFiltersAndSearch();
   }
 
+  // Toggle block
   async function toggleBlock(userId, card) {
     if (!userId || !card) return;
     const btn = card.querySelector(".block-toggle-btn");
@@ -247,7 +249,48 @@
 
     btn.disabled = false;
     showMessage(isBlockedNow ? "User blocked" : "User unblocked", "info");
-    applyFiltersAndSearch(); // update visible counts
+    applyFiltersAndSearch();
+  }
+
+  // Helper: extract title from many shapes
+  function extractTitleFromItem(it) {
+    if (!it) return "";
+    const tries = [
+      it.title,
+      it.item_title,
+      it._title,
+      it.name,
+      it.item_name,
+      it.display_name,
+      (it._item && it._item.title),
+      (it._item && it._item.item_title),
+      (it._item && it._item._title),
+      (it.raw && (it.raw.title || it.raw.item_title || it.raw.name)),
+      (it.raw && it.raw.item_name),
+    ];
+    for (const t of tries) {
+      if (typeof t === "string" && t.trim()) return t.trim();
+    }
+    return "";
+  }
+
+  // Helper: extract thumbnail from many shapes
+  function extractThumbnailFromItem(it) {
+    if (!it) return "";
+    const tries = [
+      it.thumbnail_url,
+      it._thumbnail,
+      it.image_url,
+      it.image,
+      it.image_path,
+      (it._item && it._item.thumbnail_url),
+      (it._item && it._item.raw && (it._item.raw.thumbnail_url || it._item.raw.image_url)),
+      (it.raw && (it.raw.thumbnail_url || it.raw.image_url || it.raw.image)),
+    ];
+    for (const t of tries) {
+      if (typeof t === "string" && t.trim()) return t.trim();
+    }
+    return "";
   }
 
   // Details modal
@@ -271,6 +314,7 @@
         const img = document.createElement("img");
         img.src = profile_picture;
         img.alt = displayName || "Avatar";
+        img.className = "ud-avatar-img";
         udAvatar.appendChild(img);
       } else {
         udAvatar.textContent = (displayName || "U").slice(0,1).toUpperCase();
@@ -280,45 +324,130 @@
     if (owned) owned.innerHTML = "<div class='loading-state'>Loading owned items...</div>";
     if (borrowed) borrowed.innerHTML = "<div class='loading-state'>Loading borrowed items...</div>";
 
+    modal.style.display = "block";
     modal.classList.remove("hidden");
+    // allow CSS transition to run
     setTimeout(() => {
       modal.style.opacity = "1";
       modal.style.transform = "scale(1)";
     }, 20);
 
-    const resp = await postJson(ADMIN_USER_DETAILS_URL, { user_id: userId });
-    if (!resp.ok || !resp.data || !resp.data.success) {
-      if (owned) owned.innerHTML = "<div class='empty-state'>Failed to load</div>";
-      if (borrowed) borrowed.innerHTML = "<div class='empty-state'>Failed to load</div>";
+    if (!ADMIN_USER_DETAILS_URL) {
+      const err = "User details endpoint not configured.";
+      if (owned) owned.innerHTML = `<div class='empty-state'>${escapeHtml(err)}</div>`;
+      if (borrowed) borrowed.innerHTML = `<div class='empty-state'>${escapeHtml(err)}</div>`;
       return;
     }
 
-    const itemsOwned = resp.data.items_owned || [];
-    const itemsBorrowed = resp.data.items_borrowed || [];
-    const counts = resp.data.counts || {};
+    const resp = await postJson(ADMIN_USER_DETAILS_URL, { user_id: userId });
+    if (!resp.ok || !resp.data) {
+      const message = (resp && resp.rawText) || "Failed to fetch user details";
+      if (owned) owned.innerHTML = `<div class='empty-state'>${escapeHtml(message)}</div>`;
+      if (borrowed) borrowed.innerHTML = `<div class='empty-state'>${escapeHtml(message)}</div>`;
+      console.error("manage_users: user details request failed", resp);
+      return;
+    }
 
+    const payload = resp.data;
+    if (!payload || payload.success !== true) {
+      const message = payload?.message || payload?.error || "Unexpected response from server";
+      if (owned) owned.innerHTML = `<div class='empty-state'>${escapeHtml(message)}</div>`;
+      if (borrowed) borrowed.innerHTML = `<div class='empty-state'>${escapeHtml(message)}</div>`;
+      console.warn("manage_users: unexpected payload", payload);
+      return;
+    }
+
+    const itemsOwned = payload.items_owned || [];
+    const itemsBorrowed = payload.items_borrowed || [];
+    const counts = payload.counts || {};
+
+    // Render owned
     if (owned) {
-      if (itemsOwned.length === 0) owned.innerHTML = "<div class='empty-state'>No items owned.</div>";
-      else {
+      if (!itemsOwned.length) {
+        owned.innerHTML = "<div class='empty-state'>No items owned.</div>";
+      } else {
         owned.innerHTML = "";
         itemsOwned.forEach(it => {
-          const d = document.createElement("div");
-          d.className = "mini-item";
-          d.textContent = it.title || it.item_title || "Untitled";
-          owned.appendChild(d);
+          const title = extractTitleFromItem(it) || `Item ${it.item_id || it.id || ""}`.trim();
+          const thumb = extractThumbnailFromItem(it);
+          const wrapper = document.createElement(it.item_id ? "a" : "div");
+          wrapper.className = "mini-item-card";
+          if (it.item_id) {
+            wrapper.href = `/items/${encodeURIComponent(it.item_id)}/`;
+            wrapper.target = "_blank";
+            wrapper.rel = "noopener noreferrer";
+          }
+          const thumbDiv = document.createElement("div");
+          thumbDiv.className = "mini-item-thumb";
+          if (thumb) {
+            const img = document.createElement("img");
+            img.src = thumb;
+            img.alt = title;
+            img.loading = "lazy";
+            thumbDiv.appendChild(img);
+          } else {
+            thumbDiv.textContent = (title || "I").slice(0,1).toUpperCase();
+          }
+          const meta = document.createElement("div");
+          meta.className = "mini-item-meta";
+          const t = document.createElement("div");
+          t.className = "mini-item-title";
+          t.textContent = title;
+          meta.appendChild(t);
+          wrapper.appendChild(thumbDiv);
+          wrapper.appendChild(meta);
+          owned.appendChild(wrapper);
         });
       }
     }
 
+    // Render borrowed/requests
     if (borrowed) {
-      if (itemsBorrowed.length === 0) borrowed.innerHTML = "<div class='empty-state'>No borrowed items.</div>";
-      else {
+      if (!itemsBorrowed.length) {
+        borrowed.innerHTML = "<div class='empty-state'>No borrowed items.</div>";
+      } else {
         borrowed.innerHTML = "";
-        itemsBorrowed.forEach(it => {
-          const d = document.createElement("div");
-          d.className = "mini-item";
-          d.textContent = (it.item_title || it.title || "Untitled") + " — " + (it.status || "");
-          borrowed.appendChild(d);
+        itemsBorrowed.forEach(req => {
+          // req may already include enriched _item
+          const itemCandidate = req._item || req.item || req;
+          const title = extractTitleFromItem(req) || extractTitleFromItem(itemCandidate) || `Request ${req.id || req.request_id || ""}`.trim();
+          const thumb = extractThumbnailFromItem(req) || extractThumbnailFromItem(itemCandidate);
+          const status = req.status || req.request_status || (req._item && req._item.raw && req._item.raw.status) || "";
+          const itemId = (req._item && req._item.item_id) || req.item_id || req.itemId || req.item_id || null;
+
+          const wrapper = document.createElement(itemId ? "a" : "div");
+          wrapper.className = "mini-item-card";
+          if (itemId) {
+            wrapper.href = `/items/${encodeURIComponent(itemId)}/`;
+            wrapper.target = "_blank";
+            wrapper.rel = "noopener noreferrer";
+          }
+          const thumbDiv = document.createElement("div");
+          thumbDiv.className = "mini-item-thumb";
+          if (thumb) {
+            const img = document.createElement("img");
+            img.src = thumb;
+            img.alt = title;
+            img.loading = "lazy";
+            thumbDiv.appendChild(img);
+          } else {
+            thumbDiv.textContent = (title || "I").slice(0,1).toUpperCase();
+          }
+          const meta = document.createElement("div");
+          meta.className = "mini-item-meta";
+          const t = document.createElement("div");
+          t.className = "mini-item-title";
+          t.textContent = title;
+          meta.appendChild(t);
+          if (status) {
+            const s = document.createElement("div");
+            s.className = "mini-item-status";
+            s.textContent = status;
+            meta.appendChild(s);
+          }
+          wrapper.appendChild(thumbDiv);
+          wrapper.appendChild(meta);
+          borrowed.appendChild(wrapper);
         });
       }
     }
@@ -332,14 +461,17 @@
     if (!modal) return;
     modal.style.opacity = "0";
     modal.style.transform = "scale(0.95)";
+    modal.style.pointerEvents = "none";
+    modal.setAttribute("aria-hidden", "true");
     setTimeout(() => {
       modal.classList.add("hidden");
       modal.style.opacity = "";
       modal.style.transform = "";
+      modal.style.pointerEvents = "";
     }, 200);
   }
 
-  // Create minimal styles used in the script for loading
+  // Inject small styles and ensure hidden modal doesn't block
   (function injectSmallStyles(){
     if (document.getElementById('manage-users-inline-styles')) return;
     const s = document.createElement('style');
@@ -350,17 +482,39 @@
       .user-msg { margin:6px 0; padding:8px 12px; border-radius:6px; background:#f3f3f3; display:flex; gap:8px; align-items:center; }
       .user-msg-info { background:#eef6ff; color:#0b63d6; }
       .user-msg-error { background:#ffecec; color:#cc0000; }
+
+      #user-details-modal.hidden { display: none !important; pointer-events: none !important; opacity: 0 !important; transform: scale(0.95) !important; }
+      #user-details-modal { display: block; position: fixed; inset: 0; z-index: 1000; transition: opacity 180ms ease, transform 180ms ease; pointer-events: auto; }
+      #user-details-modal .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 1001; pointer-events: auto; }
+      #user-details-modal .modal-panel { position: relative; z-index: 1002; max-width: 980px; margin: 48px auto; border-radius: 10px; background: #fff; overflow: hidden; }
+
+      .mini-item-card { display: flex; gap: 10px; align-items: center; padding: 8px; border-bottom: 1px solid #f1f1f1; text-decoration: none; color: inherit; }
+      .mini-item-card:hover { background: #fafafa; }
+      .mini-item-thumb { width: 56px; height: 56px; flex: 0 0 56px; display:flex; align-items:center; justify-content:center; background:#f7f7f7; border-radius:6px; overflow:hidden; }
+      .mini-item-thumb img { width:100%; height:100%; object-fit: cover; display:block; }
+      .mini-item-meta { display:flex; flex-direction:column; gap:4px; }
+      .mini-item-title { font-size: 14px; font-weight: 600; }
+      .mini-item-status { font-size: 12px; color: #666; }
+      .ud-avatar-img { width:56px; height:56px; border-radius:50%; object-fit:cover; }
+      .empty-state { padding:16px; color:#777; }
     `;
     document.head.appendChild(s);
   })();
 
-  // DOM ready wiring
+  // DOM ready wiring (defensive)
   document.addEventListener("DOMContentLoaded", function () {
+    // defensive: ensure modal hidden does not block the page on load
+    const modal = document.getElementById("user-details-modal");
+    if (modal && modal.classList.contains("hidden")) {
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+      modal.style.pointerEvents = "none";
+    }
+
     const allUsers = loadUsersData();
-    // initialize counters from DOM cards (not just JSON) so page initial state is correct
     updateCountersFromCards();
 
-    // wire admin toggle
+    // admin toggles
     document.querySelectorAll(".admin-toggle-btn").forEach(btn => {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
@@ -371,7 +525,7 @@
       });
     });
 
-    // wire block toggle
+    // block toggles
     document.querySelectorAll(".block-toggle-btn").forEach(btn => {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
@@ -382,7 +536,7 @@
       });
     });
 
-    // wire details btns
+    // details buttons
     document.querySelectorAll(".details-btn").forEach(btn => {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
@@ -396,12 +550,16 @@
       });
     });
 
-    // modal close handlers
-    document.getElementById("close-user-details")?.addEventListener("click", closeUserDetailsModal);
-    document.getElementById("close-user-details-2")?.addEventListener("click", closeUserDetailsModal);
-    document.querySelectorAll(".modal-backdrop").forEach(b => b.addEventListener("click", closeUserDetailsModal));
+    // modal close handlers (safe)
+    const closeTop = document.getElementById("close-user-details");
+    if (closeTop) closeTop.addEventListener("click", closeUserDetailsModal);
+    const closeFoot = document.getElementById("close-user-details-2");
+    if (closeFoot) closeFoot.addEventListener("click", closeUserDetailsModal);
+    document.querySelectorAll("#user-details-modal .modal-backdrop").forEach(b => {
+      if (b) b.addEventListener("click", closeUserDetailsModal);
+    });
 
-    // role/status filters + search
+    // filters + search
     const roleSelect = document.getElementById('role-filter');
     const statusSelect = document.getElementById('status-filter');
     const searchInput = document.getElementById('search-users');
@@ -412,10 +570,10 @@
     if (statusSelect) statusSelect.addEventListener('change', applyFiltersAndSearch);
     if (searchInput) searchInput.addEventListener('input', debouncedApply);
 
-    // initial apply (in case template rendered with values)
-    applyFiltersAndSearch();
+    // initial apply
+    try { applyFiltersAndSearch(); } catch (err) { console.warn("applyFiltersAndSearch error:", err); updateCountersFromCards(); }
 
-    // escape key to close modal
+    // escape to close modal
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeUserDetailsModal();
     });
