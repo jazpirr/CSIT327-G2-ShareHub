@@ -106,6 +106,12 @@
     {% if reports %}
     <div class="reports-grid">
       {% for r in reports %}
+      <!-- Debug div moved inside the loop -->
+      <div style="display: none;" class="debug-report" data-id="{{ r.report_id }}"
+        data-type="{{ r.report_id|default:'none'|slice:':10' }}">
+        Report ID: {{ r.report_id }}, Type: {{ r.report_id|default:'none' }}
+      </div>
+      
       {% with status=r.status|default:"open" %}
       <div class="report-card" data-report-id="{{ r.report_id }}" data-status="{{ status }}">
         <div class="report-header">
@@ -115,20 +121,20 @@
           </div>
           <div class="report-type">
             {% if r.item_id %}
-              <span class="type-badge item-type">
-                <i class="fas fa-box"></i>
-                Item Issue
-              </span>
+            <span class="type-badge item-type">
+              <i class="fas fa-box"></i>
+              Item Issue
+            </span>
             {% elif r.request_id %}
-              <span class="type-badge request-type">
-                <i class="fas fa-handshake"></i>
-                Request Issue
-              </span>
+            <span class="type-badge request-type">
+              <i class="fas fa-handshake"></i>
+              Request Issue
+            </span>
             {% else %}
-              <span class="type-badge other-type">
-                <i class="fas fa-exclamation-triangle"></i>
-                General Issue
-              </span>
+            <span class="type-badge other-type">
+              <i class="fas fa-exclamation-triangle"></i>
+              General Issue
+            </span>
             {% endif %}
           </div>
         </div>
@@ -136,17 +142,17 @@
         <div class="report-content">
           <h4 class="report-title">{{ r.title }}</h4>
           <p class="report-description">{{ r.description|truncatewords:25 }}</p>
-          
+
           <div class="report-details">
             <div class="detail-item">
               <span class="detail-label">Reference:</span>
               <span class="detail-value">
                 {% if r.item_id %}
-                  Item #{{ r.item_id }}
+                Item #{{ r.item_id }}
                 {% elif r.request_id %}
-                  Request #{{ r.request_id }}
+                Request #{{ r.request_id }}
                 {% else %}
-                  N/A
+                N/A
                 {% endif %}
               </span>
             </div>
@@ -160,36 +166,36 @@
         <div class="report-footer">
           <div class="status-indicator">
             {% if status == "in progress" or status == "in_progress" %}
-              <span class="status-badge progress">
-                <i class="fas fa-spinner"></i>
-                In Progress
-              </span>
+            <span class="status-badge progress">
+              <i class="fas fa-spinner"></i>
+              In Progress
+            </span>
             {% elif status == "resolved" %}
-              <span class="status-badge resolved">
-                <i class="fas fa-check-circle"></i>
-                Resolved
-              </span>
+            <span class="status-badge resolved">
+              <i class="fas fa-check-circle"></i>
+              Resolved
+            </span>
             {% else %}
-              <span class="status-badge open">
-                <i class="fas fa-exclamation-circle"></i>
-                Open
-              </span>
+            <span class="status-badge open">
+              <i class="fas fa-exclamation-circle"></i>
+              Open
+            </span>
             {% endif %}
           </div>
 
           <div class="report-actions">
             {% if status == "open" %}
-              <button class="action-btn progress-btn" data-report-id="{{ r.report_id }}" data-action="in_progress">
-                <i class="fas fa-spinner"></i>
-                Start Progress
-              </button>
+            <button class="action-btn progress-btn" data-report-id="{{ r.report_id }}" data-action="in_progress">
+              <i class="fas fa-spinner"></i>
+              Start Progress
+            </button>
             {% elif status == "in_progress" or status == "in progress" %}
-              <button class="action-btn resolve-btn" data-report-id="{{ r.report_id }}" data-action="resolved">
-                <i class="fas fa-check-circle"></i>
-                Mark Resolved
-              </button>
+            <button class="action-btn resolve-btn" data-report-id="{{ r.report_id }}" data-action="resolved">
+              <i class="fas fa-check-circle"></i>
+              Mark Resolved
+            </button>
             {% endif %}
-            
+
             <button class="action-btn view-btn" data-report-id="{{ r.report_id }}">
               <i class="fas fa-eye"></i>
               View Details
@@ -217,16 +223,53 @@
   <div class="modal-backdrop"></div>
   <div class="modal-panel">
     <header class="modal-header">
-      <h3><i class="fas fa-file-alt"></i> Report Details</h3>
-      <button class="modal-close">&times;</button>
+      <div class="modal-header-main">
+        <h3><i class="fas fa-file-alt"></i> Report Details</h3>
+      </div>
+      <div class="modal-header-meta">
+        <span class="modal-report-date" id="modal-report-date"></span>
+      </div>
     </header>
+
     <div class="modal-body">
       <div class="report-detail-content">
-        <!-- Content will be populated by JavaScript -->
+        <!-- Loading Template -->
+        <div class="detail-loading-template">
+          <div class="loading-animation">
+            <div class="spinner"></div>
+          </div>
+          <h4>Loading Report Information</h4>
+          <p>Fetching details for the selected report...</p>
+        </div>
+
+        <!-- Error Template (hidden by default) -->
+        <div class="detail-error-template" style="display: none;">
+          <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h4>Unable to Load Report</h4>
+          <p id="error-message">The report details could not be loaded.</p>
+          <button class="btn btn-retry" id="retry-load-btn">
+            <i class="fas fa-redo"></i> Try Again
+          </button>
+        </div>
+
+        <!-- Success Template (hidden by default) -->
+        <div class="detail-success-template" style="display: none;">
+          <!-- Content will be populated by JavaScript -->
+        </div>
       </div>
     </div>
+
     <footer class="modal-footer">
-      <button class="btn btn-secondary close-modal">Close</button>
+      <div class="modal-footer-left">
+        <button class="btn btn-secondary close-modal">
+          <i class="fas fa-times"></i> Close
+        </button>
+      </div>
+      <div class="modal-footer-right" id="modal-action-buttons">
+        <!-- Action buttons will appear here when applicable -->
+      </div>
     </footer>
   </div>
 </div>
@@ -236,207 +279,28 @@
 {{ reports|json_script:"reports-data" }}
 
 <script>
-// Remove all CSS from the script section and keep only JS
-(function () {
-  const UPDATE_URL = "{% url 'admin_update_report_status' %}";
-  
-  function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
-  }
+  console.log("🟢 Template script starting");
+  console.log("Static URL test: {% static 'js/admin-report-details.js' %}");
+</script>
 
-  function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-      <span>${message}</span>
-      <button class="close-notification">&times;</button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => notification.classList.add('show'), 100);
-    
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 300);
-    }, 5000);
-    
-    notification.querySelector('.close-notification').addEventListener('click', () => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 300);
-    });
-  }
+<script>
+  // FIXED: Use ADMIN_REPORT_DETAILS_URL (not ADMIN_REPORT_DETAILS_BASE_URL)
+  window.ADMIN_REPORT_DETAILS_URL = "{% url 'admin_report_details' '0' %}".replace('0', '');
+  console.log("API URL set to:", window.ADMIN_REPORT_DETAILS_URL);
+</script>
 
-  function recalcCounts() {
-    let open = 0, progress = 0, resolved = 0;
-    document.querySelectorAll('.report-card').forEach(card => {
-      const status = card.getAttribute('data-status');
-      if (status === 'open') open++;
-      else if (status === 'in_progress' || status === 'in progress') progress++;
-      else if (status === 'resolved') resolved++;
-    });
-    
-    document.getElementById('open-count').textContent = open;
-    document.getElementById('progress-count').textContent = progress;
-    document.getElementById('resolved-count').textContent = resolved;
-  }
+<script src="{% static 'js/admin-report-details.js' %}"></script>
+<script src="{% static 'js/admin-reports.js' %}"></script>
 
-  async function postJson(url, body) {
-    const csrftoken = getCookie('csrftoken');
-    try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-        body: JSON.stringify(body),
-        credentials: 'same-origin'
-      });
-      const data = await resp.json();
-      return { ok: resp.ok, data };
-    } catch (e) { 
-      console.error('Network error', e); 
-      return { ok: false, data: null, error: e }; 
-    }
-  }
+<script>
+  console.log("🟢 After loading JS file");
+  console.log("Is AdminReportDetails defined?", typeof AdminReportDetails !== 'undefined');
+  console.log("Is debugReportDetails defined?", typeof debugReportDetails !== 'undefined');
+</script>
 
-  function updateReportStatus(card, newStatus) {
-    const safeStatus = String(newStatus).replace(/\s+/g, '_').toLowerCase();
-    card.setAttribute('data-status', safeStatus);
-    
-    const statusBadge = card.querySelector('.status-badge');
-    const progressBtn = card.querySelector('.progress-btn');
-    const resolveBtn = card.querySelector('.resolve-btn');
-    
-    // Update status badge
-    statusBadge.className = `status-badge ${safeStatus}`;
-    if (safeStatus === 'in_progress') {
-      statusBadge.innerHTML = '<i class="fas fa-spinner"></i> In Progress';
-    } else if (safeStatus === 'resolved') {
-      statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Resolved';
-    } else {
-      statusBadge.innerHTML = '<i class="fas fa-exclamation-circle"></i> Open';
-    }
-    
-    // Update buttons
-    if (safeStatus === 'open') {
-      if (progressBtn) progressBtn.style.display = 'flex';
-      if (resolveBtn) resolveBtn.style.display = 'none';
-    } else if (safeStatus === 'in_progress') {
-      if (progressBtn) progressBtn.style.display = 'none';
-      if (resolveBtn) resolveBtn.style.display = 'flex';
-    } else {
-      if (progressBtn) progressBtn.style.display = 'none';
-      if (resolveBtn) resolveBtn.style.display = 'none';
-    }
-    
-    // Add success animation
-    card.style.animation = 'pulseSuccess 0.6s ease';
-    setTimeout(() => card.style.animation = '', 600);
-  }
-
-  // Event listeners
-  document.addEventListener('DOMContentLoaded', function () {
-    // Status update buttons
-    document.addEventListener('click', async function (ev) {
-      const btn = ev.target.closest('.progress-btn, .resolve-btn');
-      if (!btn) return;
-      
-      ev.preventDefault();
-      const reportId = btn.getAttribute('data-report-id');
-      const action = btn.getAttribute('data-action');
-      const card = btn.closest('.report-card');
-      
-      if (!reportId || !action) return;
-      
-      // Show loading state
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
-      
-      const resp = await postJson(UPDATE_URL, { report_id: reportId, status: action });
-      
-      if (!resp.ok || !resp.data) {
-        showNotification('Network error while updating status', 'error');
-        btn.disabled = false;
-        btn.innerHTML = action === 'in_progress' ? 
-          '<i class="fas fa-spinner"></i> Start Progress' :
-          '<i class="fas fa-check-circle"></i> Mark Resolved';
-        return;
-      }
-      
-      if (resp.data.success) {
-        updateReportStatus(card, action);
-        recalcCounts();
-        showNotification('Report status updated successfully', 'success');
-      } else {
-        showNotification('Failed to update report: ' + (resp.data.message || resp.data.error || 'Unknown error'), 'error');
-        btn.disabled = false;
-        btn.innerHTML = action === 'in_progress' ? 
-          '<i class="fas fa-spinner"></i> Start Progress' :
-          '<i class="fas fa-check-circle"></i> Mark Resolved';
-      }
-    });
-
-    // Filter functionality
-    const statusFilter = document.getElementById('status-filter');
-    const typeFilter = document.getElementById('type-filter');
-    
-    if (statusFilter && typeFilter) {
-      const applyFilters = () => {
-        const statusValue = statusFilter.value;
-        const typeValue = typeFilter.value;
-        
-        document.querySelectorAll('.report-card').forEach(card => {
-          const cardStatus = card.getAttribute('data-status');
-          const cardType = card.querySelector('.type-badge').className.includes('item-type') ? 'item' : 
-                          card.querySelector('.type-badge').className.includes('request-type') ? 'request' : 'other';
-          
-          const statusMatch = statusValue === 'all' || cardStatus === statusValue;
-          const typeMatch = typeValue === 'all' || cardType === typeValue;
-          
-          card.style.display = statusMatch && typeMatch ? 'block' : 'none';
-        });
-      };
-      
-      statusFilter.addEventListener('change', applyFilters);
-      typeFilter.addEventListener('change', applyFilters);
-    }
-
-    // View details buttons
-    document.querySelectorAll('.view-btn').forEach(btn => {
-      btn.addEventListener('click', function() {
-        // Implement view details functionality here
-        showNotification('View details feature coming soon', 'info');
-      });
-    });
-
-    // Modal functionality
-    const modal = document.getElementById('report-details-modal');
-    const closeModal = () => {
-      modal.classList.add('hidden');
-    };
-    
-    document.querySelectorAll('.modal-close, .close-modal').forEach(btn => {
-      btn.addEventListener('click', closeModal);
-    });
-    
-    document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
-
-    // Add hover effects
-    document.querySelectorAll('.report-card').forEach(card => {
-      card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-4px)';
-      });
-      
-      card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
-      });
-    });
-
-    // Initialize counts
-    recalcCounts();
-  });
-})();
+<script>
+  // Debug: Check if JavaScript file loaded
+  console.log("admin-report-details.js loaded:", typeof AdminReportDetails !== 'undefined');
+  console.log("ADMIN_REPORT_DETAILS_URL:", window.ADMIN_REPORT_DETAILS_URL);
 </script>
 {% endblock %}

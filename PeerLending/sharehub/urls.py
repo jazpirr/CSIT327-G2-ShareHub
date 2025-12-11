@@ -40,7 +40,7 @@ urlpatterns = [
     path("api/user-details/", views.admin_user_details_api, name="admin_user_details_api"),
     path('items/', views.admin_all_items, name='admin_all_items'),
     path('item/delete/<uuid:item_id>/', views.admin_delete_item, name='admin_delete_item'),
-    
+    path('admin/api/report-details/<str:report_id>/', views.admin_report_details, name='admin_report_details'),
 ]
  
     

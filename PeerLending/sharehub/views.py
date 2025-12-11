@@ -30,6 +30,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from supabase_auth._sync.gotrue_client import AuthApiError
 from functools import wraps
 from django.http import HttpResponseForbidden
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 
 SUPABASE_URL = settings.SUPABASE_URL
@@ -2824,3 +2825,53 @@ def admin_all_items(request):
         "borrowed_count": borrowed_count,
         "pending_count": pending_count
     })
+
+@supabase_login_required
+def admin_report_details(request, report_id):
+    """Return detailed information for a specific report from Supabase"""
+    # Check if user is admin via session
+    if not request.session.get("is_admin"):
+        return JsonResponse({
+            'success': False,
+            'error': 'Admin access required'
+        }, status=403)
+    
+    try:
+        # Fetch report from Supabase
+        report_resp = supabase.table("reports").select("*").eq("report_id", report_id).single().execute()
+        
+        if not report_resp.data:
+            return JsonResponse({
+                'success': False,
+                'error': 'Report not found'
+            }, status=404)
+        
+        report = report_resp.data
+        
+        # Format the report data (simplified version)
+        report_data = {
+            'success': True,
+            'report': {
+                'id': str(report.get('report_id', report_id)),
+                'report_id': report.get('report_id', report_id),
+                'title': report.get('title', 'Untitled Report'),
+                'description': report.get('description', 'No description'),
+                'status': report.get('status', 'open'),
+                'type': report.get('issue_type', 'other'),
+                'reported_by': report.get('reported_by'),
+                'reported_by_email': report.get('reported_by_email'),
+                'created_at': report.get('created_at'),
+                'item_id': report.get('item_id'),
+                'request_id': report.get('request_id'),
+                'reference': report.get('reference') or (f"Item #{report.get('item_id')}" if report.get('item_id') else f"Request #{report.get('request_id')}" if report.get('request_id') else 'N/A'),
+            }
+        }
+        
+        return JsonResponse(report_data)
+        
+    except Exception as e:
+        print(f"Error fetching report details: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

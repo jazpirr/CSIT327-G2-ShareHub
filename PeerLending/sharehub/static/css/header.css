@@ -766,3 +766,10 @@
         font-size: 16px;
     }
 }
+
+.admin-nav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 90px; /* same as .navbar height */
+}
