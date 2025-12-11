@@ -37,11 +37,11 @@
             <i class="fas fa-home nav-icon"></i>
             <span class="nav-text">Home</span>
           </a>
-          <a href="{% url 'approve_requests' %}"
+          <!-- <a href="{% url 'approve_requests' %}"
             class="nav-link {% if request.resolver_match.url_name == 'approve_requests' %}active{% endif %}">
             <i class="fas fa-check-circle nav-icon"></i>
             <span class="nav-text">Approve Requests</span>
-          </a>
+          </a> -->
           <a href="{% url 'manage_users' %}"
             class="nav-link {% if request.resolver_match.url_name == 'manage_users' %}active{% endif %}">
             <i class="fas fa-user-cog nav-icon"></i>
