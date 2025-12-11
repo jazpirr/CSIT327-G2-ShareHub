@@ -271,6 +271,149 @@
 <script src="{% static 'js/report_issue.js' %}"></script>
 <script src="{% static 'js/my_items.js' %}"></script>
 <script>
+(function () {
+  // Modal elements
+  const historyModal = document.getElementById('historyModal');
+  const historyModalOverlay = document.getElementById('historyModalOverlay');
+  const historyModalBody = document.getElementById('historyModalBody');
+  const historyModalClose = document.getElementById('historyModalClose');
+  const historyModalCloseFooter = document.getElementById('historyModalCloseFooter');
+
+  if (!historyModal || !historyModalBody) return;
+
+  // Utility: create history entry DOM
+  function buildHistoryRow(data) {
+    // data: { requester, requestDate, status, returned }
+    const row = document.createElement('div');
+    row.className = 'history-entry-row';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'history-entry-avatar';
+    avatar.textContent = (data.requester && data.requester[0]) ? data.requester[0].toUpperCase() : '?';
+
+    const content = document.createElement('div');
+    content.className = 'history-entry-content';
+
+    const meta = document.createElement('div');
+    meta.className = 'history-entry-meta';
+    meta.textContent = `${data.requester || 'Unknown'} • ${data.requestDate || '—'}`;
+
+    const status = document.createElement('div');
+    status.className = 'history-entry-status';
+    status.textContent = (data.status || 'unknown').replace(/^./, s => s.toUpperCase());
+
+    content.appendChild(meta);
+    content.appendChild(status);
+
+    // optional returned flag
+    if (data.returned === 'true' || data.returned === true) {
+      const returnedBadge = document.createElement('div');
+      returnedBadge.style.marginTop = '6px';
+      returnedBadge.style.fontSize = '12px';
+      returnedBadge.textContent = 'Returned';
+      content.appendChild(returnedBadge);
+    }
+
+    row.appendChild(avatar);
+    row.appendChild(content);
+    return row;
+  }
+
+  function clearModalBody() {
+    // keep the "empty" message container, but clear any injected rows (except the .history-list-empty)
+    historyModalBody.querySelectorAll('.history-entry-row').forEach(n => n.remove());
+  }
+
+  function openModal() {
+    historyModal.style.display = 'flex';
+    historyModal.setAttribute('aria-hidden', 'false');
+    // trap focus simple approach: focus close button
+    historyModalClose && historyModalClose.focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    historyModal.style.display = 'none';
+    historyModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    clearModalBody();
+  }
+
+  // Delegated click: show history for the clicked item's card
+  document.addEventListener('click', function (ev) {
+    const btn = ev.target.closest && ev.target.closest('.btn-history');
+    if (!btn) return;
+
+    ev.preventDefault();
+
+    // find nearest item card
+    const card = btn.closest('.item-card-enhanced');
+    if (!card) return;
+
+    // find hidden history-data inside the card
+    const dataContainer = card.querySelector('.history-data');
+    clearModalBody();
+
+    if (!dataContainer) {
+      // show no history message
+      const empty = historyModalBody.querySelector('.history-list-empty');
+      if (empty) {
+        empty.style.display = '';
+      }
+      openModal();
+      return;
+    }
+
+    // gather entries
+    const entries = Array.from(dataContainer.querySelectorAll('.history-entry'));
+    if (!entries.length) {
+      const empty = historyModalBody.querySelector('.history-list-empty');
+      if (empty) empty.style.display = '';
+      openModal();
+      return;
+    }
+
+    // hide the empty message if present
+    const empty = historyModalBody.querySelector('.history-list-empty');
+    if (empty) empty.style.display = 'none';
+
+    // build rows and append
+    entries.forEach(e => {
+      const entryData = {
+        requester: e.dataset.requester || e.getAttribute('data-requester') || '',
+        requestDate: e.dataset.requestDate || e.getAttribute('data-request-date') || '',
+        status: e.dataset.status || e.getAttribute('data-status') || '',
+        returned: e.dataset.return || e.getAttribute('data-return') || 'false'
+      };
+      const row = buildHistoryRow(entryData);
+      historyModalBody.appendChild(row);
+    });
+
+    openModal();
+  });
+
+  // Close handlers
+  if (historyModalClose) historyModalClose.addEventListener('click', closeModal);
+  if (historyModalCloseFooter) historyModalCloseFooter.addEventListener('click', closeModal);
+  if (historyModalOverlay) historyModalOverlay.addEventListener('click', closeModal);
+
+  // escape key
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && historyModal.getAttribute('aria-hidden') === 'false') {
+      closeModal();
+    }
+  });
+
+  // Prevent clicks inside panel from closing (if overlay used)
+  historyModal.querySelector('.modal-panel')?.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+  });
+
+})();
+</script>
+
+
+<script>
 (function(){
   const RESPOND_URL = window.RESPOND_URL || "{% url 'api_respond_request' %}";
 
